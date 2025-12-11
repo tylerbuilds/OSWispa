@@ -32,11 +32,11 @@ impl Tray for OswispaTray {
     fn icon_name(&self) -> String {
         let state = self.state.lock().unwrap();
         if state.is_recording {
-            // Red/active icon when recording
+            // Mic icon when recording
             "audio-input-microphone-high".to_string()
         } else {
-            // Normal microphone icon
-            "audio-input-microphone".to_string()
+            // Smiley face when idle
+            "face-smile".to_string()
         }
     }
 
@@ -45,7 +45,7 @@ impl Tray for OswispaTray {
         let (status, icon) = if state.is_recording {
             ("RECORDING - Release Ctrl+Super to transcribe, ESC to cancel", "audio-input-microphone-high")
         } else {
-            ("Ready - Hold Ctrl+Super to record", "audio-input-microphone")
+            ("Ready - Hold Ctrl+Super to record", "face-smile")
         };
 
         ToolTip {
