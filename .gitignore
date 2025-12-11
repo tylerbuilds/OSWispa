@@ -23,7 +23,7 @@ oswispa.log
 
 # Whisper models (large files)
 *.bin
-models/
+/models/
 
 # Debug/test files
 test_*.wav

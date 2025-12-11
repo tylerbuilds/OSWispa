@@ -14,7 +14,7 @@ pub struct ModelInfo {
     pub size_mb: u32,
     pub url: &'static str,
     pub description: &'static str,
-    pub english_only: bool,
+
 }
 
 /// All available models from Hugging Face
@@ -25,7 +25,7 @@ pub const AVAILABLE_MODELS: &[ModelInfo] = &[
         size_mb: 75,
         url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en.bin",
         description: "Fastest, basic accuracy",
-        english_only: true,
+
     },
     ModelInfo {
         name: "Tiny (Multilingual)",
@@ -33,7 +33,7 @@ pub const AVAILABLE_MODELS: &[ModelInfo] = &[
         size_mb: 75,
         url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin",
         description: "Fastest, supports all languages",
-        english_only: false,
+
     },
     ModelInfo {
         name: "Base (English)",
@@ -41,7 +41,7 @@ pub const AVAILABLE_MODELS: &[ModelInfo] = &[
         size_mb: 142,
         url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin",
         description: "Fast, good accuracy (recommended)",
-        english_only: true,
+
     },
     ModelInfo {
         name: "Base (Multilingual)",
@@ -49,7 +49,7 @@ pub const AVAILABLE_MODELS: &[ModelInfo] = &[
         size_mb: 142,
         url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin",
         description: "Fast, good accuracy, all languages",
-        english_only: false,
+
     },
     ModelInfo {
         name: "Small (English)",
@@ -57,7 +57,7 @@ pub const AVAILABLE_MODELS: &[ModelInfo] = &[
         size_mb: 466,
         url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en.bin",
         description: "Medium speed, better accuracy",
-        english_only: true,
+
     },
     ModelInfo {
         name: "Small (Multilingual)",
@@ -65,7 +65,7 @@ pub const AVAILABLE_MODELS: &[ModelInfo] = &[
         size_mb: 466,
         url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin",
         description: "Medium speed, better accuracy, all languages",
-        english_only: false,
+
     },
     ModelInfo {
         name: "Medium (English)",
@@ -73,7 +73,7 @@ pub const AVAILABLE_MODELS: &[ModelInfo] = &[
         size_mb: 1500,
         url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.en.bin",
         description: "Slow, high accuracy",
-        english_only: true,
+
     },
     ModelInfo {
         name: "Large",
@@ -81,7 +81,7 @@ pub const AVAILABLE_MODELS: &[ModelInfo] = &[
         size_mb: 3000,
         url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin",
         description: "Slowest, best accuracy, all languages",
-        english_only: false,
+
     },
 ];
 
@@ -147,14 +147,4 @@ where
 
     info!("Download complete: {:?}", dest_path);
     Ok(dest_path)
-}
-
-/// Delete a model
-pub fn delete_model(model: &ModelInfo) -> Result<()> {
-    let path = get_model_path(model);
-    if path.exists() {
-        std::fs::remove_file(&path)?;
-        info!("Deleted model: {}", model.name);
-    }
-    Ok(())
 }

@@ -359,7 +359,6 @@ fn create_model_row(model: &'static ModelInfo, config: &Config) -> GtkBox {
                 size_mb: 0,
                 url: "",
                 description: "",
-                english_only: false,
             });
             if let Err(e) = save_config(&new_config) {
                 error!("Failed to set active model: {}", e);

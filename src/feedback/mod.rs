@@ -9,7 +9,7 @@ use std::f32::consts::PI;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, warn};
 
 /// Sound configuration for different events
 #[derive(Debug, Clone)]
@@ -92,18 +92,6 @@ pub fn play_tone(config: ToneConfig) {
             warn!("Failed to play feedback tone: {}", e);
         }
     });
-}
-
-/// Play start recording sound (non-blocking)
-pub fn play_start_sound() {
-    debug!("Playing start recording sound");
-    play_tone(ToneConfig::start_recording());
-}
-
-/// Play stop recording sound (non-blocking)
-pub fn play_stop_sound() {
-    debug!("Playing stop recording sound");
-    play_tone(ToneConfig::stop_recording());
 }
 
 /// Play transcription complete sound (non-blocking)

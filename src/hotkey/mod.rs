@@ -16,9 +16,9 @@ use crossbeam_channel::Sender;
 use evdev::{Device, EventType, InputEventKind, Key};
 use std::collections::HashSet;
 use std::fs;
-use std::sync::Arc;
+
 use std::time::{Duration, Instant};
-use tracing::{debug, info, warn, error};
+use tracing::{debug, info, error};
 
 /// Time threshold for detecting a "quick tap" (cancel gesture)
 const QUICK_TAP_THRESHOLD_MS: u64 = 200;
