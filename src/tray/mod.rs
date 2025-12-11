@@ -42,14 +42,14 @@ impl Tray for OswispaTray {
 
     fn tool_tip(&self) -> ToolTip {
         let state = self.state.lock().unwrap();
-        let status = if state.is_recording {
-            "RECORDING - Release Ctrl+Super to transcribe, ESC to cancel"
+        let (status, icon) = if state.is_recording {
+            ("RECORDING - Release Ctrl+Super to transcribe, ESC to cancel", "audio-input-microphone-high")
         } else {
-            "Ready - Hold Ctrl+Super to record"
+            ("Ready - Hold Ctrl+Super to record", "audio-input-microphone")
         };
 
         ToolTip {
-            icon_name: self.icon_name(),
+            icon_name: icon.to_string(),
             icon_pixmap: Vec::new(),
             title: "OSWispa - Voice to Text".to_string(),
             description: status.to_string(),
