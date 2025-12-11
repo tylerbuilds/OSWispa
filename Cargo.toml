@@ -11,8 +11,8 @@ license = "MIT"
 cpal = "0.15"
 hound = "3.5"
 
-# Whisper.cpp bindings
-whisper-rs = "0.11"
+# Whisper.cpp bindings with ROCm GPU support
+whisper-rs = { version = "0.13", features = ["hipblas"] }
 
 # Global hotkey detection (works on Wayland via evdev)
 evdev = "0.12"
