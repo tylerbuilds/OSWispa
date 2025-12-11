@@ -1,23 +1,61 @@
 # OSWispa 🎙️
 
-**Open Source Whisper Assistant** - Lightning-fast voice-to-text for Linux/macOS/Windows
+**Open Source Whisper Assistant** - Lightning-fast voice-to-text for your desktop.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Platform: Linux](https://img.shields.io/badge/Platform-Linux-green.svg)](https://github.com/yourusername/oswispa)
+[![Status: Alpha](https://img.shields.io/badge/Status-Alpha-orange.svg)](https://github.com/yourusername/oswispa)
 
 A privacy-focused, locally-running voice transcription tool powered by [Whisper.cpp](https://github.com/ggerganov/whisper.cpp). Hold a hotkey, speak, release - your words appear instantly.
+
+---
+
+## 🚧 Project Status & Transparency
+
+**Current State:** v0.1 (Alpha)
+
+OSWispa is a **Linux-first** project, currently optimized for **Ubuntu/Debian** systems.
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| **Ubuntu/Debian** | ✅ **Supported** | Primary dev environment. Automated installer available. |
+| **Fedora/Arch** | ⚠️ **Manual** | Works, but `install.sh` uses `apt`. Manual dependency install required. |
+| **macOS** | 🧪 **Experimental** | Theoretically supported via Metal, but untested. **Help wanted!** |
+| **Windows** | 🧪 **Experimental** | Theoretically supported, but untested. **Help wanted!** |
+
+### 🛑 Known Limitations
+1.  **Installer**: The provided `install.sh` is strictly for **Ubuntu/Debian** (uses `apt`). Users on other distros must install dependencies manually (see below).
+2.  **Auto-Paste Friction**: On Wayland/Linux, we use `ydotool` to simulate typing. This requires a background daemon (`ydotoold`) running, often as root. If text doesn't appear, this is usually why.
+3.  **Global Hotkeys**: Wayland security model makes global hotkeys hard. We read directly from `/dev/input`, which requires your user to be in the `input` group.
+
+---
 
 ## ✨ Features
 
 - **🎤 Push-to-Talk**: Hold `Ctrl+Super` to record, release to transcribe
 - **🔒 100% Local**: No cloud APIs, no data leaves your machine
 - **⚡ GPU Accelerated**: AMD ROCm, NVIDIA CUDA, or Apple Metal support
-- **📋 Auto-Paste**: Text automatically copies to clipboard (Ctrl+V to paste)
-- **🖥️ System Tray**: Status indicator shows recording state
+- **📋 Auto-Paste**: Text is typed directly into your active window
 - **🌍 Multilingual**: Supports 99 languages with the right model
 
-## 🚀 Quick Start
+---
 
-### Linux (Ubuntu/Debian)
+## 🤝 Call for Contributors
+
+We need your help to make OSWispa truly cross-platform! We are actively looking for contributions to:
+
+- [ ] Create installation scripts for **Fedora**, **Arch**, and **macOS** (Homebrew).
+- [ ] Test and debug the **Windows** build process.
+- [ ] Improve the specific **Wayland** integration without requiring root/input group hacks.
+- [ ] Add a proper GUI settings menu (currently experimental).
+
+If you can help, please fork the repo and submit a PR! See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+---
+
+## 🚀 Installation (Ubuntu/Debian)
+
+The easiest way to get started on Ubuntu 22.04/24.04:
 
 ```bash
 # Clone and install
@@ -29,242 +67,75 @@ cd oswispa
 oswispa
 ```
 
-Then press **Ctrl+Super** → speak → release → **Ctrl+V** to paste!
-
-## 📦 Installation
-
-### Prerequisites (All Platforms)
-
-- [Rust](https://rustup.rs/) (1.70+)
-- CMake 3.16+
-- A Whisper model (downloaded automatically or manually)
+**After install:**
+1.  Log out and back in (to refresh user groups).
+2.  Ensure `ydotoold` is running if you want auto-paste (`sudo ydotoold &`).
+3.  Press **Ctrl+Super**, speak, and release!
 
 ---
 
-### 🐧 Linux
+## 🛠️ Manual Installation (Other Distros/OS)
 
-#### CPU Only (Works Everywhere)
-```bash
-# Install dependencies (Ubuntu/Debian)
-sudo apt install build-essential cmake pkg-config libssl-dev \
-    libayatana-appindicator3-dev libasound2-dev
+### 1. Prerequisites (All Platforms)
+*   [Rust](https://rustup.rs/) (1.70+)
+*   CMake 3.16+
+*   `libssl-dev`, `pkg-config`, `libasound2-dev` (Linux)
 
-# Build
-cargo build --release
+### 2. GPU Acceleration (Optional but Recommended)
 
-# Install
-sudo cp target/release/oswispa /usr/local/bin/
-```
-
-#### AMD GPU (ROCm) - Recommended for AMD users
-```bash
-# Install ROCm (6.0+)
-# See: https://rocm.docs.amd.com/projects/install-on-linux/en/latest/
-
-# Install dependencies
-sudo apt install build-essential cmake pkg-config libssl-dev \
-    libayatana-appindicator3-dev libasound2-dev \
-    hipblas-dev rocblas-dev
-
-# Edit Cargo.toml - change whisper-rs line to:
-# whisper-rs = { version = "0.13", features = ["hipblas"] }
-
-# Build with ROCm
-export AMDGPU_TARGETS="gfx1100"  # Adjust for your GPU (gfx1030, gfx1100, etc.)
-cargo build --release
-```
-
-**Finding your GPU architecture:**
-```bash
-rocminfo | grep "Name:" | grep gfx
-```
+#### AMD GPU (ROCm)
+Required for fast transcription on AMD cards.
+1.  Install ROCm (6.0+).
+2.  Edit `Cargo.toml`: ensure `whisper-rs` uses `features = ["hipblas"]`.
+3.  Build: `AMDGPU_TARGETS="gfx1100" cargo build --release` (adjust `gfx...` for your card).
 
 #### NVIDIA GPU (CUDA)
+1.  Install CUDA Toolkit.
+2.  Edit `Cargo.toml`: use `features = ["cuda"]`.
+3.  Build: `cargo build --release`.
+
+#### macOS (Metal)
+1.  Edit `Cargo.toml`: use `features = ["metal"]`.
+2.  Build: `cargo build --release`.
+
+### 3. Build & Run
 ```bash
-# Install CUDA toolkit
-# See: https://developer.nvidia.com/cuda-downloads
-
-# Edit Cargo.toml - change whisper-rs line to:
-# whisper-rs = { version = "0.13", features = ["cuda"] }
-
-# Build with CUDA
 cargo build --release
+./target/release/oswispa
 ```
 
 ---
 
-### 🍎 macOS
+## 📥 Models
 
-#### CPU Only
-```bash
-# Install dependencies
-brew install cmake pkg-config
+OSWispa needs a model file to work.
 
-# Build
-cargo build --release
-```
+| Model | Size | Speed | Recommendation |
+|-------|------|-------|----------------|
+| `base.en` | 142MB | ⚡⚡⚡ | Fast dictation |
+| `medium.en` | 1.5GB | ⚡ | **Good balance** |
+| `distil-large-v3` | 1.5GB | ⚡ | **Best performance/size** |
+| `large-v3` | 2.9GB | 🐢 | High accuracy, multilingual |
 
-#### Apple Silicon (Metal) - Recommended for M1/M2/M3
-```bash
-# Edit Cargo.toml - change whisper-rs line to:
-# whisper-rs = { version = "0.13", features = ["metal"] }
-
-# Build with Metal acceleration
-cargo build --release
-```
-
-> ⚠️ **Note**: macOS requires accessibility permissions for auto-paste functionality.
-
----
-
-### 🪟 Windows
-
-#### Prerequisites
-1. Install [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
-2. Install [CMake](https://cmake.org/download/)
-3. Install [Rust](https://rustup.rs/)
-
-#### CPU Only
-```powershell
-cargo build --release
-```
-
-#### NVIDIA GPU (CUDA)
-```powershell
-# Install CUDA Toolkit from NVIDIA
-
-# Edit Cargo.toml - change whisper-rs line to:
-# whisper-rs = { version = "0.13", features = ["cuda"] }
-
-cargo build --release
-```
-
-> ⚠️ **Note**: Windows support is experimental. Wayland-specific features won't work.
-
----
-
-## 📥 Downloading Models
-
-OSWispa requires a Whisper model. Download from [Hugging Face](https://huggingface.co/ggerganov/whisper.cpp):
-
-| Model | Size | Speed | Accuracy | Best For |
-|-------|------|-------|----------|----------|
-| `ggml-base.en.bin` | 142MB | ⚡⚡⚡ | Good | Fast dictation |
-| `ggml-small.en.bin` | 488MB | ⚡⚡ | Better | General use |
-| `ggml-medium.en.bin` | 1.5GB | ⚡ | Great | Recommended |
-| `ggml-large-v3.bin` | 2.9GB | 🐢 | Best | Complex audio |
-
-**Download:**
-```bash
-# Create models directory
-mkdir -p ~/.local/share/oswispa/models
-cd ~/.local/share/oswispa/models
-
-# Download medium.en (recommended)
-curl -LO https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.en.bin
-```
-
-**Configure model path** in `~/.config/oswispa/config.json`:
-```json
-{
-  "model_path": "/path/to/your/model.bin"
-}
-```
-
----
-
-## ⚙️ Configuration
-
-Configuration file: `~/.config/oswispa/config.json`
-
-```json
-{
-  "model_path": "~/.local/share/oswispa/models/ggml-medium.en.bin",
-  "language": "en",
-  "hotkey": {
-    "ctrl": true,
-    "alt": false,
-    "shift": false,
-    "super_key": true
-  },
-  "auto_paste": true,
-  "audio_feedback": true,
-  "max_history": 50
-}
-```
-
-### Hotkey Options
-- Default: `Ctrl+Super`
-- Customize by editing the `hotkey` section
-
----
-
-## 🎯 Usage
-
-1. **Start**: Run `oswispa` (add to startup for auto-launch)
-2. **Record**: Hold `Ctrl+Super`
-3. **Speak**: Say your text clearly
-4. **Release**: Let go of the keys
-5. **Paste**: Press `Ctrl+V` in any application
-
-### Tips
-- Speak naturally - Whisper handles punctuation
-- Short pauses are fine, long pauses may split sentences
-- For best results, use `medium.en` or `large-v3` models
+**Manual Download:**
+Save models to `~/.local/share/oswispa/models/`.
+Download links: [Hugging Face ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp/tree/main)
 
 ---
 
 ## 🔧 Troubleshooting
 
-### No hotkey response?
-- **Linux**: Ensure you're in the `input` group: `sudo usermod -aG input $USER`
-- **Wayland**: The app uses evdev for global hotkeys
+**"It says recording but nothing happens."**
+*   Check if `ydotoold` is running: `pgrep ydotoold`.
+*   Try manual paste: The text is also copied to your clipboard. Press `Ctrl+V`.
 
-### No audio recording?
-- Check microphone permissions
-- Ensure `arecord` works: `arecord -d 2 test.wav`
-- On PipeWire: Install `pipewire-alsa`
+**"Permission denied accessing /dev/input/..."**
+*   You need to be in the `input` group.
+    *   Run: `sudo usermod -aG input $USER`
+    *   **Log out and log back in.**
 
-### No tray icon?
-- Install GNOME extension: [AppIndicator Support](https://extensions.gnome.org/extension/615/appindicator-support/)
-- Or run: `sudo apt install gnome-shell-extension-appindicator`
-
-### GPU not detected?
-- **AMD**: Check `rocminfo` shows your GPU
-- **NVIDIA**: Check `nvidia-smi` works
-- Ensure you built with correct feature flag
-
-### Segfault on startup?
-- Often a GPU driver mismatch
-- Try CPU mode: rebuild without GPU features
-- Check driver versions match (e.g., ROCm 6.2 libs with ROCm 6.2 hipcc)
-
----
-
-## 🏗️ Architecture
-
-```
-oswispa/
-├── src/
-│   ├── main.rs          # Application entry, event loop
-│   ├── audio/           # Recording via arecord
-│   ├── transcribe/      # Whisper.cpp integration
-│   ├── hotkey/          # Global hotkey detection (evdev)
-│   ├── input/           # Clipboard & paste (wl-copy)
-│   ├── tray/            # System tray (ksni)
-│   └── feedback/        # Audio feedback sounds
-├── install.sh           # One-line installer
-└── Cargo.toml           # Rust dependencies
-```
-
----
-
-## 🤝 Contributing
-
-Contributions welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Submit a pull request
+**"The app crashes with a 'segmentation fault'."**
+*   Usually a GPU driver mismatch. Try building without GPU features (default `Cargo.toml`) to test CPU mode first.
 
 ---
 
@@ -274,12 +145,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-## 🙏 Acknowledgments
-
-- [whisper.cpp](https://github.com/ggerganov/whisper.cpp) by Georgi Gerganov
-- [whisper-rs](https://github.com/tazz4843/whisper-rs) Rust bindings
-- OpenAI for the original Whisper model
-
----
-
-**Made with ❤️ for the open source community**
+**Made with ❤️ for the open source community.**
