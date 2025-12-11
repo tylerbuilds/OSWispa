@@ -14,28 +14,40 @@ use std::sync::Arc;
 use tracing::{debug, error, info};
 use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
 
+/// Maximum retries before falling back to CPU
+const MAX_GPU_RETRIES: u32 = 3;
+/// Delay between retries in milliseconds
+const RETRY_DELAY_MS: u64 = 500;
+
 /// Transcription worker that processes audio files
 pub fn transcription_worker(
     audio_rx: Receiver<Option<PathBuf>>,
     event_tx: Sender<AppEvent>,
     config: &Config,
 ) {
-    info!("Initializing Whisper context...");
+    info!("Initializing Whisper context (GPU mode)...");
 
-    // Initialize Whisper context once
-    let ctx = match WhisperContext::new_with_params(
+    // Initialize primary Whisper context (GPU mode)
+    let gpu_ctx = match WhisperContext::new_with_params(
         config.model_path.to_str().unwrap(),
         WhisperContextParameters::default(),
     ) {
-        Ok(ctx) => ctx,
+        Ok(ctx) => {
+            info!("Whisper GPU context initialized successfully");
+            Some(Arc::new(ctx))
+        }
         Err(e) => {
-            error!("Failed to initialize Whisper: {}", e);
-            let _ = event_tx.send(AppEvent::Error(format!("Whisper init failed: {}", e)));
-            return;
+            error!("Failed to initialize Whisper GPU context: {}", e);
+            None
         }
     };
 
-    info!("Whisper context initialized successfully");
+    // Lazy-initialized CPU fallback context
+    let mut cpu_ctx: Option<Arc<WhisperContext>> = None;
+
+    if gpu_ctx.is_none() {
+        error!("No GPU context available, will use CPU fallback for all requests");
+    }
 
     for audio_path_opt in audio_rx {
         // Handle cancelled recordings (None)
@@ -49,20 +61,82 @@ pub fn transcription_worker(
 
         info!("Processing audio file: {:?}", audio_path);
 
-        match transcribe_audio(&ctx, &audio_path, config) {
-            Ok(text) => {
+        // Try GPU with retries first
+        let mut transcription_result = None;
+        
+        if let Some(ref ctx) = gpu_ctx {
+            for attempt in 1..=MAX_GPU_RETRIES {
+                match transcribe_audio(ctx, &audio_path, config) {
+                    Ok(text) => {
+                        let trimmed = text.trim();
+                        // Check for garbage output (repeated punctuation = GPU failure)
+                        if !is_garbage_output(trimmed) {
+                            transcription_result = Some(Ok(text));
+                            break;
+                        } else {
+                            info!("GPU attempt {} returned garbage output, retrying...", attempt);
+                        }
+                    }
+                    Err(e) => {
+                        info!("GPU attempt {} failed: {}, retrying...", attempt, e);
+                    }
+                }
+                
+                if attempt < MAX_GPU_RETRIES {
+                    std::thread::sleep(std::time::Duration::from_millis(RETRY_DELAY_MS));
+                }
+            }
+        }
+
+        // If GPU failed, fall back to CPU
+        if transcription_result.is_none() {
+            info!("GPU transcription failed after {} attempts, falling back to CPU...", MAX_GPU_RETRIES);
+            
+            // Initialize CPU context if not already done
+            if cpu_ctx.is_none() {
+                info!("Initializing CPU fallback context...");
+                let mut cpu_params = WhisperContextParameters::default();
+                cpu_params.use_gpu(false);
+                
+                match WhisperContext::new_with_params(
+                    config.model_path.to_str().unwrap(),
+                    cpu_params,
+                ) {
+                    Ok(ctx) => {
+                        info!("CPU fallback context initialized successfully");
+                        cpu_ctx = Some(Arc::new(ctx));
+                    }
+                    Err(e) => {
+                        error!("Failed to initialize CPU fallback context: {}", e);
+                    }
+                }
+            }
+            
+            // Try CPU transcription
+            if let Some(ref ctx) = cpu_ctx {
+                transcription_result = Some(transcribe_audio(ctx, &audio_path, config));
+            }
+        }
+
+        // Process result
+        match transcription_result {
+            Some(Ok(text)) => {
                 let text = text.trim().to_string();
-                if !text.is_empty() {
+                if !text.is_empty() && !is_garbage_output(&text) {
                     info!("Transcription successful: {} chars", text.len());
                     let _ = event_tx.send(AppEvent::TranscriptionComplete(text));
                 } else {
-                    info!("Empty transcription (no speech detected)");
+                    info!("Empty or garbage transcription");
                     let _ = event_tx.send(AppEvent::Error("No speech detected".to_string()));
                 }
             }
-            Err(e) => {
+            Some(Err(e)) => {
                 error!("Transcription failed: {}", e);
                 let _ = event_tx.send(AppEvent::Error(format!("Transcription failed: {}", e)));
+            }
+            None => {
+                error!("All transcription attempts failed");
+                let _ = event_tx.send(AppEvent::Error("Transcription failed - GPU and CPU both unavailable".to_string()));
             }
         }
 
@@ -71,6 +145,25 @@ pub fn transcription_worker(
             debug!("Failed to remove temp audio file: {}", e);
         }
     }
+}
+
+/// Check if output is garbage (repeated punctuation from GPU failure)
+fn is_garbage_output(text: &str) -> bool {
+    if text.is_empty() {
+        return false;
+    }
+    
+    // Count punctuation vs letters
+    let punct_count = text.chars().filter(|c| c.is_ascii_punctuation()).count();
+    let letter_count = text.chars().filter(|c| c.is_alphabetic()).count();
+    
+    // If more than 80% punctuation, it's garbage
+    if letter_count == 0 {
+        return punct_count > 3;
+    }
+    
+    let punct_ratio = punct_count as f32 / (punct_count + letter_count) as f32;
+    punct_ratio > 0.8
 }
 
 /// Transcribe a single audio file
