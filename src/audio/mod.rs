@@ -22,16 +22,13 @@ pub fn audio_worker(
     status_tx: Sender<AppEvent>,
     _config: &Config,
 ) {
-    println!("DEBUG: Audio worker thread started");
     info!("Audio worker thread started");
-    
     let recording = Arc::new(AtomicBool::new(false));
     let cancelled = Arc::new(AtomicBool::new(false));
     
     let mut _recording_thread: Option<std::thread::JoinHandle<()>> = None;
 
     for cmd in record_rx {
-        eprintln!("DEBUG: Audio worker received command: {:?}", cmd);
         match cmd {
             RecordCommand::Start => {
                 if recording.load(Ordering::SeqCst) {

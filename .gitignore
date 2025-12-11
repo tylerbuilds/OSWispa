@@ -1,6 +1,33 @@
+# Build artifacts
 target/
 **/*.rs.bk
+
+# Editor files
 *.swp
-.env
+*.swo
+*~
+.vscode/
+.idea/
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# Environment and config
+.env
+.env.local
+
+# Logs
+*.log
 oswispa.log
+
+# Whisper models (large files)
+*.bin
+models/
+
+# Debug/test files
+test_*.wav
+recording_*.wav
+
+# Claude/AI assistant files
+.claude/

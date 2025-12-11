@@ -397,21 +397,18 @@ fn main() -> Result<()> {
         match event {
             AppEvent::StartRecording => {
                 info!("Starting recording...");
-                eprintln!("DEBUG: StartRecording event received in main loop");
 
-                // DISABLED: cpal hangs on this system
+                // Note: Audio feedback disabled - cpal may hang on some systems
                 // if config_for_main.audio_feedback {
-                //     eprintln!("DEBUG: Playing audio feedback");
                 //     feedback::play_start_sequence();
                 // }
 
                 let mut state = state_for_main.lock().unwrap();
                 state.is_recording = true;
                 drop(state);
-                eprintln!("DEBUG: Main loop sending RecordCommand::Start");
-                match record_tx.send(RecordCommand::Start) {
-                    Ok(_) => eprintln!("DEBUG: Send succeeded"),
-                    Err(e) => eprintln!("DEBUG: Send FAILED: {}", e),
+                
+                if let Err(e) = record_tx.send(RecordCommand::Start) {
+                    error!("Failed to send start command: {}", e);
                 }
             }
             AppEvent::StopRecording | AppEvent::VadSilenceDetected => {
