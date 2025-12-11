@@ -1,0 +1,6 @@
+target/
+**/*.rs.bk
+*.swp
+.env
+.DS_Store
+oswispa.log

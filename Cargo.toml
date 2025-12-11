@@ -1,0 +1,71 @@
+[package]
+name = "oswispa"
+version = "0.1.0"
+edition = "2021"
+description = "Voice-to-text with Whisper - hold Super+Ctrl to record and transcribe"
+authors = ["OSWispa"]
+license = "MIT"
+
+[dependencies]
+# Audio recording
+cpal = "0.15"
+hound = "3.5"
+
+# Whisper.cpp bindings
+whisper-rs = "0.11"
+
+# Global hotkey detection (works on Wayland via evdev)
+evdev = "0.12"
+
+# Wayland clipboard
+wl-clipboard-rs = "0.8"
+
+# System tray (using libappindicator for GNOME)
+ksni = "0.2"
+
+# Config and state
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+directories = "5.0"
+
+# Notifications
+notify-rust = "4.10"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Error handling
+anyhow = "1.0"
+
+# System calls for input polling
+libc = "0.2"
+
+# Channel for async communication
+crossbeam-channel = "0.5"
+
+# Time utilities
+chrono = { version = "0.4", features = ["serde"] }
+
+# CPU detection
+num_cpus = "1.16"
+
+# Regex for punctuation commands
+regex = "1.10"
+
+# GUI settings dialog (optional)
+gtk4 = { version = "0.7", optional = true }
+
+# Async model downloads (optional)
+reqwest = { version = "0.11", features = ["stream"], optional = true }
+tokio = { version = "1", features = ["rt-multi-thread", "sync"], optional = true }
+futures-util = { version = "0.3", optional = true }
+
+[features]
+default = ["gui"]
+gui = ["gtk4", "reqwest", "tokio", "futures-util"]
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true
