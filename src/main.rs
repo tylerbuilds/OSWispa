@@ -144,6 +144,9 @@ impl Default for StreamingConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub model_path: PathBuf,
+    /// Fallback model path for VRAM-constrained situations (smaller/faster model)
+    #[serde(default)]
+    pub fallback_model_path: Option<PathBuf>,
     pub max_history: usize,
     pub auto_paste: bool,
     pub notification_enabled: bool,
@@ -183,6 +186,7 @@ impl Default for Config {
         let data_dir = get_data_dir();
         Self {
             model_path: data_dir.join("models").join("ggml-base.en.bin"),
+            fallback_model_path: None,
             max_history: 50,
             auto_paste: true,
             notification_enabled: true,

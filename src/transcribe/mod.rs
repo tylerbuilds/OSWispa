@@ -3,50 +3,31 @@
 //! Uses whisper-rs bindings to whisper.cpp for fast local transcription.
 //!
 //! Features:
-//! - Standard batch transcription of complete recordings
-//! - Streaming mode for real-time partial transcriptions
+//! - Lazy GPU context initialization (only allocates VRAM when needed)
+//! - Automatic fallback to smaller model when VRAM is constrained
+//! - CPU fallback when GPU is unavailable
 
 use crate::{AppEvent, Config};
 use anyhow::Result;
 use crossbeam_channel::{Receiver, Sender};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
 
-/// Maximum retries before falling back to CPU
-const MAX_GPU_RETRIES: u32 = 3;
-/// Delay between retries in milliseconds
-const RETRY_DELAY_MS: u64 = 500;
+/// Minimum available VRAM in bytes to attempt GPU transcription (2GB)
+const MIN_VRAM_BYTES: u64 = 2 * 1024 * 1024 * 1024;
 
-/// Transcription worker that processes audio files
+/// Transcription worker that processes audio files with lazy context initialization
 pub fn transcription_worker(
     audio_rx: Receiver<Option<PathBuf>>,
     event_tx: Sender<AppEvent>,
     config: &Config,
 ) {
-    info!("Initializing Whisper context (GPU mode)...");
+    info!("Transcription worker started (lazy initialization mode)");
 
-    // Initialize primary Whisper context (GPU mode)
-    let gpu_ctx = match WhisperContext::new_with_params(
-        config.model_path.to_str().unwrap(),
-        WhisperContextParameters::default(),
-    ) {
-        Ok(ctx) => {
-            info!("Whisper GPU context initialized successfully");
-            Some(Arc::new(ctx))
-        }
-        Err(e) => {
-            error!("Failed to initialize Whisper GPU context: {}", e);
-            None
-        }
-    };
-
-    // Lazy-initialized CPU fallback context
-    let mut cpu_ctx: Option<Arc<WhisperContext>> = None;
-
-    if gpu_ctx.is_none() {
-        error!("No GPU context available, will use CPU fallback for all requests");
+    if let Some(ref fallback) = config.fallback_model_path {
+        info!("Fallback model configured: {:?}", fallback);
     }
 
     for audio_path_opt in audio_rx {
@@ -61,66 +42,12 @@ pub fn transcription_worker(
 
         info!("Processing audio file: {:?}", audio_path);
 
-        // Try GPU with retries first
-        let mut transcription_result = None;
-        
-        if let Some(ref ctx) = gpu_ctx {
-            for attempt in 1..=MAX_GPU_RETRIES {
-                match transcribe_audio(ctx, &audio_path, config) {
-                    Ok(text) => {
-                        let trimmed = text.trim();
-                        // Check for garbage output (repeated punctuation = GPU failure)
-                        if !is_garbage_output(trimmed) {
-                            transcription_result = Some(Ok(text));
-                            break;
-                        } else {
-                            info!("GPU attempt {} returned garbage output, retrying...", attempt);
-                        }
-                    }
-                    Err(e) => {
-                        info!("GPU attempt {} failed: {}, retrying...", attempt, e);
-                    }
-                }
-                
-                if attempt < MAX_GPU_RETRIES {
-                    std::thread::sleep(std::time::Duration::from_millis(RETRY_DELAY_MS));
-                }
-            }
-        }
-
-        // If GPU failed, fall back to CPU
-        if transcription_result.is_none() {
-            info!("GPU transcription failed after {} attempts, falling back to CPU...", MAX_GPU_RETRIES);
-            
-            // Initialize CPU context if not already done
-            if cpu_ctx.is_none() {
-                info!("Initializing CPU fallback context...");
-                let mut cpu_params = WhisperContextParameters::default();
-                cpu_params.use_gpu(false);
-                
-                match WhisperContext::new_with_params(
-                    config.model_path.to_str().unwrap(),
-                    cpu_params,
-                ) {
-                    Ok(ctx) => {
-                        info!("CPU fallback context initialized successfully");
-                        cpu_ctx = Some(Arc::new(ctx));
-                    }
-                    Err(e) => {
-                        error!("Failed to initialize CPU fallback context: {}", e);
-                    }
-                }
-            }
-            
-            // Try CPU transcription
-            if let Some(ref ctx) = cpu_ctx {
-                transcription_result = Some(transcribe_audio(ctx, &audio_path, config));
-            }
-        }
+        // Try transcription with fallback chain
+        let result = transcribe_with_fallback(&audio_path, config);
 
         // Process result
-        match transcription_result {
-            Some(Ok(text)) => {
+        match result {
+            Ok(text) => {
                 let text = text.trim().to_string();
                 if !text.is_empty() && !is_garbage_output(&text) {
                     info!("Transcription successful: {} chars", text.len());
@@ -130,13 +57,9 @@ pub fn transcription_worker(
                     let _ = event_tx.send(AppEvent::Error("No speech detected".to_string()));
                 }
             }
-            Some(Err(e)) => {
+            Err(e) => {
                 error!("Transcription failed: {}", e);
                 let _ = event_tx.send(AppEvent::Error(format!("Transcription failed: {}", e)));
-            }
-            None => {
-                error!("All transcription attempts failed");
-                let _ = event_tx.send(AppEvent::Error("Transcription failed - GPU and CPU both unavailable".to_string()));
             }
         }
 
@@ -147,21 +70,217 @@ pub fn transcription_worker(
     }
 }
 
+/// Transcribe with fallback chain: Primary GPU -> Fallback GPU -> Primary CPU -> Fallback CPU
+fn transcribe_with_fallback(audio_path: &PathBuf, config: &Config) -> Result<String> {
+    let primary_model = &config.model_path;
+    let fallback_model = config.fallback_model_path.as_ref();
+
+    // Check available VRAM
+    let available_vram = get_available_vram();
+    info!("Available VRAM: {:.2} GB", available_vram as f64 / 1024.0 / 1024.0 / 1024.0);
+
+    // Strategy based on VRAM availability
+    if available_vram >= MIN_VRAM_BYTES {
+        // Enough VRAM - try primary model on GPU
+        info!("Sufficient VRAM available, attempting GPU transcription with primary model");
+
+        match transcribe_with_model(audio_path, primary_model, config, true) {
+            Ok(text) if !is_garbage_output(text.trim()) => {
+                return Ok(text);
+            }
+            Ok(_) => {
+                warn!("Primary GPU returned garbage output");
+            }
+            Err(e) => {
+                warn!("Primary GPU transcription failed: {}", e);
+            }
+        }
+
+        // GPU failed - try fallback model on GPU if available
+        if let Some(fallback) = fallback_model {
+            if fallback.exists() {
+                info!("Trying fallback model on GPU: {:?}", fallback);
+                match transcribe_with_model(audio_path, fallback, config, true) {
+                    Ok(text) if !is_garbage_output(text.trim()) => {
+                        return Ok(text);
+                    }
+                    Ok(_) => {
+                        warn!("Fallback GPU returned garbage output");
+                    }
+                    Err(e) => {
+                        warn!("Fallback GPU transcription failed: {}", e);
+                    }
+                }
+            }
+        }
+    } else {
+        // Low VRAM - skip straight to fallback model if available
+        warn!("Low VRAM detected ({:.2} GB < {:.2} GB threshold), skipping primary GPU",
+              available_vram as f64 / 1024.0 / 1024.0 / 1024.0,
+              MIN_VRAM_BYTES as f64 / 1024.0 / 1024.0 / 1024.0);
+
+        if let Some(fallback) = fallback_model {
+            if fallback.exists() {
+                info!("Trying fallback model on GPU (smaller footprint): {:?}", fallback);
+                match transcribe_with_model(audio_path, fallback, config, true) {
+                    Ok(text) if !is_garbage_output(text.trim()) => {
+                        return Ok(text);
+                    }
+                    Ok(_) => {
+                        warn!("Fallback GPU returned garbage output");
+                    }
+                    Err(e) => {
+                        warn!("Fallback GPU transcription failed: {}", e);
+                    }
+                }
+            }
+        }
+    }
+
+    // All GPU attempts failed - fall back to CPU
+    info!("GPU transcription failed, falling back to CPU");
+
+    // Try fallback model on CPU first (faster)
+    if let Some(fallback) = fallback_model {
+        if fallback.exists() {
+            info!("Trying fallback model on CPU: {:?}", fallback);
+            match transcribe_with_model(audio_path, fallback, config, false) {
+                Ok(text) if !is_garbage_output(text.trim()) => {
+                    return Ok(text);
+                }
+                Ok(_) => {
+                    warn!("Fallback CPU returned garbage output");
+                }
+                Err(e) => {
+                    warn!("Fallback CPU transcription failed: {}", e);
+                }
+            }
+        }
+    }
+
+    // Last resort: primary model on CPU
+    info!("Trying primary model on CPU (last resort): {:?}", primary_model);
+    transcribe_with_model(audio_path, primary_model, config, false)
+}
+
+/// Transcribe using a specific model with lazy context initialization
+fn transcribe_with_model(
+    audio_path: &PathBuf,
+    model_path: &Path,
+    config: &Config,
+    use_gpu: bool,
+) -> Result<String> {
+    let mode_str = if use_gpu { "GPU" } else { "CPU" };
+    info!("Creating Whisper context ({} mode) for {:?}", mode_str, model_path);
+
+    // Create context parameters
+    let mut ctx_params = WhisperContextParameters::default();
+    if !use_gpu {
+        ctx_params.use_gpu(false);
+    }
+
+    // Lazy initialization - create context just for this transcription
+    let ctx = WhisperContext::new_with_params(
+        model_path.to_str().ok_or_else(|| anyhow::anyhow!("Invalid model path"))?,
+        ctx_params,
+    )?;
+
+    info!("Whisper {} context created successfully", mode_str);
+
+    // Perform transcription
+    let result = transcribe_audio(&ctx, audio_path, config);
+
+    // Context is dropped here, releasing VRAM
+    info!("Whisper {} context released", mode_str);
+
+    result
+}
+
+/// Get available VRAM in bytes by querying the AMD GPU
+fn get_available_vram() -> u64 {
+    // Try to read from sysfs (works for AMD GPUs)
+    // Look for the discrete GPU (card1 typically, but we'll check for the larger one)
+
+    let cards = [
+        "/sys/class/drm/card1/device/mem_info_vram_used",
+        "/sys/class/drm/card0/device/mem_info_vram_used",
+    ];
+
+    let totals = [
+        "/sys/class/drm/card1/device/mem_info_vram_total",
+        "/sys/class/drm/card0/device/mem_info_vram_total",
+    ];
+
+    for (used_path, total_path) in cards.iter().zip(totals.iter()) {
+        if let (Ok(used_str), Ok(total_str)) = (
+            std::fs::read_to_string(used_path),
+            std::fs::read_to_string(total_path),
+        ) {
+            if let (Ok(used), Ok(total)) = (
+                used_str.trim().parse::<u64>(),
+                total_str.trim().parse::<u64>(),
+            ) {
+                // Only consider GPUs with significant VRAM (>1GB = discrete GPU)
+                if total > 1024 * 1024 * 1024 {
+                    let available = total.saturating_sub(used);
+                    debug!("Found GPU at {}: total={}, used={}, available={}",
+                           used_path, total, used, available);
+                    return available;
+                }
+            }
+        }
+    }
+
+    // Fallback: try rocm-smi
+    if let Ok(output) = std::process::Command::new("rocm-smi")
+        .args(["--showmeminfo", "vram"])
+        .output()
+    {
+        if let Ok(stdout) = String::from_utf8(output.stdout) {
+            // Parse rocm-smi output for VRAM info
+            // Look for lines like "GPU[0]		: VRAM Total Used Memory (B): 16974520320"
+            let mut total: u64 = 0;
+            let mut used: u64 = 0;
+
+            for line in stdout.lines() {
+                if line.contains("VRAM Total Memory") && line.contains("GPU[0]") {
+                    if let Some(val) = line.split(':').last() {
+                        total = val.trim().parse().unwrap_or(0);
+                    }
+                }
+                if line.contains("VRAM Total Used") && line.contains("GPU[0]") {
+                    if let Some(val) = line.split(':').last() {
+                        used = val.trim().parse().unwrap_or(0);
+                    }
+                }
+            }
+
+            if total > 0 {
+                return total.saturating_sub(used);
+            }
+        }
+    }
+
+    // If we can't determine VRAM, assume we have enough (optimistic)
+    warn!("Could not determine available VRAM, assuming sufficient");
+    MIN_VRAM_BYTES + 1
+}
+
 /// Check if output is garbage (repeated punctuation from GPU failure)
 fn is_garbage_output(text: &str) -> bool {
     if text.is_empty() {
         return false;
     }
-    
+
     // Count punctuation vs letters
     let punct_count = text.chars().filter(|c| c.is_ascii_punctuation()).count();
     let letter_count = text.chars().filter(|c| c.is_alphabetic()).count();
-    
+
     // If more than 80% punctuation, it's garbage
     if letter_count == 0 {
         return punct_count > 3;
     }
-    
+
     let punct_ratio = punct_count as f32 / (punct_count + letter_count) as f32;
     punct_ratio > 0.8
 }
@@ -341,7 +460,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_sample_loading() {
-        // Would need a test WAV file
+    fn test_garbage_detection() {
+        assert!(is_garbage_output("...."));
+        assert!(is_garbage_output("!!!???..."));
+        assert!(!is_garbage_output("Hello world"));
+        assert!(!is_garbage_output("Hello, world!"));
+    }
+
+    #[test]
+    fn test_vram_detection() {
+        let vram = get_available_vram();
+        println!("Detected available VRAM: {} bytes", vram);
+        // Just ensure it doesn't panic
     }
 }
