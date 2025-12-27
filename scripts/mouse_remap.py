@@ -24,12 +24,14 @@ logging.basicConfig(
 # Bottom button (BTN_SIDE) = 275 -> Paste (Ctrl+V)
 TOP_BUTTON = 276
 BOTTOM_BUTTON = 275
+MIDDLE_BUTTON = 274
 
-def run_ydotool_key(combo):
-    # combo is a list of strings like ["29:1", "46:1", "46:0", "29:0"]
-    cmd = ["ydotool", "key"] + combo
+def run_ydotool_key(combo_str):
+    # combo_str is like "ctrl+c" or "125:1 42:1 ..."
+    # Split by space to ensure separate arguments for subprocess
+    cmd = ["ydotool", "key"] + combo_str.split()
     try:
-        logging.debug(f"Running ydotool command: {cmd}")
+        logging.info(f"Running ydotool command: {' '.join(cmd)}")
         subprocess.run(cmd, check=True, capture_output=True)
     except Exception as e:
         logging.error(f"Error running ydotool: {e}")
@@ -42,13 +44,15 @@ def monitor_device(path):
             if event.type == ecodes.EV_KEY:
                 if event.value == 1: # Key Down
                     if event.code == TOP_BUTTON:
-                        logging.info(f"Top button pressed on {device.name} -> Copying")
-                        # Ctrl(29) + C(46)
-                        run_ydotool_key(["29:1", "46:1", "46:0", "29:0"])
+                        logging.info(f"Top button pressed on {device.name} -> Super+Shift+3 (Screenshot)")
+                        # Triggers GNOME Screenshot UI (mimicking user's physical keyboard behavior)
+                        run_ydotool_key("super+shift+3")
                     elif event.code == BOTTOM_BUTTON:
                         logging.info(f"Bottom button pressed on {device.name} -> Pasting")
-                        # Ctrl(29) + V(47)
-                        run_ydotool_key(["29:1", "47:1", "47:0", "29:0"])
+                        run_ydotool_key("ctrl+v")
+                    elif event.code == 274: # BTN_MIDDLE (Scroll Wheel Click)
+                        logging.info(f"Middle button pressed on {device.name} -> Copying")
+                        run_ydotool_key("ctrl+c")
     except Exception as e:
         logging.error(f"Error monitoring {path}: {e}")
 
@@ -63,8 +67,8 @@ def main():
             capabilities = device.capabilities()
             if ecodes.EV_KEY in capabilities:
                 keys = capabilities[ecodes.EV_KEY]
-                # If it has either of the side buttons
-                if TOP_BUTTON in keys or BOTTOM_BUTTON in keys:
+                # If it has either of the side buttons or middle button
+                if TOP_BUTTON in keys or BOTTOM_BUTTON in keys or MIDDLE_BUTTON in keys:
                     logging.info(f"Found suitable device: {device.name} at {path}")
                     discovered_paths.append(path)
         except Exception as e:
