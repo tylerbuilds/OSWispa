@@ -44,11 +44,8 @@ pub fn paste_text(text: &str) -> Result<()> {
             debug!("ydotoold daemon is running");
         }
         _ => {
-            warn!("ydotoold may not be running. Attempting paste anyway...");
-            // Try to start it (might fail without sudo)
-            let _ = Command::new("ydotoold")
-                .spawn();
-            std::thread::sleep(std::time::Duration::from_millis(100));
+            debug!("ydotoold may not be running.");
+            // We don't try to spawn it here as the binary is often missing or requires sudo
         }
     }
 

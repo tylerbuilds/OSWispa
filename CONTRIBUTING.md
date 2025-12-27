@@ -1,55 +1,31 @@
 # Contributing to OSWispa
 
-Thank you for your interest in contributing! Here's how you can help.
+First off, thank you for considering contributing to OSWispa! It's people like you that make it a great tool.
 
-## Getting Started
+## How Can I Contribute?
 
-1. Fork the repository
-2. Clone your fork: `git clone https://github.com/yourusername/oswispa.git`
-3. Create a branch: `git checkout -b feature/your-feature-name`
+### Reporting Bugs
+- Use GitHub Issues to report bugs.
+- Include OS version, hardware details (especially GPU/ROCm version), and steps to reproduce.
+
+### Suggesting Enhancements
+- Enhancement suggestions are tracked as GitHub issues.
+- Provide a clear description and use case for the feature.
+
+### Pull Requests
+- We love pull requests! 
+- **Platform Support**: One of the biggest goals is to expand OSWispa beyond Ubuntu/Wayland. If you can help port it to:
+  - macOS (CoreAudio + CoreML/Metal)
+  - Windows (WASAPI + DirectML/CUDA)
+  - Other Linux distros (Arch, Fedora, NixOS)
+- Please open an issue first to discuss major changes.
+- Ensure your code is formatted with `cargo fmt`.
 
 ## Development Setup
 
-```bash
-# Install dependencies (Ubuntu/Debian)
-sudo apt install build-essential cmake pkg-config libssl-dev \
-    libayatana-appindicator3-dev libasound2-dev
-
-# Build in debug mode
-cargo build
-
-# Run with logging
-RUST_LOG=debug cargo run
-```
-
-## Code Style
-
-- Follow Rust conventions (`cargo fmt` before committing)
-- Run `cargo clippy` and address warnings
-- Add tests for new functionality
-
-## Pull Request Process
-
-1. Update the README.md if needed
-2. Ensure all tests pass: `cargo test`
-3. Update CHANGELOG.md (if exists)
-4. Submit PR with clear description
-
-## Reporting Issues
-
-When reporting bugs, include:
-- OS and version
-- GPU type (if relevant)
-- Steps to reproduce
-- Error messages or logs
-
-## Feature Requests
-
-Open an issue describing:
-- The problem you're trying to solve
-- Your proposed solution
-- Alternative approaches considered
+1.  **Dependencies**: See `README.md` for the Ubuntu setup.
+2.  **Build**: `cargo build`
+3.  **Run**: `cargo run --features gui`
 
 ## License
-
 By contributing, you agree that your contributions will be licensed under the MIT License.

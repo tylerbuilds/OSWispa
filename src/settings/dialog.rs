@@ -3,33 +3,42 @@
 //! Full settings UI with tabs for General, Hotkey, and Models configuration.
 
 use crate::models::{self, ModelInfo, AVAILABLE_MODELS};
-use crate::{Config, HotkeyConfig, get_config_dir};
+use crate::{AppEvent, Config, HotkeyConfig, get_config_dir};
+use crossbeam_channel::Sender;
 use gtk4::prelude::*;
 use gtk4::{
     Application, ApplicationWindow, Box as GtkBox, Button, CheckButton, ComboBoxText,
     Grid, Label, Notebook, Orientation, ScrolledWindow, Separator,
 };
+use std::sync::Arc;
 use tracing::{error, info};
 
 /// Show the settings dialog
-pub fn show_settings_dialog(config: &Config) {
+pub fn show_settings_dialog(config: &Arc<Config>, event_tx: Sender<AppEvent>) {
     let config = config.clone();
+    let event_tx = event_tx.clone();
     
     std::thread::spawn(move || {
+        if let Err(e) = gtk4::init() {
+            error!("Failed to initialize GTK: {}", e);
+            return;
+        }
+
         let app = Application::builder()
-            .application_id("com.oswispa.settings")
+            .application_id(format!("com.oswispa.settings.{}", std::process::id()))
             .build();
 
         let config_clone = config.clone();
+        let event_tx_clone = event_tx.clone();
         app.connect_activate(move |app| {
-            build_settings_window(app, &config_clone);
+            build_settings_window(app, &config_clone, event_tx_clone.clone());
         });
 
         app.run_with_args::<String>(&[]);
     });
 }
 
-fn build_settings_window(app: &Application, config: &Config) {
+fn build_settings_window(app: &Application, config: &Config, event_tx: Sender<AppEvent>) {
     let window = ApplicationWindow::builder()
         .application(app)
         .title("OSWispa Settings")
@@ -41,15 +50,15 @@ fn build_settings_window(app: &Application, config: &Config) {
     
     // Create tabs
     notebook.append_page(
-        &create_general_tab(config),
+        &create_general_tab(config, event_tx.clone()),
         Some(&Label::new(Some("General"))),
     );
     notebook.append_page(
-        &create_hotkey_tab(config),
+        &create_hotkey_tab(config, event_tx.clone()),
         Some(&Label::new(Some("Hotkey"))),
     );
     notebook.append_page(
-        &create_models_tab(config),
+        &create_models_tab(config, event_tx.clone()),
         Some(&Label::new(Some("Models"))),
     );
 
@@ -58,7 +67,7 @@ fn build_settings_window(app: &Application, config: &Config) {
 }
 
 /// Create General settings tab
-fn create_general_tab(config: &Config) -> GtkBox {
+fn create_general_tab(config: &Config, event_tx: Sender<AppEvent>) -> GtkBox {
     let vbox = GtkBox::new(Orientation::Vertical, 12);
     vbox.set_margin_top(20);
     vbox.set_margin_bottom(20);
@@ -133,6 +142,7 @@ fn create_general_tab(config: &Config) -> GtkBox {
     save_btn.add_css_class("suggested-action");
     
     let config_clone = config.clone();
+    let event_tx_clone = event_tx.clone();
     save_btn.connect_clicked(move |_| {
         let mut new_config = config_clone.clone();
         new_config.audio_feedback = audio_check.is_active();
@@ -149,6 +159,7 @@ fn create_general_tab(config: &Config) -> GtkBox {
             error!("Failed to save config: {}", e);
         } else {
             info!("Settings saved successfully");
+            let _ = event_tx_clone.send(AppEvent::ReloadConfig);
         }
     });
     vbox.append(&save_btn);
@@ -157,7 +168,7 @@ fn create_general_tab(config: &Config) -> GtkBox {
 }
 
 /// Create Hotkey settings tab
-fn create_hotkey_tab(config: &Config) -> GtkBox {
+fn create_hotkey_tab(config: &Config, event_tx: Sender<AppEvent>) -> GtkBox {
     let vbox = GtkBox::new(Orientation::Vertical, 12);
     vbox.set_margin_top(20);
     vbox.set_margin_bottom(20);
@@ -250,6 +261,7 @@ fn create_hotkey_tab(config: &Config) -> GtkBox {
     save_btn.add_css_class("suggested-action");
     
     let config_clone = config.clone();
+    let event_tx_clone = event_tx.clone();
     save_btn.connect_clicked(move |_| {
         let mut new_config = config_clone.clone();
         new_config.hotkey = HotkeyConfig {
@@ -263,6 +275,8 @@ fn create_hotkey_tab(config: &Config) -> GtkBox {
             error!("Failed to save hotkey config: {}", e);
         } else {
             info!("Hotkey updated: {}", format_hotkey(&new_config.hotkey));
+            // Notify main loop to reload config
+            let _ = event_tx_clone.send(AppEvent::ReloadConfig);
         }
     });
     vbox.append(&save_btn);
@@ -271,7 +285,7 @@ fn create_hotkey_tab(config: &Config) -> GtkBox {
 }
 
 /// Create Models settings tab
-fn create_models_tab(config: &Config) -> GtkBox {
+fn create_models_tab(config: &Config, event_tx: Sender<AppEvent>) -> GtkBox {
     let vbox = GtkBox::new(Orientation::Vertical, 12);
     vbox.set_margin_top(20);
     vbox.set_margin_bottom(20);
@@ -305,7 +319,7 @@ fn create_models_tab(config: &Config) -> GtkBox {
     let models_box = GtkBox::new(Orientation::Vertical, 8);
 
     for model in AVAILABLE_MODELS {
-        let row = create_model_row(model, config);
+        let row = create_model_row(model, config, event_tx.clone());
         models_box.append(&row);
     }
 
@@ -316,7 +330,7 @@ fn create_models_tab(config: &Config) -> GtkBox {
 }
 
 /// Create a row for a model in the list
-fn create_model_row(model: &'static ModelInfo, config: &Config) -> GtkBox {
+fn create_model_row(model: &'static ModelInfo, config: &Config, event_tx: Sender<AppEvent>) -> GtkBox {
     let row = GtkBox::new(Orientation::Horizontal, 12);
     row.set_margin_top(4);
     row.set_margin_bottom(4);
@@ -364,6 +378,7 @@ fn create_model_row(model: &'static ModelInfo, config: &Config) -> GtkBox {
                 error!("Failed to set active model: {}", e);
             } else {
                 info!("Active model changed to: {}", model_filename);
+                let _ = event_tx.send(AppEvent::ReloadConfig);
             }
         });
         row.append(&use_btn);

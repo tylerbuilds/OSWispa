@@ -45,6 +45,8 @@ pub enum AppEvent {
     Error(String),
     ShowHistory,
     OpenSettings,
+    /// Reload configuration from disk
+    ReloadConfig,
     Quit,
 }
 
@@ -315,8 +317,10 @@ fn main() -> Result<()> {
     let event_tx_tray = event_tx.clone();
 
     // Start hotkey listener thread
+    let (hotkey_config_tx, hotkey_config_rx) = bounded(1);
+    let config_for_initial_hotkey = Arc::clone(&config);
     std::thread::spawn(move || {
-        if let Err(e) = hotkey::listen_for_hotkey(event_tx_hotkey, &config_for_hotkey) {
+        if let Err(e) = hotkey::listen_for_hotkey(event_tx_hotkey, hotkey_config_rx, config_for_initial_hotkey) {
             error!("Hotkey listener error: {}", e);
             eprintln!(
                 "\n[ERROR] Hotkey listener failed: {}\n\
@@ -522,9 +526,17 @@ fn main() -> Result<()> {
             AppEvent::OpenSettings => {
                 info!("Opening settings dialog...");
                 #[cfg(feature = "gui")]
-                settings::show_settings_dialog(&config_for_main);
+                settings::show_settings_dialog(&config_for_main, event_tx.clone());
                 #[cfg(not(feature = "gui"))]
                 warn!("Settings dialog requires the 'gui' feature");
+            }
+            AppEvent::ReloadConfig => {
+                info!("Reloading configuration...");
+                let new_config = Arc::new(load_config());
+                // We could update config_for_main if it were mutable, but we'll use a local state.
+                // However, the Arc<Config> is captured in closures.
+                // For now, we'll notify the hotkey listener.
+                let _ = hotkey_config_tx.send(new_config);
             }
             AppEvent::Quit => {
                 info!("Shutting down...");

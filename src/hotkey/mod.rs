@@ -10,12 +10,13 @@
 //! - ESC while recording: Cancel recording
 //! - Quick tap: Cancel recording
 
-use crate::{AppEvent, Config};
+use crate::{AppEvent, Config, HotkeyConfig};
 use anyhow::{Context, Result};
-use crossbeam_channel::Sender;
+use crossbeam_channel::{Receiver, Sender};
 use evdev::{Device, EventType, InputEventKind, Key};
 use std::collections::HashSet;
 use std::fs;
+use std::sync::Arc;
 
 use std::time::{Duration, Instant};
 use tracing::{debug, info, error};
@@ -63,50 +64,60 @@ fn find_keyboards() -> Result<Vec<Device>> {
 }
 
 /// Check if the configured hotkey combination is currently pressed
-fn is_hotkey_active(pressed_keys: &HashSet<Key>, config: &Config) -> bool {
-    let ctrl_ok = if config.hotkey.ctrl {
+fn is_hotkey_active(pressed_keys: &HashSet<Key>, config: &HotkeyConfig) -> bool {
+    let ctrl_ok = if config.ctrl {
         pressed_keys.contains(&Key::KEY_LEFTCTRL) || pressed_keys.contains(&Key::KEY_RIGHTCTRL)
     } else {
         !pressed_keys.contains(&Key::KEY_LEFTCTRL) && !pressed_keys.contains(&Key::KEY_RIGHTCTRL)
     };
 
-    let alt_ok = if config.hotkey.alt {
+    let alt_ok = if config.alt {
         pressed_keys.contains(&Key::KEY_LEFTALT) || pressed_keys.contains(&Key::KEY_RIGHTALT)
     } else {
         !pressed_keys.contains(&Key::KEY_LEFTALT) && !pressed_keys.contains(&Key::KEY_RIGHTALT)
     };
 
-    let shift_ok = if config.hotkey.shift {
+    let shift_ok = if config.shift {
         pressed_keys.contains(&Key::KEY_LEFTSHIFT) || pressed_keys.contains(&Key::KEY_RIGHTSHIFT)
     } else {
         !pressed_keys.contains(&Key::KEY_LEFTSHIFT) && !pressed_keys.contains(&Key::KEY_RIGHTSHIFT)
     };
 
-    let super_ok = if config.hotkey.super_key {
+    let super_ok = if config.super_key {
         pressed_keys.contains(&Key::KEY_LEFTMETA) || pressed_keys.contains(&Key::KEY_RIGHTMETA)
     } else {
         !pressed_keys.contains(&Key::KEY_LEFTMETA) && !pressed_keys.contains(&Key::KEY_RIGHTMETA)
     };
 
-    // At least one modifier must be configured
-    let has_any_modifier = config.hotkey.ctrl || config.hotkey.alt || config.hotkey.shift || config.hotkey.super_key;
+    // Stricter check: No OTHER keys should be pressed besides the configured modifiers
+    // This prevents "Ctrl + Print Screen" from triggering if only "Ctrl + Shift" is configured.
+    let modifier_keys = [
+        Key::KEY_LEFTCTRL, Key::KEY_RIGHTCTRL,
+        Key::KEY_LEFTALT, Key::KEY_RIGHTALT,
+        Key::KEY_LEFTSHIFT, Key::KEY_RIGHTSHIFT,
+        Key::KEY_LEFTMETA, Key::KEY_RIGHTMETA,
+    ];
+    
+    let has_unconfigured_key = pressed_keys.iter().any(|k| !modifier_keys.contains(k));
 
-    has_any_modifier && ctrl_ok && alt_ok && shift_ok && super_ok
+    let has_any_modifier = config.ctrl || config.alt || config.shift || config.super_key;
+
+    has_any_modifier && ctrl_ok && alt_ok && shift_ok && super_ok && !has_unconfigured_key
 }
 
 /// Format hotkey for display
-fn format_hotkey(config: &Config) -> String {
+fn format_hotkey(config: &HotkeyConfig) -> String {
     let mut parts = Vec::new();
-    if config.hotkey.ctrl {
+    if config.ctrl {
         parts.push("Ctrl");
     }
-    if config.hotkey.alt {
+    if config.alt {
         parts.push("Alt");
     }
-    if config.hotkey.shift {
+    if config.shift {
         parts.push("Shift");
     }
-    if config.hotkey.super_key {
+    if config.super_key {
         parts.push("Super");
     }
     if parts.is_empty() {
@@ -117,19 +128,20 @@ fn format_hotkey(config: &Config) -> String {
 }
 
 /// Listen for configured hotkey combination using a single thread with select/poll
-pub fn listen_for_hotkey(event_tx: Sender<AppEvent>, config: &Config) -> Result<()> {
+pub fn listen_for_hotkey(
+    event_tx: Sender<AppEvent>,
+    config_rx: Receiver<Arc<Config>>,
+    initial_config: Arc<Config>
+) -> Result<()> {
     info!("Starting hotkey listener...");
 
+    let mut config = initial_config;
     let mut keyboards = find_keyboards().context("Failed to find keyboard devices")?;
-    let keyboard_count = keyboards.len();
+    
+    info!("Monitoring {} keyboard device(s) for hotkeys", keyboards.len());
 
-    info!("Monitoring {} keyboard device(s) for hotkeys", keyboard_count);
-
-    let hotkey_str = format_hotkey(config);
-    info!("Hotkey listener active:");
-    info!("  - Hold {} to record, release to transcribe", hotkey_str);
-    info!("  - Press ESC while recording to cancel");
-    info!("  - Quick tap (<200ms) to cancel");
+    let mut hotkey_str = format_hotkey(&config.hotkey);
+    info!("Hotkey listener active: Hold {} to record", hotkey_str);
 
     // Shared state
     let mut pressed_keys: HashSet<Key> = HashSet::new();
@@ -140,6 +152,14 @@ pub fn listen_for_hotkey(event_tx: Sender<AppEvent>, config: &Config) -> Result<
     use std::os::unix::io::AsRawFd;
     
     loop {
+        // Check for config updates
+        while let Ok(new_config) = config_rx.try_recv() {
+            info!("Hotkey listener reloading configuration...");
+            config = new_config;
+            hotkey_str = format_hotkey(&config.hotkey);
+            info!("New hotkey: {}", hotkey_str);
+        }
+
         // Create poll fd list for all keyboards
         let mut pollfds: Vec<libc::pollfd> = keyboards.iter().map(|kb| {
             libc::pollfd {
@@ -195,8 +215,8 @@ pub fn listen_for_hotkey(event_tx: Sender<AppEvent>, config: &Config) -> Result<
                                     }
                                     _ => {}
                                 }
-
-                                let combo_active = is_hotkey_active(&pressed_keys, config);
+                                
+                                let combo_active = is_hotkey_active(&pressed_keys, &config.hotkey);
 
                                 if combo_active && !is_recording {
                                     info!("Recording started ({} pressed)", hotkey_str);

@@ -2,9 +2,9 @@
 
 **Open Source Whisper Assistant** - Lightning-fast voice-to-text for your desktop.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Platform: Linux](https://img.shields.io/badge/Platform-Linux-green.svg)](https://github.com/yourusername/oswispa)
-[![Status: Alpha](https://img.shields.io/badge/Status-Alpha-orange.svg)](https://github.com/yourusername/oswispa)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Platform: Linux](https://img.shields.io/badge/Platform-Linux-green.svg)](#)
+[![Status: Release Ready](https://img.shields.io/badge/Status-Release--Ready-blue.svg)](#)
 
 A privacy-focused, locally-running voice transcription tool powered by [Whisper.cpp](https://github.com/ggerganov/whisper.cpp). Hold a hotkey, speak, release - your words appear instantly.
 
@@ -59,9 +59,12 @@ The easiest way to get started on Ubuntu 22.04/24.04:
 
 ```bash
 # Clone and install
-git clone https://github.com/yourusername/oswispa.git
+```bash
+# Clone and install
+git clone https://github.com/tylercasey/oswispa.git
 cd oswispa
 ./install.sh
+```
 
 # Run
 oswispa
@@ -141,7 +144,7 @@ Download links: [Hugging Face ggerganov/whisper.cpp](https://huggingface.co/gger
 
 ## 📜 License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License - Copyright (c) 2026 Tyler Casey. See [LICENSE](LICENSE) for details.
 
 ---
 
