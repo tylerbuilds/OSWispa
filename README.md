@@ -59,7 +59,7 @@ The easiest way to get started on Ubuntu 22.04/24.04:
 
 ```bash
 # Clone and install
-git clone https://github.com/OSWispa/OSWispa.git
+git clone https://github.com/tylerbuilds/OSWispa.git
 cd OSWispa
 ./install.sh
 
