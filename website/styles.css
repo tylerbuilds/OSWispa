@@ -404,6 +404,8 @@ p {
   gap: 6px;
   height: 70px;
   margin: 18px 0;
+  width: 100%;
+  justify-content: space-between;
 }
 
 .meter span {
@@ -824,6 +826,18 @@ p {
   grid-column: 1 / -1;
   font-size: 0.85rem;
   color: var(--muted);
+}
+
+.footer-meta + .footer-meta {
+  margin-top: 6px;
+}
+
+.footer-link {
+  color: var(--muted-2);
+}
+
+.footer-link:hover {
+  color: var(--accent);
 }
 
 .reveal {
