@@ -291,6 +291,83 @@ p {
   backdrop-filter: blur(12px);
 }
 
+.contact-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(54, 226, 255, 0.2);
+  backdrop-filter: blur(12px);
+}
+
+.contact-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.form-field {
+  display: grid;
+  gap: 8px;
+}
+
+.form-label {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.form-input,
+.form-textarea {
+  background: rgba(8, 14, 26, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 0.95rem;
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+  outline: 2px solid rgba(54, 226, 255, 0.6);
+  outline-offset: 2px;
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 140px;
+}
+
+.form-footnote {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.form-success {
+  display: none;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(111, 247, 180, 0.4);
+  background: rgba(15, 40, 30, 0.6);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.form-success.is-visible {
+  display: block;
+}
+
+.hidden-field {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 .card-header {
   display: flex;
   align-items: center;

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contact OSWispa</title>
+  <meta name="description" content="Contact OSWispa for support, collaboration, and feedback.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page">
+    <header class="site-header">
+      <div class="logo">OSWispa</div>
+      <nav class="site-nav" aria-label="Primary">
+        <a href="index.html#release">Release</a>
+        <a href="index.html#features">Features</a>
+        <a href="index.html#workflow">Workflow</a>
+        <a href="index.html#install">Install</a>
+        <a href="models.html">Model guide</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+      <div class="header-actions">
+        <a class="btn btn-ghost" href="https://github.com/tylerbuilds/OSWispa">GitHub</a>
+        <a class="btn btn-primary" href="https://github.com/tylerbuilds/OSWispa/releases/tag/v0.1.0-alpha.1">Download</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero hero-compact">
+        <div class="hero-copy reveal" style="--delay: 0.05s">
+          <p class="eyebrow">Contact</p>
+          <h1>Send a note to the builder.</h1>
+          <p class="lead">
+            Have feedback, want to collaborate, or need help with OSWispa? Drop a message and
+            it will reach the inbox at <strong>tc@tylerbuilds.com</strong>.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-secondary" href="mailto:tc@tylerbuilds.com">Email directly</a>
+          </div>
+          <div class="hero-meta">
+            <div>
+              <p class="meta-title">Response window</p>
+              <p class="meta-copy">Usually within 1-2 business days.</p>
+            </div>
+            <div>
+              <p class="meta-title">Best topics</p>
+              <p class="meta-copy">Bugs, feature ideas, and partnerships.</p>
+            </div>
+          </div>
+        </div>
+        <div class="hero-visual reveal" style="--delay: 0.15s">
+          <div class="contact-card">
+            <div class="card-header">
+              <span class="signal"></span>
+              <span>Contact form</span>
+              <span class="pill">Protected</span>
+            </div>
+            <div class="form-success" data-form-success>
+              Message sent. Thanks for reaching out.
+            </div>
+            <form class="contact-form" action="https://formsubmit.co/tc@tylerbuilds.com" method="POST">
+              <input type="hidden" name="_subject" value="OSWispa contact">
+              <input type="hidden" name="_captcha" value="true">
+              <input type="hidden" name="_template" value="table">
+              <input type="hidden" name="_next" value="https://oswispa.tylerbuilds.com/contact.html?sent=1">
+              <input type="text" name="_honey" class="hidden-field" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+              <label class="form-field">
+                <span class="form-label">Name</span>
+                <input class="form-input" type="text" name="name" placeholder="Your name" required>
+              </label>
+              <label class="form-field">
+                <span class="form-label">Email</span>
+                <input class="form-input" type="email" name="email" placeholder="you@example.com" required>
+              </label>
+              <label class="form-field">
+                <span class="form-label">Message</span>
+                <textarea class="form-textarea" name="message" rows="5" placeholder="Tell me what you are building." required></textarea>
+              </label>
+
+              <button class="btn btn-primary" type="submit">Send message</button>
+              <p class="form-footnote">Protected by a captcha and a honeypot field to block bots.</p>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div>
+        <p class="logo">OSWispa</p>
+        <p>Open Source Whisper Assistant for fast, private transcription.</p>
+      </div>
+      <div class="footer-links">
+        <a href="index.html#release">Release</a>
+        <a href="models.html">Model guide</a>
+        <a href="https://github.com/tylerbuilds/OSWispa">GitHub</a>
+        <a href="contact.html">Contact</a>
+      </div>
+      <p class="footer-meta">Copyright (c) 2026 Tyler Casey.</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
