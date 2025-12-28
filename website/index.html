@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OSWispa - Open Source Whisper Assistant</title>
+  <meta name="description" content="OSWispa is a fast, privacy-first voice transcription tool powered by Whisper.cpp. Hold a hotkey, speak, release - your words appear instantly.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page">
+    <header class="site-header">
+      <div class="logo">OSWispa</div>
+      <nav class="site-nav" aria-label="Primary">
+        <a href="#release">Release</a>
+        <a href="#features">Features</a>
+        <a href="#workflow">Workflow</a>
+        <a href="#install">Install</a>
+        <a href="#models">Models</a>
+      </nav>
+      <div class="header-actions">
+        <a class="btn btn-ghost" href="https://github.com/tylerbuilds/OSWispa">GitHub</a>
+        <a class="btn btn-primary" href="https://github.com/tylerbuilds/OSWispa/releases/tag/v0.1.0-alpha.1">Download</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy reveal" style="--delay: 0.05s">
+          <p class="eyebrow">Open Source Whisper Assistant</p>
+          <p class="release-chip">
+            <span class="chip-label">Release</span>
+            <span>v0.1.0-alpha.1 is live</span>
+          </p>
+          <h1>Whisper-fast dictation under a starry sky.</h1>
+          <p class="lead">
+            OSWispa turns your voice into text instantly with a privacy-first, offline pipeline.
+            Hold <span class="kbd">Ctrl</span> + <span class="kbd">Super</span>, speak, release, and keep writing.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="https://github.com/tylerbuilds/OSWispa/releases/tag/v0.1.0-alpha.1">Download release</a>
+            <a class="btn btn-secondary" href="https://github.com/tylerbuilds/OSWispa/blob/master/docs/USER_GUIDE.md">Read the guide</a>
+          </div>
+          <div class="hero-meta">
+            <div>
+              <p class="meta-title">Local only</p>
+              <p class="meta-copy">No cloud APIs, no uploads, no surprises.</p>
+            </div>
+            <div>
+              <p class="meta-title">GPU ready</p>
+              <p class="meta-copy">CUDA, ROCm, and Metal support.</p>
+            </div>
+            <div>
+              <p class="meta-title">Push-to-talk</p>
+              <p class="meta-copy">Fast capture without leaving your app.</p>
+            </div>
+          </div>
+        </div>
+        <div class="hero-visual reveal" style="--delay: 0.15s">
+          <div class="hero-card">
+            <div class="card-header">
+              <span class="signal"></span>
+              <span>Listening</span>
+              <span class="pill">Local session</span>
+            </div>
+            <div class="meter" aria-hidden="true">
+              <span style="--i: 1"></span>
+              <span style="--i: 2"></span>
+              <span style="--i: 3"></span>
+              <span style="--i: 4"></span>
+              <span style="--i: 5"></span>
+              <span style="--i: 6"></span>
+              <span style="--i: 7"></span>
+              <span style="--i: 8"></span>
+              <span style="--i: 9"></span>
+              <span style="--i: 10"></span>
+              <span style="--i: 11"></span>
+              <span style="--i: 12"></span>
+              <span style="--i: 13"></span>
+              <span style="--i: 14"></span>
+              <span style="--i: 15"></span>
+            </div>
+            <div class="transcript">
+              <p class="stamp">Transcript</p>
+              <p>
+                "Ship the update, then open the editor. Add a quick note about the new hotkey."
+              </p>
+              <p class="muted">Auto paste enabled. Clipboard ready.</p>
+            </div>
+          </div>
+          <div class="hero-stack">
+            <div class="stack-card">
+              <p class="stack-title">Latency</p>
+              <p class="stack-value">0.7s</p>
+              <p class="stack-copy">Median on mid-tier GPU.</p>
+            </div>
+            <div class="stack-card">
+              <p class="stack-title">Model</p>
+              <p class="stack-value">distil-large-v3</p>
+              <p class="stack-copy">Best speed-to-accuracy pick.</p>
+            </div>
+            <div class="stack-card">
+              <p class="stack-title">Release</p>
+              <p class="stack-value">v0.1.0-alpha.1</p>
+              <p class="stack-copy">Linux-first alpha build.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="release" class="section release">
+        <div class="release-card reveal" style="--delay: 0.05s">
+          <div class="release-copy">
+            <p class="eyebrow">Release</p>
+            <h2>v0.1.0-alpha.1 is published.</h2>
+            <p class="section-lead">
+              The first public alpha is ready for builders who want fast, local transcription.
+              Grab the release, run the installer, and start dictating.
+            </p>
+            <div class="release-actions">
+              <a class="btn btn-primary" href="https://github.com/tylerbuilds/OSWispa/releases/tag/v0.1.0-alpha.1">Release notes</a>
+              <a class="btn btn-secondary" href="https://github.com/tylerbuilds/OSWispa">View repo</a>
+            </div>
+          </div>
+          <div class="release-grid">
+            <div class="release-item">
+              <p class="label">Status</p>
+              <p class="value">Alpha</p>
+            </div>
+            <div class="release-item">
+              <p class="label">Primary OS</p>
+              <p class="value">Ubuntu / Debian</p>
+            </div>
+            <div class="release-item">
+              <p class="label">Backend</p>
+              <p class="value">Whisper.cpp</p>
+            </div>
+            <div class="release-item">
+              <p class="label">Hotkey</p>
+              <p class="value">Ctrl + Super</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="features" class="section">
+        <div class="section-heading reveal" style="--delay: 0.05s">
+          <p class="eyebrow">Why OSWispa</p>
+          <h2>Voice to text without the cloud tax.</h2>
+          <p class="section-lead">Built for builders who want speed, privacy, and a simple hotkey workflow.</p>
+        </div>
+        <div class="card-grid">
+          <article class="info-card reveal" style="--delay: 0.1s">
+            <h3>Local by design</h3>
+            <p>Everything runs on your machine. No accounts, no telemetry, no network dependency.</p>
+            <ul>
+              <li>Works offline</li>
+              <li>Clipboard safe</li>
+              <li>MIT licensed</li>
+            </ul>
+          </article>
+          <article class="info-card reveal" style="--delay: 0.2s">
+            <h3>Speed you can feel</h3>
+            <p>Whisper.cpp plus optional GPU acceleration keeps transcription snappy.</p>
+            <ul>
+              <li>CUDA, ROCm, Metal</li>
+              <li>Fast hotkey capture</li>
+              <li>Optimized models</li>
+            </ul>
+          </article>
+          <article class="info-card reveal" style="--delay: 0.3s">
+            <h3>Hands stay on the keyboard</h3>
+            <p>Push-to-talk, release, and the text lands right where you are typing.</p>
+            <ul>
+              <li>Global hotkey</li>
+              <li>Auto paste ready</li>
+              <li>Multilingual options</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="workflow" class="section">
+        <div class="split">
+          <div class="split-copy reveal" style="--delay: 0.05s">
+            <p class="eyebrow">Workflow</p>
+            <h2>Record in seconds, edit in context.</h2>
+            <p class="section-lead">
+              OSWispa is made for daily writing, coding, and note capture. It respects your focus and your system.
+            </p>
+            <div class="step-list">
+              <div class="step">
+                <span class="step-index">01</span>
+                <div>
+                  <h3>Hold the hotkey</h3>
+                  <p>Press <span class="kbd">Ctrl</span> + <span class="kbd">Super</span> to start recording.</p>
+                </div>
+              </div>
+              <div class="step">
+                <span class="step-index">02</span>
+                <div>
+                  <h3>Speak naturally</h3>
+                  <p>Use your normal voice. You can switch models based on accuracy vs speed.</p>
+                </div>
+              </div>
+              <div class="step">
+                <span class="step-index">03</span>
+                <div>
+                  <h3>Release to paste</h3>
+                  <p>Text is typed into your active window or copied to the clipboard.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="split-panel reveal" style="--delay: 0.15s">
+            <div class="panel-header">
+              <span>System status</span>
+              <span class="pill pill-dark">Ready</span>
+            </div>
+            <div class="status-grid">
+              <div>
+                <p class="label">Platform</p>
+                <p class="value">Ubuntu 24.04</p>
+              </div>
+              <div>
+                <p class="label">Backend</p>
+                <p class="value">ROCm (gfx1100)</p>
+              </div>
+              <div>
+                <p class="label">Model cache</p>
+                <p class="value">1.6 GB</p>
+              </div>
+              <div>
+                <p class="label">Hotkey</p>
+                <p class="value">Ctrl + Super</p>
+              </div>
+            </div>
+            <div class="support-grid">
+              <div class="support-card">
+                <p class="support-title">Ubuntu / Debian</p>
+                <p class="support-status good">Supported</p>
+              </div>
+              <div class="support-card">
+                <p class="support-title">Fedora / Arch</p>
+                <p class="support-status warn">Manual</p>
+              </div>
+              <div class="support-card">
+                <p class="support-title">macOS / Windows</p>
+                <p class="support-status note">Experimental</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="install" class="section">
+        <div class="section-heading reveal" style="--delay: 0.05s">
+          <p class="eyebrow">Install</p>
+          <h2>Get running in minutes.</h2>
+          <p class="section-lead">Ubuntu and Debian are first class. Other platforms need manual dependencies.</p>
+        </div>
+        <div class="install-grid">
+          <div class="install-card reveal" style="--delay: 0.1s">
+            <h3>Quick start</h3>
+            <p>Clone and run the installer. Log out and back in to refresh group permissions.</p>
+            <pre><code>git clone https://github.com/tylerbuilds/OSWispa.git
+cd OSWispa
+./install.sh
+oswispa</code></pre>
+            <div class="install-meta">
+              <span>Requires: Rust 1.70+, CMake 3.16+, libssl-dev</span>
+            </div>
+          </div>
+          <div class="install-card reveal" style="--delay: 0.2s">
+            <h3>Auto paste tips</h3>
+            <p>Wayland needs ydotoold for simulated typing. Clipboard copy is always available.</p>
+            <pre><code>sudo ydotoold &
+pgrep ydotoold</code></pre>
+            <div class="install-meta">
+              <span>If text does not appear, start the daemon or paste manually.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="models" class="section">
+        <div class="section-heading reveal" style="--delay: 0.05s">
+          <p class="eyebrow">Models</p>
+          <h2>Pick the model that fits your day.</h2>
+          <p class="section-lead">Drop model files into <code>~/.local/share/oswispa/models/</code>. Click a model to download.</p>
+        </div>
+        <div class="model-table reveal" style="--delay: 0.1s" role="table" aria-label="Model recommendations">
+          <div class="model-row model-head" role="row">
+            <span>Model</span>
+            <span>Size</span>
+            <span>Speed</span>
+            <span>Best for</span>
+          </div>
+          <div class="model-row" role="row">
+            <span><a class="model-link" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin" target="_blank" rel="noopener">base.en</a></span>
+            <span>142 MB</span>
+            <span>Fast</span>
+            <span>Quick dictation</span>
+          </div>
+          <div class="model-row" role="row">
+            <span><a class="model-link" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.en.bin" target="_blank" rel="noopener">medium.en</a></span>
+            <span>1.5 GB</span>
+            <span>Balanced</span>
+            <span>Everyday writing</span>
+          </div>
+          <div class="model-row" role="row">
+            <span><a class="model-link" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-distil-large-v3.bin" target="_blank" rel="noopener">distil-large-v3</a></span>
+            <span>1.5 GB</span>
+            <span>Fast</span>
+            <span>Best all-around</span>
+          </div>
+          <div class="model-row" role="row">
+            <span><a class="model-link" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin" target="_blank" rel="noopener">large-v3</a></span>
+            <span>2.9 GB</span>
+            <span>Slow</span>
+            <span>Highest accuracy</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section cta">
+        <div class="cta-card reveal" style="--delay: 0.05s">
+          <div>
+            <p class="eyebrow">Contribute</p>
+            <h2>Help make OSWispa truly cross-platform.</h2>
+            <p class="section-lead">
+              We are looking for installers, platform testing, and UI polish. Join the effort.
+            </p>
+          </div>
+          <div class="cta-actions">
+            <a class="btn btn-primary" href="https://github.com/tylerbuilds/OSWispa">View repo</a>
+            <a class="btn btn-secondary" href="https://github.com/tylerbuilds/OSWispa/blob/master/CONTRIBUTING.md">Contribution guide</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div>
+        <p class="logo">OSWispa</p>
+        <p>Open Source Whisper Assistant for fast, private transcription.</p>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/tylerbuilds/OSWispa/releases/tag/v0.1.0-alpha.1">Release</a>
+        <a href="https://github.com/tylerbuilds/OSWispa">GitHub</a>
+        <a href="https://github.com/tylerbuilds/OSWispa/issues">Issues</a>
+        <a href="https://github.com/tylerbuilds/OSWispa/blob/master/LICENSE">MIT License</a>
+      </div>
+      <p class="footer-meta">Copyright (c) 2026 Tyler Casey.</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
