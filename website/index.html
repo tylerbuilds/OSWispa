@@ -14,8 +14,18 @@
 <body>
   <div class="page">
     <header class="site-header">
-      <div class="logo">OSWispa</div>
-      <nav class="site-nav" aria-label="Primary">
+      <div class="header-brand">
+        <div class="logo">OSWispa</div>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" data-nav-toggle>
+          <span class="nav-toggle-label">Menu</span>
+          <span class="nav-toggle-bars" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </span>
+        </button>
+      </div>
+      <nav class="site-nav" id="primary-nav" aria-label="Primary" data-site-nav>
         <a href="#release">Release</a>
         <a href="#features">Features</a>
         <a href="#workflow">Workflow</a>
@@ -359,11 +369,14 @@ pgrep ydotoold</code></pre>
         <p>Open Source Whisper Assistant for fast, private transcription.</p>
       </div>
       <div class="footer-links">
-        <a href="https://github.com/tylerbuilds/OSWispa/releases/tag/v0.1.0-alpha.1">Release</a>
-        <a href="https://github.com/tylerbuilds/OSWispa">GitHub</a>
-        <a href="https://github.com/tylerbuilds/OSWispa/issues">Issues</a>
-        <a href="https://github.com/tylerbuilds/OSWispa/blob/master/LICENSE">MIT License</a>
-        <a href="contact.html">Contact</a>
+        <div class="footer-link-group">
+          <a href="https://github.com/tylerbuilds/OSWispa/releases/tag/v0.1.0-alpha.1">Release</a>
+          <a href="https://github.com/tylerbuilds/OSWispa">GitHub</a>
+          <a href="https://github.com/tylerbuilds/OSWispa/issues">Issues</a>
+          <a href="https://github.com/tylerbuilds/OSWispa/blob/master/LICENSE">MIT License</a>
+          <a href="contact.html">Contact</a>
+        </div>
+        <a class="btn btn-secondary btn-small footer-follow" href="https://x.com/TylerIsBuilding" target="_blank" rel="noopener">Follow on X</a>
       </div>
       <div class="footer-meta-group">
         <p class="footer-meta">Copyright (c) 2026 Tyler Casey.</p>

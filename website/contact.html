@@ -14,8 +14,18 @@
 <body>
   <div class="page">
     <header class="site-header">
-      <div class="logo">OSWispa</div>
-      <nav class="site-nav" aria-label="Primary">
+      <div class="header-brand">
+        <div class="logo">OSWispa</div>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" data-nav-toggle>
+          <span class="nav-toggle-label">Menu</span>
+          <span class="nav-toggle-bars" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </span>
+        </button>
+      </div>
+      <nav class="site-nav" id="primary-nav" aria-label="Primary" data-site-nav>
         <a href="index.html#release">Release</a>
         <a href="index.html#features">Features</a>
         <a href="index.html#workflow">Workflow</a>
@@ -96,10 +106,13 @@
         <p>Open Source Whisper Assistant for fast, private transcription.</p>
       </div>
       <div class="footer-links">
-        <a href="index.html#release">Release</a>
-        <a href="models.html">Model guide</a>
-        <a href="https://github.com/tylerbuilds/OSWispa">GitHub</a>
-        <a href="contact.html">Contact</a>
+        <div class="footer-link-group">
+          <a href="index.html#release">Release</a>
+          <a href="models.html">Model guide</a>
+          <a href="https://github.com/tylerbuilds/OSWispa">GitHub</a>
+          <a href="contact.html">Contact</a>
+        </div>
+        <a class="btn btn-secondary btn-small footer-follow" href="https://x.com/TylerIsBuilding" target="_blank" rel="noopener">Follow on X</a>
       </div>
       <div class="footer-meta-group">
         <p class="footer-meta">Copyright (c) 2026 Tyler Casey.</p>
