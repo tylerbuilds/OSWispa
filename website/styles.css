@@ -187,12 +187,22 @@ p {
   transform: translateY(-1px);
 }
 
+.btn-small {
+  padding: 8px 14px;
+  font-size: 0.9rem;
+}
+
 .hero {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 48px;
   align-items: center;
   padding: 70px 0 90px;
+}
+
+.hero-compact {
+  padding-top: 50px;
+  padding-bottom: 60px;
 }
 
 .eyebrow {
@@ -478,6 +488,46 @@ p {
   vertical-align: middle;
 }
 
+.model-card {
+  display: grid;
+  gap: 12px;
+}
+
+.model-meta {
+  color: var(--muted);
+}
+
+.model-note {
+  margin-top: 28px;
+  padding: 20px 22px;
+  border-radius: 18px;
+  border: 1px solid rgba(54, 226, 255, 0.2);
+  background: rgba(10, 18, 32, 0.8);
+}
+
+.model-note h3 {
+  margin-bottom: 10px;
+  color: var(--text);
+}
+
+.note-list {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  color: var(--muted-2);
+}
+
+.note-list li::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--accent-2);
+  vertical-align: middle;
+}
+
 .split {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -626,6 +676,19 @@ p {
 
 .model-link:hover {
   color: var(--accent);
+}
+
+.model-guide-card {
+  margin-top: 24px;
+  padding: 20px 22px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(12, 20, 34, 0.7);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  justify-content: space-between;
 }
 
 .model-row:last-child {

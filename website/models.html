@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OSWispa Models - Downloads and Guidance</title>
+  <meta name="description" content="Download OSWispa Whisper.cpp models and see guidance for modest systems.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page">
+    <header class="site-header">
+      <div class="logo">OSWispa</div>
+      <nav class="site-nav" aria-label="Primary">
+        <a href="index.html#release">Release</a>
+        <a href="index.html#features">Features</a>
+        <a href="index.html#workflow">Workflow</a>
+        <a href="index.html#install">Install</a>
+        <a href="#downloads">Downloads</a>
+        <a href="#guidance">Guidance</a>
+      </nav>
+      <div class="header-actions">
+        <a class="btn btn-ghost" href="https://github.com/tylerbuilds/OSWispa">GitHub</a>
+        <a class="btn btn-primary" href="https://github.com/tylerbuilds/OSWispa/releases/tag/v0.1.0-alpha.1">Download</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero hero-compact">
+        <div class="hero-copy reveal" style="--delay: 0.05s">
+          <p class="eyebrow">Model guide</p>
+          <h1>Download the right model for your hardware.</h1>
+          <p class="lead">
+            These models power OSWispa. Bigger models sound better but demand more RAM and compute.
+            Use the guidance below to avoid overload on modest systems.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#downloads">Download models</a>
+            <a class="btn btn-secondary" href="#guidance">See hardware guidance</a>
+          </div>
+        </div>
+        <div class="hero-visual reveal" style="--delay: 0.15s">
+          <div class="hero-card">
+            <div class="card-header">
+              <span class="signal"></span>
+              <span>Resource snapshot</span>
+              <span class="pill">CPU-only note</span>
+            </div>
+            <div class="transcript">
+              <p class="stamp">Rule of thumb</p>
+              <p>Base and medium models run on modest CPUs. Distil-large-v3 and large-v3 feel best with a GPU.</p>
+              <p class="muted">Actual usage depends on audio length, backend, and system load.</p>
+            </div>
+          </div>
+          <div class="hero-stack">
+            <div class="stack-card">
+              <p class="stack-title">Disk space</p>
+              <p class="stack-value">142 MB - 2.9 GB</p>
+              <p class="stack-copy">Model size on disk.</p>
+            </div>
+            <div class="stack-card">
+              <p class="stack-title">Suggested RAM</p>
+              <p class="stack-value">4 GB - 16 GB+</p>
+              <p class="stack-copy">CPU-only baseline.</p>
+            </div>
+            <div class="stack-card">
+              <p class="stack-title">Speed range</p>
+              <p class="stack-value">Fast to Slow</p>
+              <p class="stack-copy">Depends on hardware.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="downloads" class="section">
+        <div class="section-heading reveal" style="--delay: 0.05s">
+          <p class="eyebrow">Downloads</p>
+          <h2>Pick the model that fits your day.</h2>
+          <p class="section-lead">Drop model files into <code>~/.local/share/oswispa/models/</code>. Click a model to download.</p>
+        </div>
+        <div class="model-table reveal" style="--delay: 0.1s" role="table" aria-label="Model recommendations">
+          <div class="model-row model-head" role="row">
+            <span>Model</span>
+            <span>Size</span>
+            <span>Speed</span>
+            <span>Best for</span>
+          </div>
+          <div class="model-row" role="row">
+            <span><a class="model-link" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin" target="_blank" rel="noopener">base.en</a></span>
+            <span>142 MB</span>
+            <span>Fast</span>
+            <span>Quick dictation</span>
+          </div>
+          <div class="model-row" role="row">
+            <span><a class="model-link" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.en.bin" target="_blank" rel="noopener">medium.en</a></span>
+            <span>1.5 GB</span>
+            <span>Balanced</span>
+            <span>Everyday writing</span>
+          </div>
+          <div class="model-row" role="row">
+            <span><a class="model-link" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-distil-large-v3.bin" target="_blank" rel="noopener">distil-large-v3</a></span>
+            <span>1.5 GB</span>
+            <span>Fast</span>
+            <span>Best all-around</span>
+          </div>
+          <div class="model-row" role="row">
+            <span><a class="model-link" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin" target="_blank" rel="noopener">large-v3</a></span>
+            <span>2.9 GB</span>
+            <span>Slow</span>
+            <span>Highest accuracy</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="guidance" class="section">
+        <div class="section-heading reveal" style="--delay: 0.05s">
+          <p class="eyebrow">Guidance</p>
+          <h2>Model resource guidance for modest systems.</h2>
+          <p class="section-lead">Suggested RAM is for CPU-only systems. GPUs can reduce latency significantly.</p>
+        </div>
+        <div class="card-grid">
+          <article class="info-card model-card reveal" style="--delay: 0.1s">
+            <h3>base.en</h3>
+            <p class="model-meta">Smallest English model. Fast and light.</p>
+            <ul>
+              <li>Download size: 142 MB</li>
+              <li>Suggested RAM (CPU-only): 4 GB+</li>
+              <li>CPU-only speed: good</li>
+            </ul>
+            <a class="btn btn-secondary btn-small" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin" target="_blank" rel="noopener">Download base.en</a>
+          </article>
+          <article class="info-card model-card reveal" style="--delay: 0.2s">
+            <h3>medium.en</h3>
+            <p class="model-meta">Balanced accuracy with heavier compute.</p>
+            <ul>
+              <li>Download size: 1.5 GB</li>
+              <li>Suggested RAM (CPU-only): 8 GB+</li>
+              <li>CPU-only speed: moderate</li>
+            </ul>
+            <a class="btn btn-secondary btn-small" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.en.bin" target="_blank" rel="noopener">Download medium.en</a>
+          </article>
+          <article class="info-card model-card reveal" style="--delay: 0.3s">
+            <h3>distil-large-v3</h3>
+            <p class="model-meta">Fast for its accuracy. GPU recommended.</p>
+            <ul>
+              <li>Download size: 1.5 GB</li>
+              <li>Suggested RAM (CPU-only): 8-12 GB</li>
+              <li>CPU-only speed: moderate</li>
+            </ul>
+            <a class="btn btn-secondary btn-small" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-distil-large-v3.bin" target="_blank" rel="noopener">Download distil-large-v3</a>
+          </article>
+          <article class="info-card model-card reveal" style="--delay: 0.4s">
+            <h3>large-v3</h3>
+            <p class="model-meta">Highest accuracy with heavy compute.</p>
+            <ul>
+              <li>Download size: 2.9 GB</li>
+              <li>Suggested RAM (CPU-only): 16 GB+</li>
+              <li>CPU-only speed: slow</li>
+            </ul>
+            <a class="btn btn-secondary btn-small" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin" target="_blank" rel="noopener">Download large-v3</a>
+          </article>
+        </div>
+        <div class="model-note reveal" style="--delay: 0.15s">
+          <h3>Modest system tips</h3>
+          <ul class="note-list">
+            <li>Start with base.en if you have 4-8 GB RAM or an older CPU.</li>
+            <li>Keep recordings short to reduce peak memory and latency.</li>
+            <li>Close heavy apps when testing medium or larger models on CPU-only machines.</li>
+            <li>Use distil-large-v3 or large-v3 only if your system stays responsive.</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div>
+        <p class="logo">OSWispa</p>
+        <p>Open Source Whisper Assistant for fast, private transcription.</p>
+      </div>
+      <div class="footer-links">
+        <a href="index.html#release">Release</a>
+        <a href="index.html#models">Models</a>
+        <a href="https://github.com/tylerbuilds/OSWispa">GitHub</a>
+      </div>
+      <p class="footer-meta">Copyright (c) 2026 Tyler Casey.</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
