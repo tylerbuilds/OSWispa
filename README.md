@@ -59,12 +59,9 @@ The easiest way to get started on Ubuntu 22.04/24.04:
 
 ```bash
 # Clone and install
-```bash
-# Clone and install
-git clone https://github.com/tylercasey/oswispa.git
-cd oswispa
+git clone https://github.com/OSWispa/OSWispa.git
+cd OSWispa
 ./install.sh
-```
 
 # Run
 oswispa

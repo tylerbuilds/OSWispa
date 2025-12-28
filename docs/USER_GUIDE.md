@@ -4,7 +4,7 @@ Welcome to OSWispa! This guide will help you get the most out of your new voice-
 
 ## How to Record
 
-1.  **Hotkey**: Press and hold **Ctrl + Shift** (default).
+1.  **Hotkey**: Press and hold **Ctrl + Super** (default).
     - You'll hear a subtle "beep" (if audio feedback is enabled) and see a "Recording..." notification.
 2.  **Speak**: Talk naturally. OSWispa uses OpenAI's Whisper models locally on your machine.
 3.  **Release**: Let go of the keys.
@@ -15,12 +15,6 @@ Welcome to OSWispa! This guide will help you get the most out of your new voice-
 - **Silence**: Try to record in a quiet environment.
 - **Punctuation**: OSWispa automatically attempts to punctuate your speech. If you prefer manual control, you can toggle this in settings.
 - **Models**: Use the `distil-large-v3` model for the best balance of speed and accuracy.
-
-## Keyboard & Mouse Shortcuts
-
-- **Copy**: Press the **Top Side Button** on your mouse.
-- **Paste**: Press the **Bottom Side Button** on your mouse.
-- **Print Screen**: Works as expected to trigger the GNOME screenshot UI.
 
 ## Settings
 

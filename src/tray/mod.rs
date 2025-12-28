@@ -128,7 +128,7 @@ impl Tray for OswispaTray {
                 label: "Help".to_string(),
                 activate: Box::new(|_| {
                     let _ = std::process::Command::new("xdg-open")
-                        .arg("https://github.com/oswispa/oswispa")
+                        .arg("https://github.com/OSWispa/OSWispa")
                         .spawn();
                 }),
                 ..Default::default()
