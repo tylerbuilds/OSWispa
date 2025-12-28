@@ -810,8 +810,9 @@ p {
   padding-top: 28px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: minmax(220px, 0.9fr) minmax(360px, 1.6fr);
   gap: 20px;
+  align-items: start;
 }
 
 .footer-links {
@@ -890,6 +891,10 @@ html.js.loaded .reveal {
 
   .hero {
     padding-top: 50px;
+  }
+
+  .site-footer {
+    grid-template-columns: 1fr;
   }
 }
 
