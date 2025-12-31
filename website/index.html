@@ -31,6 +31,7 @@
         <a href="#workflow">Workflow</a>
         <a href="#install">Install</a>
         <a href="#models">Models</a>
+        <a href="#faq">FAQ</a>
         <a href="models.html">Model guide</a>
         <a href="contact.html">Contact</a>
       </nav>
@@ -343,6 +344,96 @@ pgrep ydotoold</code></pre>
             <p class="meta-copy">See the model guide for hardware limits and download tips.</p>
           </div>
           <a class="btn btn-secondary" href="models.html">Open model guide</a>
+        </div>
+      </section>
+
+      <section id="faq" class="section">
+        <div class="section-heading reveal" style="--delay: 0.05s">
+          <p class="eyebrow">FAQ</p>
+          <h2>Common questions answered.</h2>
+          <p class="section-lead">Troubleshooting tips and setup guidance for OSWispa.</p>
+        </div>
+        <div class="faq-grid">
+          <article class="faq-item reveal" style="--delay: 0.1s">
+            <h3>OSWispa doesn't start on login</h3>
+            <p>
+              The most common cause is a missing or unreachable model file. Check your config at
+              <code>~/.config/oswispa/config.json</code> and verify the <code>model_path</code> exists.
+              Models should be stored locally at <code>~/.local/share/oswispa/models/</code>.
+            </p>
+            <p>
+              For reliable autostart, use a systemd user service instead of the desktop file:
+            </p>
+            <pre><code># Create the service
+cat > ~/.config/systemd/user/oswispa.service &lt;&lt;EOF
+[Unit]
+Description=OSWispa Voice-to-Text
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/oswispa
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+EOF
+
+# Enable and start
+systemctl --user daemon-reload
+systemctl --user enable oswispa
+systemctl --user start oswispa</code></pre>
+          </article>
+          <article class="faq-item reveal" style="--delay: 0.15s">
+            <h3>Model not found error</h3>
+            <p>
+              OSWispa exits immediately if the configured model file is missing. If your models are on a
+              network drive or external mount, they may not be available at login time.
+            </p>
+            <p><strong>Fix:</strong> Copy models to local storage:</p>
+            <pre><code>mkdir -p ~/.local/share/oswispa/models
+cp /path/to/your/model.bin ~/.local/share/oswispa/models/</code></pre>
+            <p>Then update <code>~/.config/oswispa/config.json</code> to point to the local path.</p>
+          </article>
+          <article class="faq-item reveal" style="--delay: 0.2s">
+            <h3>App closes when terminal closes</h3>
+            <p>
+              If you're running <code>oswispa</code> from a terminal, closing that terminal kills the app.
+              Use the systemd service approach above, or launch with <code>nohup</code>:
+            </p>
+            <pre><code>nohup oswispa &amp; disown</code></pre>
+            <p>The systemd service is recommended for production use.</p>
+          </article>
+          <article class="faq-item reveal" style="--delay: 0.25s">
+            <h3>Text doesn't paste automatically</h3>
+            <p>
+              On Wayland, auto-paste requires <code>ydotoold</code> running as root:
+            </p>
+            <pre><code>sudo systemctl enable ydotool
+sudo systemctl start ydotool</code></pre>
+            <p>If paste still fails, text is always copied to the clipboard. Use <span class="kbd">Ctrl</span> + <span class="kbd">V</span> manually.</p>
+          </article>
+          <article class="faq-item reveal" style="--delay: 0.3s">
+            <h3>How do I change the hotkey?</h3>
+            <p>
+              Edit <code>~/.config/oswispa/config.json</code> and set the hotkey modifiers:
+            </p>
+            <pre><code>"hotkey": {
+  "ctrl": true,
+  "alt": false,
+  "shift": true,
+  "super_key": false
+}</code></pre>
+            <p>Restart OSWispa after changing the config.</p>
+          </article>
+          <article class="faq-item reveal" style="--delay: 0.35s">
+            <h3>How do I check if OSWispa is running?</h3>
+            <p>Check the systemd service status or look for the process:</p>
+            <pre><code>systemctl --user status oswispa
+# or
+pgrep -f oswispa</code></pre>
+            <p>The system tray icon also indicates active status.</p>
+          </article>
         </div>
       </section>
 

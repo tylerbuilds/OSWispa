@@ -838,6 +838,56 @@ p {
   font-weight: 600;
 }
 
+.faq-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 22px;
+}
+
+.faq-item {
+  background: var(--surface-2);
+  border-radius: 18px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.35);
+}
+
+.faq-item h3 {
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.faq-item p {
+  margin-bottom: 12px;
+}
+
+.faq-item p:last-child {
+  margin-bottom: 0;
+}
+
+.faq-item pre {
+  background: rgba(8, 12, 24, 0.8);
+  border-radius: 12px;
+  padding: 14px;
+  margin: 12px 0;
+  overflow-x: auto;
+  color: var(--muted-2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.85rem;
+}
+
+.faq-item code {
+  font-family: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  font-size: 0.85rem;
+}
+
+.faq-item p code {
+  background: rgba(54, 226, 255, 0.12);
+  padding: 2px 6px;
+  border-radius: 6px;
+  color: var(--accent);
+}
+
 .cta {
   padding-top: 70px;
 }
