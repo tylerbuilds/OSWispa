@@ -14,7 +14,7 @@ use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 use tracing::{error, info, warn};
 use tracing_subscriber::EnvFilter;
 
@@ -257,42 +257,50 @@ fn main() -> Result<()> {
     info!("Starting OSWispa - Voice to Text");
 
     // Load configuration and history
-    let config = Arc::new(load_config());
+    let config = Arc::new(RwLock::new(load_config()));
     let history = load_history();
     let state = Arc::new(Mutex::new(AppState {
         is_recording: false,
         clipboard_history: history,
     }));
 
-    info!("Language: {}, Audio feedback: {}", config.language, config.audio_feedback);
+    let initial_config = config.read().unwrap().clone();
+
+    info!(
+        "Language: {}, Audio feedback: {}",
+        initial_config.language, initial_config.audio_feedback
+    );
     info!(
         "Hotkey: {}{}{}{}",
-        if config.hotkey.ctrl { "Ctrl+" } else { "" },
-        if config.hotkey.alt { "Alt+" } else { "" },
-        if config.hotkey.shift { "Shift+" } else { "" },
-        if config.hotkey.super_key { "Super" } else { "" }
+        if initial_config.hotkey.ctrl { "Ctrl+" } else { "" },
+        if initial_config.hotkey.alt { "Alt+" } else { "" },
+        if initial_config.hotkey.shift { "Shift+" } else { "" },
+        if initial_config.hotkey.super_key { "Super" } else { "" }
     );
-    if config.vad.enabled {
+    if initial_config.vad.enabled {
         info!(
             "VAD enabled: threshold={}, silence={}ms",
-            config.vad.threshold, config.vad.silence_duration_ms
+            initial_config.vad.threshold, initial_config.vad.silence_duration_ms
         );
     }
-    if config.streaming.enabled {
-        info!("Streaming mode enabled: chunk={}ms", config.streaming.chunk_duration_ms);
+    if initial_config.streaming.enabled {
+        info!(
+            "Streaming mode enabled: chunk={}ms",
+            initial_config.streaming.chunk_duration_ms
+        );
     }
 
     // Verify model exists
-    if !config.model_path.exists() {
+    if !initial_config.model_path.exists() {
         error!(
             "Whisper model not found at {:?}. Run the install script first.",
-            config.model_path
+            initial_config.model_path
         );
         eprintln!(
             "\n[ERROR] Whisper model not found!\n\
             Please run: ./install.sh\n\
             Or manually download a model to {:?}\n",
-            config.model_path
+            initial_config.model_path
         );
         std::process::exit(1);
     }
@@ -305,8 +313,6 @@ fn main() -> Result<()> {
     // Clone handles for threads
     let config_for_main = Arc::clone(&config);
     let config_for_transcribe = Arc::clone(&config);
-    let config_for_hotkey = Arc::clone(&config);
-    let config_for_audio = Arc::clone(&config);
     let state_for_main = Arc::clone(&state);
     let state_for_tray = Arc::clone(&state);
 
@@ -318,9 +324,11 @@ fn main() -> Result<()> {
 
     // Start hotkey listener thread
     let (hotkey_config_tx, hotkey_config_rx) = bounded(1);
-    let config_for_initial_hotkey = Arc::clone(&config);
+    let config_for_initial_hotkey = Arc::new(config.read().unwrap().clone());
     std::thread::spawn(move || {
-        if let Err(e) = hotkey::listen_for_hotkey(event_tx_hotkey, hotkey_config_rx, config_for_initial_hotkey) {
+        if let Err(e) =
+            hotkey::listen_for_hotkey(event_tx_hotkey, hotkey_config_rx, config_for_initial_hotkey)
+        {
             error!("Hotkey listener error: {}", e);
             eprintln!(
                 "\n[ERROR] Hotkey listener failed: {}\n\
@@ -334,12 +342,12 @@ fn main() -> Result<()> {
 
     // Start audio recording thread
     std::thread::spawn(move || {
-        audio::audio_worker(record_rx, audio_tx, event_tx_audio, &config_for_audio);
+        audio::audio_worker(record_rx, audio_tx, event_tx_audio);
     });
 
     // Start transcription thread
     std::thread::spawn(move || {
-        transcribe::transcription_worker(audio_rx, event_tx_transcribe, &config_for_transcribe);
+        transcribe::transcription_worker(audio_rx, event_tx_transcribe, config_for_transcribe);
     });
 
     // Start system tray in separate thread
@@ -394,10 +402,10 @@ fn main() -> Result<()> {
     info!("All workers started.");
     info!(
         "Hotkey: {}{}{}{}",
-        if config.hotkey.ctrl { "Ctrl+" } else { "" },
-        if config.hotkey.alt { "Alt+" } else { "" },
-        if config.hotkey.shift { "Shift+" } else { "" },
-        if config.hotkey.super_key { "Super" } else { "" }
+        if initial_config.hotkey.ctrl { "Ctrl+" } else { "" },
+        if initial_config.hotkey.alt { "Alt+" } else { "" },
+        if initial_config.hotkey.shift { "Shift+" } else { "" },
+        if initial_config.hotkey.super_key { "Super" } else { "" }
     );
 
     // Main event loop
@@ -427,7 +435,7 @@ fn main() -> Result<()> {
                     info!("Stopping recording...");
                 }
 
-                if config_for_main.audio_feedback {
+                if config_for_main.read().unwrap().audio_feedback {
                     feedback::play_stop_sequence();
                 }
 
@@ -439,7 +447,7 @@ fn main() -> Result<()> {
             AppEvent::CancelRecording => {
                 info!("Cancelling recording...");
 
-                if config_for_main.audio_feedback {
+                if config_for_main.read().unwrap().audio_feedback {
                     feedback::play_cancel_sound();
                 }
 
@@ -455,15 +463,16 @@ fn main() -> Result<()> {
             }
             AppEvent::TranscriptionComplete(text) => {
                 info!("Transcription complete: {} chars", text.len());
+                let current_config = config_for_main.read().unwrap().clone();
 
                 // Apply punctuation commands if enabled
-                let text = if config_for_main.punctuation_commands {
+                let text = if current_config.punctuation_commands {
                     punctuation::apply_punctuation_commands(&text)
                 } else {
                     text
                 };
 
-                if config_for_main.audio_feedback {
+                if current_config.audio_feedback {
                     feedback::play_complete_sound();
                 }
 
@@ -471,7 +480,7 @@ fn main() -> Result<()> {
                     warn!("Failed to copy to clipboard: {}", e);
                 }
 
-                if config_for_main.auto_paste {
+                if current_config.auto_paste {
                     std::thread::sleep(std::time::Duration::from_millis(150));
                     if let Err(e) = input::paste_text(&text) {
                         warn!("Failed to paste text: {}", e);
@@ -488,13 +497,13 @@ fn main() -> Result<()> {
                             timestamp: chrono::Local::now(),
                         },
                     );
-                    if state.clipboard_history.len() > config_for_main.max_history {
-                        state.clipboard_history.truncate(config_for_main.max_history);
+                    if state.clipboard_history.len() > current_config.max_history {
+                        state.clipboard_history.truncate(current_config.max_history);
                     }
                     save_history(&state.clipboard_history);
                 }
 
-                if config_for_main.notification_enabled {
+                if current_config.notification_enabled {
                     let preview = if text.chars().count() > 50 {
                         format!("{}...", text.chars().take(50).collect::<String>())
                     } else {
@@ -510,7 +519,7 @@ fn main() -> Result<()> {
             AppEvent::Error(msg) => {
                 error!("Error: {}", msg);
 
-                if config_for_main.audio_feedback {
+                if config_for_main.read().unwrap().audio_feedback {
                     feedback::play_error_sound();
                 }
 
@@ -532,11 +541,12 @@ fn main() -> Result<()> {
             }
             AppEvent::ReloadConfig => {
                 info!("Reloading configuration...");
-                let new_config = Arc::new(load_config());
-                // We could update config_for_main if it were mutable, but we'll use a local state.
-                // However, the Arc<Config> is captured in closures.
-                // For now, we'll notify the hotkey listener.
-                let _ = hotkey_config_tx.send(new_config);
+                let new_config = load_config();
+                {
+                    let mut config_guard = config_for_main.write().unwrap();
+                    *config_guard = new_config.clone();
+                }
+                let _ = hotkey_config_tx.send(Arc::new(new_config));
             }
             AppEvent::Quit => {
                 info!("Shutting down...");

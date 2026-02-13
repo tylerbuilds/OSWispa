@@ -5,7 +5,7 @@
 //!
 //! arecord is part of alsa-utils and is universally available on Linux.
 
-use crate::{AppEvent, Config, RecordCommand};
+use crate::{AppEvent, RecordCommand};
 use anyhow::{Context, Result};
 use crossbeam_channel::{Receiver, Sender};
 use std::path::PathBuf;
@@ -20,7 +20,6 @@ pub fn audio_worker(
     record_rx: Receiver<RecordCommand>,
     audio_tx: Sender<Option<PathBuf>>,
     status_tx: Sender<AppEvent>,
-    _config: &Config,
 ) {
     info!("Audio worker thread started");
     let recording = Arc::new(AtomicBool::new(false));

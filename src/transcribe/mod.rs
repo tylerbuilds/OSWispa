@@ -11,7 +11,7 @@ use crate::{AppEvent, Config};
 use anyhow::Result;
 use crossbeam_channel::{Receiver, Sender};
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use tracing::{debug, error, info, warn};
 use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
 
@@ -22,11 +22,12 @@ const MIN_VRAM_BYTES: u64 = 2 * 1024 * 1024 * 1024;
 pub fn transcription_worker(
     audio_rx: Receiver<Option<PathBuf>>,
     event_tx: Sender<AppEvent>,
-    config: &Config,
+    config: Arc<RwLock<Config>>,
 ) {
     info!("Transcription worker started (lazy initialization mode)");
 
-    if let Some(ref fallback) = config.fallback_model_path {
+    let startup_config = config.read().unwrap().clone();
+    if let Some(ref fallback) = startup_config.fallback_model_path {
         info!("Fallback model configured: {:?}", fallback);
     }
 
@@ -42,8 +43,10 @@ pub fn transcription_worker(
 
         info!("Processing audio file: {:?}", audio_path);
 
+        let current_config = config.read().unwrap().clone();
+
         // Try transcription with fallback chain
-        let result = transcribe_with_fallback(&audio_path, config);
+        let result = transcribe_with_fallback(&audio_path, &current_config);
 
         // Process result
         match result {
