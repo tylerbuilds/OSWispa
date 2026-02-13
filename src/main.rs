@@ -215,6 +215,15 @@ pub fn get_config_dir() -> PathBuf {
         .unwrap_or_else(|| PathBuf::from(".oswispa"))
 }
 
+pub fn get_socket_path() -> PathBuf {
+    if let Ok(runtime_dir) = std::env::var("XDG_RUNTIME_DIR") {
+        return PathBuf::from(runtime_dir).join("oswispa.sock");
+    }
+
+    let uid = unsafe { libc::geteuid() };
+    PathBuf::from(format!("/tmp/oswispa-{}.sock", uid))
+}
+
 fn load_config() -> Config {
     let config_path = get_config_dir().join("config.json");
     if config_path.exists() {
@@ -361,31 +370,61 @@ fn main() -> Result<()> {
     let event_tx_socket = event_tx.clone();
     let state_for_socket = Arc::clone(&state);
     std::thread::spawn(move || {
-        use std::os::unix::net::UnixListener;
         use std::io::Read;
-        let socket_path = "/tmp/oswispa.sock";
+        use std::os::unix::fs::PermissionsExt;
+        use std::os::unix::net::UnixListener;
+        let socket_path = get_socket_path();
+        let socket_path_display = socket_path.display().to_string();
         
         // Remove old socket if exists
-        let _ = std::fs::remove_file(socket_path);
+        let _ = std::fs::remove_file(&socket_path);
         
-        match UnixListener::bind(socket_path) {
+        if let Some(parent) = socket_path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+
+        match UnixListener::bind(&socket_path) {
             Ok(listener) => {
-                info!("Unix socket listener started at {}", socket_path);
-                info!("To toggle recording, run: echo toggle | nc -U /tmp/oswispa.sock");
+                let _ = std::fs::set_permissions(
+                    &socket_path,
+                    std::fs::Permissions::from_mode(0o600),
+                );
+                info!("Unix socket listener started at {}", socket_path_display);
+                info!(
+                    "To toggle recording, run: printf toggle | nc -U {}",
+                    socket_path_display
+                );
                 
                 for stream in listener.incoming() {
                     match stream {
                         Ok(mut stream) => {
                             let mut buf = String::new();
                             if stream.read_to_string(&mut buf).is_ok() {
-                                let state = state_for_socket.lock().unwrap();
-                                let is_recording = state.is_recording;
-                                drop(state);
-                                
-                                if is_recording {
-                                    let _ = event_tx_socket.send(AppEvent::StopRecording);
-                                } else {
-                                    let _ = event_tx_socket.send(AppEvent::StartRecording);
+                                let cmd = buf.trim().to_ascii_lowercase();
+                                match cmd.as_str() {
+                                    "toggle" => {
+                                        let state = state_for_socket.lock().unwrap();
+                                        let is_recording = state.is_recording;
+                                        drop(state);
+
+                                        if is_recording {
+                                            let _ = event_tx_socket.send(AppEvent::StopRecording);
+                                        } else {
+                                            let _ = event_tx_socket.send(AppEvent::StartRecording);
+                                        }
+                                    }
+                                    "start" => {
+                                        let _ = event_tx_socket.send(AppEvent::StartRecording);
+                                    }
+                                    "stop" => {
+                                        let _ = event_tx_socket.send(AppEvent::StopRecording);
+                                    }
+                                    "cancel" => {
+                                        let _ = event_tx_socket.send(AppEvent::CancelRecording);
+                                    }
+                                    _ => {
+                                        warn!("Ignoring unknown socket command: '{}'", cmd);
+                                    }
                                 }
                             }
                         }

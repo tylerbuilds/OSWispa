@@ -51,6 +51,7 @@ sudo apt install -y \
     libappindicator3-dev \
     wl-clipboard \
     ydotool \
+    netcat-openbsd \
     curl \
     git
 
@@ -144,6 +145,13 @@ cargo build --release
 print_status "Installing binary..."
 sudo cp target/release/oswispa /usr/local/bin/
 sudo chmod +x /usr/local/bin/oswispa
+
+# 9b. Install IPC toggle helper
+if [ -f "$SCRIPT_DIR/scripts/oswispa-toggle.sh" ]; then
+    print_status "Installing oswispa-toggle helper..."
+    sudo cp "$SCRIPT_DIR/scripts/oswispa-toggle.sh" /usr/local/bin/oswispa-toggle
+    sudo chmod +x /usr/local/bin/oswispa-toggle
+fi
 
 # 10. Create desktop entry
 print_status "Creating desktop entry..."

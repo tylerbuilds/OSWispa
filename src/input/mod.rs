@@ -29,10 +29,10 @@ pub fn copy_to_clipboard(text: &str) -> Result<()> {
 
 /// Paste text by simulating keyboard input
 ///
-/// We use ydotool because it works on Wayland (unlike xdotool).
-/// ydotool requires the ydotoold daemon to be running.
-pub fn paste_text(text: &str) -> Result<()> {
-    info!("Pasting {} chars via ydotool", text.len());
+/// To avoid leaking dictated text in process arguments, we never pass the
+/// transcript to command-line tools. We paste from clipboard via Ctrl+V.
+pub fn paste_text(_text: &str) -> Result<()> {
+    info!("Pasting clipboard contents via simulated Ctrl+V");
 
     // First, try to check if ydotoold is running
     let daemon_check = Command::new("pgrep")
@@ -49,48 +49,28 @@ pub fn paste_text(text: &str) -> Result<()> {
         }
     }
 
-    // Use ydotool to type the text
-    // Works with both v0.1.x and v1.x
-    let mut child = Command::new("ydotool")
-        .arg("type")
-        .arg("--")
-        .arg(text)
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::piped())
-        .spawn()
-        .context(
-            "Failed to spawn ydotool. Is it installed?\n\
-            Install with: sudo apt install ydotool"
-        )?;
-
-    let status = child.wait()?;
-
-    if !status.success() {
-        // Try alternative method: wtype (another Wayland text input tool)
-        info!("ydotool failed, trying wtype...");
-        return paste_with_wtype(text);
+    if let Err(e) = paste_with_ctrl_v() {
+        warn!("ydotool Ctrl+V failed: {}", e);
+        info!("Trying wtype Ctrl+V fallback...");
+        return paste_with_wtype_ctrl_v();
     }
 
-    debug!("Text pasted successfully via ydotool");
+    debug!("Clipboard pasted successfully via ydotool Ctrl+V");
     Ok(())
 }
 
-/// Alternative: use wtype for Wayland text input
-fn paste_with_wtype(text: &str) -> Result<()> {
+/// Alternative: use wtype to send Ctrl+V
+fn paste_with_wtype_ctrl_v() -> Result<()> {
     let status = Command::new("wtype")
-        .arg("--")
-        .arg(text)
+        .args(["-M", "ctrl", "v", "-m", "ctrl"])
         .status()
         .context(
-            "Failed to run wtype. Install with: sudo apt install wtype\n\
+            "Failed to run wtype for Ctrl+V fallback. Install with: sudo apt install wtype\n\
             Note: wtype only works on wlroots-based compositors, not GNOME."
         )?;
 
     if !status.success() {
-        // Last resort: use Ctrl+V paste
-        info!("wtype failed, falling back to Ctrl+V paste");
-        return paste_with_ctrl_v();
+        anyhow::bail!("wtype Ctrl+V fallback failed");
     }
 
     Ok(())
