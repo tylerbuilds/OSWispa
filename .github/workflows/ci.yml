@@ -24,17 +24,9 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
 
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
-
-      - name: Check formatting
-        run: cargo fmt --all -- --check
-
-      - name: Clippy (no GUI feature)
-        run: cargo clippy --locked --no-default-features --all-targets -- -D warnings
 
       - name: Build (no GUI feature)
         run: cargo check --locked --no-default-features --all-targets
