@@ -36,3 +36,8 @@ jobs:
 
       - name: Build (default features)
         run: cargo check --locked
+
+      - name: Build .deb package (smoke test)
+        run: |
+          cargo install cargo-deb --locked
+          cargo deb --locked
