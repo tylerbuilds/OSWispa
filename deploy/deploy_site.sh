@@ -13,8 +13,10 @@ if [[ -n "${DEPLOY_KEY:-}" ]]; then
   ssh_cmd+=(-i "$DEPLOY_KEY")
 fi
 
-rsync -az --delete \
-  --no-owner --no-group \
-  --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r \
+rsync -rlz --delete \
+  --no-perms --no-owner --no-group \
   -e "${ssh_cmd[*]}" \
   website/ "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/"
+
+"${ssh_cmd[@]}" "${DEPLOY_USER}@${DEPLOY_HOST}" \
+  "find '${DEPLOY_PATH}' -type d -exec chmod 755 {} + && find '${DEPLOY_PATH}' -type f -exec chmod 644 {} +"
