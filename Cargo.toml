@@ -1,6 +1,6 @@
 [package]
 name = "oswispa"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 description = "Voice-to-text with Whisper - local-first with configurable hotkeys and optional VPS backend"
 authors = ["OSWispa"]
