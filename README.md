@@ -6,13 +6,13 @@
 [![Platform: Linux](https://img.shields.io/badge/Platform-Linux-green.svg)](#)
 [![Status: Release Ready](https://img.shields.io/badge/Status-Release--Ready-blue.svg)](#)
 
-A privacy-focused, locally-running voice transcription tool powered by [Whisper.cpp](https://github.com/ggerganov/whisper.cpp). Hold a hotkey, speak, release - your words appear instantly.
+A privacy-focused, local-first voice transcription tool powered by [Whisper.cpp](https://github.com/ggerganov/whisper.cpp). Hold a hotkey, speak, release - your words appear instantly.
 
 ---
 
 ## 🚧 Project Status & Transparency
 
-**Current State:** v0.1.1 (Alpha)
+**Current State:** v0.2.0 (Alpha)
 
 OSWispa is a **Linux-first** project, currently optimized for **Ubuntu/Debian** systems.
 
@@ -32,11 +32,13 @@ OSWispa is a **Linux-first** project, currently optimized for **Ubuntu/Debian** 
 
 ## ✨ Features
 
-- **🎤 Push-to-Talk**: Hold `Ctrl+Super` to record, release to transcribe
-- **🔒 100% Local**: No cloud APIs, no data leaves your machine
+- **🎤 Push-to-Talk**: Configurable modifiers + optional trigger key
+- **🔒 Local-First**: Runs fully local by default with optional VPS backend
 - **⚡ GPU Accelerated**: AMD ROCm, NVIDIA CUDA, or Apple Metal support
 - **📋 Auto-Paste**: Text is typed directly into your active window
 - **🌍 Multilingual**: Supports 99 languages with the right model
+- **🧩 Model Flexibility**: Import custom `.bin` / `.gguf` models and switch quickly
+- **✍️ Spoken Formatting**: Say commands like `quotation mark` and `new line`
 
 ---
 
@@ -70,7 +72,7 @@ oswispa
 **After install:**
 1.  Log out and back in (to refresh user groups).
 2.  Ensure `ydotoold` is running if you want auto-paste (`sudo ydotoold &`).
-3.  Press **Ctrl+Super**, speak, and release!
+3.  Press your configured hotkey (default **Ctrl+Super**), speak, and release!
 
 ---
 
@@ -117,6 +119,17 @@ OSWispa needs a model file to work.
 **Manual Download:**
 Save models to `~/.local/share/oswispa/models/`.
 Download links: [Hugging Face ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp/tree/main)
+
+---
+
+## 🌐 Optional VPS Backend
+
+OSWispa is local-first by default, but you can optionally route transcription to a VPS.
+
+- Set backend mode to `remote` in Settings.
+- Use an HTTPS endpoint (HTTP is blocked unless explicitly allowed).
+- Store API tokens via Settings (saved to a local `0600` secret file) or set an env var (e.g. `OSWISPA_REMOTE_API_KEY`).
+- If remote transcription fails and local models exist, OSWispa falls back to local automatically.
 
 ---
 

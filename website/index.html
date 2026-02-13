@@ -12,7 +12,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>OSWispa - Open Source Whisper Assistant</title>
-  <meta name="description" content="OSWispa is a fast, privacy-first voice transcription tool powered by Whisper.cpp. Hold a hotkey, speak, release - your words appear instantly.">
+  <meta name="description" content="OSWispa is a fast, local-first voice transcription tool powered by Whisper.cpp with configurable hotkeys, custom model imports, and optional VPS backend.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;600;700&display=swap" rel="stylesheet">
@@ -45,7 +45,7 @@
       </nav>
       <div class="header-actions">
         <a class="btn btn-ghost" href="https://github.com/tylerbuilds/OSWispa">GitHub</a>
-        <a class="btn btn-primary" href="https://github.com/tylerbuilds/OSWispa/releases/tag/v0.1.1">Download</a>
+        <a class="btn btn-primary" href="https://github.com/tylerbuilds/OSWispa/releases/tag/v0.2.0">Download</a>
       </div>
     </header>
 
@@ -55,21 +55,21 @@
           <p class="eyebrow">Open Source Whisper Assistant</p>
           <p class="release-chip">
             <span class="chip-label">Release</span>
-            <span>v0.1.1 is live</span>
+            <span>v0.2.0 is live</span>
           </p>
           <h1>Whisper-fast dictation under a starry sky.</h1>
           <p class="lead">
             OSWispa turns your voice into text instantly with a privacy-first, offline pipeline.
-            Hold <span class="kbd">Ctrl</span> + <span class="kbd">Super</span>, speak, release, and keep writing.
+            Hold your configured hotkey, speak, release, and keep writing.
           </p>
           <div class="hero-actions">
-            <a class="btn btn-primary" href="https://github.com/tylerbuilds/OSWispa/releases/tag/v0.1.1">Download release</a>
+            <a class="btn btn-primary" href="https://github.com/tylerbuilds/OSWispa/releases/tag/v0.2.0">Download release</a>
             <a class="btn btn-secondary" href="USER_GUIDE.md">Read the guide</a>
           </div>
           <div class="hero-meta">
             <div>
-              <p class="meta-title">Local only</p>
-              <p class="meta-copy">No cloud APIs, no uploads, no surprises.</p>
+              <p class="meta-title">Local-first</p>
+              <p class="meta-copy">Runs offline by default, with optional VPS routing.</p>
             </div>
             <div>
               <p class="meta-title">GPU ready</p>
@@ -126,8 +126,8 @@
             </div>
             <div class="stack-card">
               <p class="stack-title">Release</p>
-              <p class="stack-value">v0.1.1</p>
-              <p class="stack-copy">Linux-first alpha build.</p>
+              <p class="stack-value">v0.2.0</p>
+              <p class="stack-copy">Hotkeys, model import, and remote backend release.</p>
             </div>
           </div>
         </div>
@@ -137,13 +137,13 @@
         <div class="release-card reveal" style="--delay: 0.05s">
           <div class="release-copy">
             <p class="eyebrow">Release</p>
-            <h2>v0.1.1 is published.</h2>
+            <h2>v0.2.0 is published.</h2>
             <p class="section-lead">
               The first public alpha is ready for builders who want fast, local transcription.
               Grab the release, run the installer, and start dictating.
             </p>
             <div class="release-actions">
-              <a class="btn btn-primary" href="https://github.com/tylerbuilds/OSWispa/releases/tag/v0.1.1">Release notes</a>
+              <a class="btn btn-primary" href="https://github.com/tylerbuilds/OSWispa/releases/tag/v0.2.0">Release notes</a>
               <a class="btn btn-secondary" href="https://github.com/tylerbuilds/OSWispa">View repo</a>
             </div>
           </div>
@@ -158,11 +158,11 @@
             </div>
             <div class="release-item">
               <p class="label">Backend</p>
-              <p class="value">Whisper.cpp</p>
+              <p class="value">Local + Remote (opt-in)</p>
             </div>
             <div class="release-item">
               <p class="label">Hotkey</p>
-              <p class="value">Ctrl + Super</p>
+              <p class="value">Configurable</p>
             </div>
           </div>
         </div>
@@ -218,7 +218,7 @@
                 <span class="step-index">01</span>
                 <div>
                   <h3>Hold the hotkey</h3>
-                  <p>Press <span class="kbd">Ctrl</span> + <span class="kbd">Super</span> to start recording.</p>
+                  <p>Press your configured hotkey to start recording.</p>
                 </div>
               </div>
               <div class="step">
@@ -424,15 +424,17 @@ sudo systemctl start ydotool</code></pre>
           <article class="faq-item reveal" style="--delay: 0.3s">
             <h3>How do I change the hotkey?</h3>
             <p>
-              Edit <code>~/.config/oswispa/config.json</code> and set the hotkey modifiers:
+              Open Settings from the tray icon, then configure modifiers and an optional trigger key.
+              You can still edit <code>~/.config/oswispa/config.json</code> directly:
             </p>
             <pre><code>"hotkey": {
   "ctrl": true,
   "alt": false,
   "shift": true,
-  "super_key": false
+  "super_key": false,
+  "trigger_key": "space"
 }</code></pre>
-            <p>Restart OSWispa after changing the config.</p>
+            <p>Changes apply immediately.</p>
           </article>
           <article class="faq-item reveal" style="--delay: 0.35s">
             <h3>How do I check if OSWispa is running?</h3>
@@ -441,6 +443,16 @@ sudo systemctl start ydotool</code></pre>
 # or
 pgrep -f oswispa</code></pre>
             <p>The system tray icon also indicates active status.</p>
+          </article>
+          <article class="faq-item reveal" style="--delay: 0.4s">
+            <h3>Can I use a VPS instead of local models?</h3>
+            <p>
+              Yes. In Settings, switch Backend mode to <code>Remote VPS</code>, set your endpoint,
+              and optionally store an API key securely. HTTPS is required by default.
+            </p>
+            <p>
+              OSWispa remains local-first and can fall back to local models when available.
+            </p>
           </article>
         </div>
       </section>
@@ -469,7 +481,7 @@ pgrep -f oswispa</code></pre>
       </div>
       <div class="footer-links">
         <div class="footer-link-group">
-          <a href="https://github.com/tylerbuilds/OSWispa/releases/tag/v0.1.1">Release</a>
+          <a href="https://github.com/tylerbuilds/OSWispa/releases/tag/v0.2.0">Release</a>
           <a href="https://github.com/tylerbuilds/OSWispa">GitHub</a>
           <a href="https://github.com/tylerbuilds/OSWispa/issues">Issues</a>
           <a href="https://github.com/tylerbuilds/OSWispa/blob/master/LICENSE">MIT License</a>

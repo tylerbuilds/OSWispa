@@ -4,7 +4,7 @@ Welcome to OSWispa! This guide will help you get the most out of your new voice-
 
 ## How to Record
 
-1.  **Hotkey**: Press and hold **Ctrl + Super** (default).
+1.  **Hotkey**: Press and hold your configured hotkey (**Ctrl + Super** by default).
     - You'll hear a subtle "beep" (if audio feedback is enabled) and see a "Recording..." notification.
 2.  **Speak**: Talk naturally. OSWispa uses OpenAI's Whisper models locally on your machine.
 3.  **Release**: Let go of the keys.
@@ -19,8 +19,8 @@ Welcome to OSWispa! This guide will help you get the most out of your new voice-
 ## Settings
 
 Right-click the OSWispa icon in your system tray to:
-- Change your hotkey.
-- Select a different Whisper model.
+- Change hotkey modifiers and optional trigger key.
+- Select or import a different Whisper model.
 - Enable/Disable audio feedback.
 - Toggle auto-paste.
-
+- Configure optional remote VPS backend.
