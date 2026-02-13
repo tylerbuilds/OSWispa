@@ -13,6 +13,7 @@ target/
 .DS_Store
 Thumbs.db
 ._*
+.fuse_hidden*
 
 # Environment and config
 .env
