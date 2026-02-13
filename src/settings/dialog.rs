@@ -708,7 +708,7 @@ fn create_backend_tab(
     match config.backend {
         TranscriptionBackend::Local => backend_combo.set_active_id(Some("local")),
         TranscriptionBackend::Remote => backend_combo.set_active_id(Some("remote")),
-    }
+    };
     mode_box.append(&backend_combo);
     vbox.append(&mode_box);
 
