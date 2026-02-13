@@ -25,6 +25,8 @@ static PUNCTUATION_COMMANDS: LazyLock<Vec<(&'static str, &'static str)>> = LazyL
         ("open quote", "\""),
         ("close quote", "\""),
         ("quote", "\""),
+        ("quotation mark", "\""),
+        ("double quote", "\""),
         ("open paren", "("),
         ("close paren", ")"),
         ("open parenthesis", "("),
@@ -54,6 +56,7 @@ static PUNCTUATION_COMMANDS: LazyLock<Vec<(&'static str, &'static str)>> = LazyL
         // Formatting commands
         ("new line", "\n"),
         ("newline", "\n"),
+        ("line break", "\n"),
         ("new paragraph", "\n\n"),
         ("tab", "\t"),
     ]
@@ -115,8 +118,14 @@ pub fn apply_punctuation_commands(text: &str) -> String {
     let space_before_punct = Regex::new(r" ([.,!?;:])").unwrap();
     result = space_before_punct.replace_all(&result, "$1").to_string();
 
-    // Trim and return
-    result.trim().to_string()
+    // Normalize spacing around explicit line breaks from voice commands.
+    let space_around_newline = Regex::new(r"[ \t]*\n[ \t]*").unwrap();
+    result = space_around_newline.replace_all(&result, "\n").to_string();
+
+    // Trim horizontal whitespace only; preserve intentional newlines.
+    result
+        .trim_matches(|c| c == ' ' || c == '\t')
+        .to_string()
 }
 
 /// Check if a word is a punctuation command
@@ -171,6 +180,17 @@ mod tests {
             apply_punctuation_commands("hello new line world"),
             "hello\nworld"
         );
+    }
+
+    #[test]
+    fn test_quotation_mark_alias() {
+        let output = apply_punctuation_commands("hello quotation mark world quotation mark");
+        assert_eq!(output.matches('"').count(), 2);
+    }
+
+    #[test]
+    fn test_trailing_newline_preserved() {
+        assert_eq!(apply_punctuation_commands("note new line"), "note\n");
     }
 
     #[test]
