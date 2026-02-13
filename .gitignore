@@ -12,6 +12,7 @@ target/
 # OS files
 .DS_Store
 Thumbs.db
+._*
 
 # Environment and config
 .env
