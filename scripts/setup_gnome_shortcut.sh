@@ -9,7 +9,7 @@ BINDING="<Control><Super>"
 # Check if already exists
 EXISTING=$(/usr/bin/gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings)
 if [[ $EXISTING == *"$COMMAND"* ]]; then
-    echo "Snapshot already exists or command is already bound."
+    echo "Shortcut already exists or command is already bound."
     exit 0
 fi
 
