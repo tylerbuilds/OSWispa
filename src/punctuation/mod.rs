@@ -20,7 +20,6 @@ static PUNCTUATION_COMMANDS: LazyLock<Vec<(&'static str, &'static str)>> = LazyL
         ("semicolon", ";"),
         ("colon", ":"),
         ("ellipsis", "..."),
-
         // Quotes and brackets
         ("open quote", "\""),
         ("close quote", "\""),
@@ -35,7 +34,6 @@ static PUNCTUATION_COMMANDS: LazyLock<Vec<(&'static str, &'static str)>> = LazyL
         ("close bracket", "]"),
         ("open brace", "{"),
         ("close brace", "}"),
-
         // Other punctuation
         ("hyphen", "-"),
         ("dash", "—"),
@@ -52,7 +50,6 @@ static PUNCTUATION_COMMANDS: LazyLock<Vec<(&'static str, &'static str)>> = LazyL
         ("equals sign", "="),
         ("slash", "/"),
         ("backslash", "\\"),
-
         // Formatting commands
         ("new line", "\n"),
         ("newline", "\n"),
@@ -107,7 +104,9 @@ pub fn apply_punctuation_commands(text: &str) -> String {
             _ => replacement.to_string(),
         };
 
-        result = regex.replace_all(&result, formatted_replacement.as_str()).to_string();
+        result = regex
+            .replace_all(&result, formatted_replacement.as_str())
+            .to_string();
     }
 
     // Clean up multiple spaces
@@ -123,9 +122,7 @@ pub fn apply_punctuation_commands(text: &str) -> String {
     result = space_around_newline.replace_all(&result, "\n").to_string();
 
     // Trim horizontal whitespace only; preserve intentional newlines.
-    result
-        .trim_matches(|c| c == ' ' || c == '\t')
-        .to_string()
+    result.trim_matches(|c| c == ' ' || c == '\t').to_string()
 }
 
 /// Check if a word is a punctuation command
@@ -141,7 +138,10 @@ mod tests {
     #[test]
     fn test_period() {
         assert_eq!(apply_punctuation_commands("hello period"), "hello.");
-        assert_eq!(apply_punctuation_commands("hello world period"), "hello world.");
+        assert_eq!(
+            apply_punctuation_commands("hello world period"),
+            "hello world."
+        );
     }
 
     #[test]
@@ -195,18 +195,12 @@ mod tests {
 
     #[test]
     fn test_exclamation() {
-        assert_eq!(
-            apply_punctuation_commands("wow exclamation point"),
-            "wow!"
-        );
+        assert_eq!(apply_punctuation_commands("wow exclamation point"), "wow!");
     }
 
     #[test]
     fn test_no_commands() {
-        assert_eq!(
-            apply_punctuation_commands("hello world"),
-            "hello world"
-        );
+        assert_eq!(apply_punctuation_commands("hello world"), "hello world");
     }
 
     #[test]

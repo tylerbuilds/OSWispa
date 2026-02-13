@@ -19,7 +19,7 @@ use std::fs;
 use std::sync::Arc;
 
 use std::time::{Duration, Instant};
-use tracing::{debug, info, error};
+use tracing::{debug, error, info};
 
 /// Time threshold for detecting a "quick tap" (cancel gesture)
 const QUICK_TAP_THRESHOLD_MS: u64 = 200;
@@ -191,9 +191,9 @@ fn is_hotkey_active(pressed_keys: &HashSet<Key>, config: &HotkeyConfig) -> bool 
         .unwrap_or(true);
 
     // Stricter check: no non-modifier key except configured trigger key.
-    let has_unconfigured_non_modifier = pressed_keys.iter().any(|k| {
-        !MODIFIER_KEYS.contains(k) && trigger.as_ref().map(|t| t != k).unwrap_or(true)
-    });
+    let has_unconfigured_non_modifier = pressed_keys
+        .iter()
+        .any(|k| !MODIFIER_KEYS.contains(k) && trigger.as_ref().map(|t| t != k).unwrap_or(true));
 
     let has_activation_key =
         config.ctrl || config.alt || config.shift || config.super_key || trigger.is_some();
@@ -236,14 +236,17 @@ fn format_hotkey(config: &HotkeyConfig) -> String {
 pub fn listen_for_hotkey(
     event_tx: Sender<AppEvent>,
     config_rx: Receiver<Arc<Config>>,
-    initial_config: Arc<Config>
+    initial_config: Arc<Config>,
 ) -> Result<()> {
     info!("Starting hotkey listener...");
 
     let mut config = initial_config;
     let mut keyboards = find_keyboards().context("Failed to find keyboard devices")?;
-    
-    info!("Monitoring {} keyboard device(s) for hotkeys", keyboards.len());
+
+    info!(
+        "Monitoring {} keyboard device(s) for hotkeys",
+        keyboards.len()
+    );
 
     let mut hotkey_str = format_hotkey(&config.hotkey);
     info!("Hotkey listener active: Hold {} to record", hotkey_str);
@@ -255,7 +258,7 @@ pub fn listen_for_hotkey(
 
     // Use nix for poll
     use std::os::unix::io::AsRawFd;
-    
+
     loop {
         // Check for config updates
         while let Ok(new_config) = config_rx.try_recv() {
@@ -266,18 +269,18 @@ pub fn listen_for_hotkey(
         }
 
         // Create poll fd list for all keyboards
-        let mut pollfds: Vec<libc::pollfd> = keyboards.iter().map(|kb| {
-            libc::pollfd {
+        let mut pollfds: Vec<libc::pollfd> = keyboards
+            .iter()
+            .map(|kb| libc::pollfd {
                 fd: kb.as_raw_fd(),
                 events: libc::POLLIN,
                 revents: 0,
-            }
-        }).collect();
+            })
+            .collect();
 
         // Poll with 100ms timeout
-        let poll_result = unsafe {
-            libc::poll(pollfds.as_mut_ptr(), pollfds.len() as libc::nfds_t, 100)
-        };
+        let poll_result =
+            unsafe { libc::poll(pollfds.as_mut_ptr(), pollfds.len() as libc::nfds_t, 100) };
 
         if poll_result < 0 {
             let err = std::io::Error::last_os_error();
@@ -320,7 +323,7 @@ pub fn listen_for_hotkey(
                                     }
                                     _ => {}
                                 }
-                                
+
                                 let combo_active = is_hotkey_active(&pressed_keys, &config.hotkey);
 
                                 if combo_active && !is_recording {
@@ -330,7 +333,10 @@ pub fn listen_for_hotkey(
                                     let _ = event_tx.send(AppEvent::StartRecording);
                                 } else if !combo_active && is_recording {
                                     let was_quick_tap = recording_start_time
-                                        .map(|t| t.elapsed() < Duration::from_millis(QUICK_TAP_THRESHOLD_MS))
+                                        .map(|t| {
+                                            t.elapsed()
+                                                < Duration::from_millis(QUICK_TAP_THRESHOLD_MS)
+                                        })
                                         .unwrap_or(false);
 
                                     is_recording = false;

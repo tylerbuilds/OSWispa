@@ -6,7 +6,7 @@ This guide is for maintainers and contributors preparing to launch or mirror OSW
 
 1.  **Branching**: Ensure you are on the `master` branch.
 2.  **Versioning**: Update the version in `Cargo.toml` if making a formal release.
-3.  **Tags**: Create a git tag: `git tag -a v0.2.0 -m \"OSWispa v0.2.0 release\"`.
+3.  **Tags**: Create a git tag: `git tag -a v0.2.1 -m \"OSWispa v0.2.1 release\"`.
 4.  **GitHub Actions**: (Optional) Set up a CI pipeline to build binaries for multiple platforms.
 
 ## Multi-Platform Roadmap

@@ -391,7 +391,10 @@ fn load_history() -> Vec<ClipboardEntry> {
 fn save_history(history: &[ClipboardEntry]) {
     let history_path = get_data_dir().join("history.json");
     let _ = fs::create_dir_all(get_data_dir());
-    let _ = fs::write(&history_path, serde_json::to_string_pretty(history).unwrap());
+    let _ = fs::write(
+        &history_path,
+        serde_json::to_string_pretty(history).unwrap(),
+    );
 }
 
 fn main() -> Result<()> {
@@ -416,10 +419,7 @@ fn main() -> Result<()> {
         "Language: {}, Audio feedback: {}",
         initial_config.language, initial_config.audio_feedback
     );
-    info!(
-        "Hotkey: {}",
-        format_hotkey(&initial_config.hotkey)
-    );
+    info!("Hotkey: {}", format_hotkey(&initial_config.hotkey));
     info!("Backend: {:?}", initial_config.backend);
     if initial_config.vad.enabled {
         info!(
@@ -517,26 +517,24 @@ fn main() -> Result<()> {
         use std::os::unix::net::UnixListener;
         let socket_path = get_socket_path();
         let socket_path_display = socket_path.display().to_string();
-        
+
         // Remove old socket if exists
         let _ = std::fs::remove_file(&socket_path);
-        
+
         if let Some(parent) = socket_path.parent() {
             let _ = std::fs::create_dir_all(parent);
         }
 
         match UnixListener::bind(&socket_path) {
             Ok(listener) => {
-                let _ = std::fs::set_permissions(
-                    &socket_path,
-                    std::fs::Permissions::from_mode(0o600),
-                );
+                let _ =
+                    std::fs::set_permissions(&socket_path, std::fs::Permissions::from_mode(0o600));
                 info!("Unix socket listener started at {}", socket_path_display);
                 info!(
                     "To toggle recording, run: printf toggle | nc -U {}",
                     socket_path_display
                 );
-                
+
                 for stream in listener.incoming() {
                     match stream {
                         Ok(mut stream) => {
@@ -581,10 +579,7 @@ fn main() -> Result<()> {
     });
 
     info!("All workers started.");
-    info!(
-        "Hotkey: {}",
-        format_hotkey(&initial_config.hotkey)
-    );
+    info!("Hotkey: {}", format_hotkey(&initial_config.hotkey));
 
     // Main event loop
     for event in event_rx {
@@ -600,7 +595,7 @@ fn main() -> Result<()> {
                 let mut state = state_for_main.lock().unwrap();
                 state.is_recording = true;
                 drop(state);
-                
+
                 if let Err(e) = record_tx.send(RecordCommand::Start) {
                     error!("Failed to send start command: {}", e);
                 }

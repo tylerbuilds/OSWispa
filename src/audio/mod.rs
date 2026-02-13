@@ -24,7 +24,7 @@ pub fn audio_worker(
     info!("Audio worker thread started");
     let recording = Arc::new(AtomicBool::new(false));
     let cancelled = Arc::new(AtomicBool::new(false));
-    
+
     let mut _recording_thread: Option<std::thread::JoinHandle<()>> = None;
 
     for cmd in record_rx {
@@ -47,7 +47,7 @@ pub fn audio_worker(
                 _recording_thread = Some(std::thread::spawn(move || {
                     info!("AudioWorker: Starting arecord session");
                     let result = run_arecord_session(&recording_clone, &status_tx_clone);
-                    
+
                     match result {
                         Ok(path) => {
                             if cancelled_clone.load(Ordering::SeqCst) {
@@ -62,13 +62,15 @@ pub fn audio_worker(
                         Err(e) => {
                             if !cancelled_clone.load(Ordering::SeqCst) {
                                 error!("arecord session failed: {}", e);
-                                let _ = status_tx_clone
-                                    .send(AppEvent::Error(format!("Audio recording failed: {}", e)));
+                                let _ = status_tx_clone.send(AppEvent::Error(format!(
+                                    "Audio recording failed: {}",
+                                    e
+                                )));
                             }
                             let _ = audio_tx_clone.send(None);
                         }
                     }
-                    
+
                     recording_clone.store(false, Ordering::SeqCst);
                 }));
             }
@@ -107,7 +109,7 @@ fn run_arecord_session(
         .arg("S16_LE")
         .arg(&audio_path)
         .stdout(Stdio::null())
-        .stderr(Stdio::null()) 
+        .stderr(Stdio::null())
         .spawn()
         .context("Failed to spawn 'arecord'. Is alsa-utils installed?")?;
 
@@ -136,7 +138,7 @@ fn run_arecord_session(
 
     // Stop requested (or loop broke). Terminate process cleanly.
     debug!("Stopping arecord PID {}", child_pid);
-    
+
     // Send SIGTERM
     let _ = Command::new("kill")
         .arg("-TERM")
@@ -150,11 +152,14 @@ fn run_arecord_session(
     if !audio_path.exists() {
         anyhow::bail!("Audio file not created");
     }
-    
+
     let metadata = std::fs::metadata(&audio_path)?;
     if metadata.len() < 100 {
         let _ = std::fs::remove_file(&audio_path);
-        anyhow::bail!("Audio file too small ({} bytes), recording failed", metadata.len());
+        anyhow::bail!(
+            "Audio file too small ({} bytes), recording failed",
+            metadata.len()
+        );
     }
 
     info!("Audio file ready: {} bytes", metadata.len());

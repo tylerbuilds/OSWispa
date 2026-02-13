@@ -14,7 +14,6 @@ pub struct ModelInfo {
     pub size_mb: u32,
     pub url: &'static str,
     pub description: &'static str,
-
 }
 
 /// Lightweight model profile derived from model file size.
@@ -33,7 +32,6 @@ pub const AVAILABLE_MODELS: &[ModelInfo] = &[
         size_mb: 75,
         url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en.bin",
         description: "Fastest, basic accuracy",
-
     },
     ModelInfo {
         name: "Tiny (Multilingual)",
@@ -41,7 +39,6 @@ pub const AVAILABLE_MODELS: &[ModelInfo] = &[
         size_mb: 75,
         url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin",
         description: "Fastest, supports all languages",
-
     },
     ModelInfo {
         name: "Base (English)",
@@ -49,7 +46,6 @@ pub const AVAILABLE_MODELS: &[ModelInfo] = &[
         size_mb: 142,
         url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin",
         description: "Fast, good accuracy (recommended)",
-
     },
     ModelInfo {
         name: "Base (Multilingual)",
@@ -57,7 +53,6 @@ pub const AVAILABLE_MODELS: &[ModelInfo] = &[
         size_mb: 142,
         url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin",
         description: "Fast, good accuracy, all languages",
-
     },
     ModelInfo {
         name: "Small (English)",
@@ -65,7 +60,6 @@ pub const AVAILABLE_MODELS: &[ModelInfo] = &[
         size_mb: 466,
         url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en.bin",
         description: "Medium speed, better accuracy",
-
     },
     ModelInfo {
         name: "Small (Multilingual)",
@@ -73,7 +67,6 @@ pub const AVAILABLE_MODELS: &[ModelInfo] = &[
         size_mb: 466,
         url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin",
         description: "Medium speed, better accuracy, all languages",
-
     },
     ModelInfo {
         name: "Medium (English)",
@@ -81,7 +74,6 @@ pub const AVAILABLE_MODELS: &[ModelInfo] = &[
         size_mb: 1500,
         url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.en.bin",
         description: "Slow, high accuracy",
-
     },
     ModelInfo {
         name: "Large",
@@ -89,7 +81,6 @@ pub const AVAILABLE_MODELS: &[ModelInfo] = &[
         size_mb: 3000,
         url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin",
         description: "Slowest, best accuracy, all languages",
-
     },
 ];
 
@@ -118,7 +109,10 @@ pub fn get_model_path(model: &ModelInfo) -> PathBuf {
 }
 
 fn is_supported_model_path(path: &Path) -> bool {
-    let ext = path.extension().and_then(|e| e.to_str()).unwrap_or_default();
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or_default();
     matches!(ext, "bin" | "gguf")
 }
 
@@ -231,7 +225,9 @@ where
     let client = reqwest::Client::new();
     let response = client.get(model.url).send().await?;
 
-    let total_size = response.content_length().unwrap_or(model.size_mb as u64 * 1024 * 1024);
+    let total_size = response
+        .content_length()
+        .unwrap_or(model.size_mb as u64 * 1024 * 1024);
     let mut downloaded: u64 = 0;
 
     let mut file = std::fs::File::create(&temp_path)?;

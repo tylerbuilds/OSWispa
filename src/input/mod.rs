@@ -17,11 +17,8 @@ pub fn copy_to_clipboard(text: &str) -> Result<()> {
     info!("Copying {} chars to clipboard", text.len());
 
     let opts = Options::new();
-    opts.copy(
-        Source::Bytes(text.as_bytes().into()),
-        MimeType::Text,
-    )
-    .context("Failed to copy to Wayland clipboard")?;
+    opts.copy(Source::Bytes(text.as_bytes().into()), MimeType::Text)
+        .context("Failed to copy to Wayland clipboard")?;
 
     debug!("Text copied to clipboard successfully");
     Ok(())
@@ -35,9 +32,7 @@ pub fn paste_text(_text: &str) -> Result<()> {
     info!("Pasting clipboard contents via simulated Ctrl+V");
 
     // First, try to check if ydotoold is running
-    let daemon_check = Command::new("pgrep")
-        .arg("ydotoold")
-        .output();
+    let daemon_check = Command::new("pgrep").arg("ydotoold").output();
 
     match daemon_check {
         Ok(output) if output.status.success() => {
@@ -66,7 +61,7 @@ fn paste_with_wtype_ctrl_v() -> Result<()> {
         .status()
         .context(
             "Failed to run wtype for Ctrl+V fallback. Install with: sudo apt install wtype\n\
-            Note: wtype only works on wlroots-based compositors, not GNOME."
+            Note: wtype only works on wlroots-based compositors, not GNOME.",
         )?;
 
     if !status.success() {
@@ -118,9 +113,10 @@ pub fn copy_to_clipboard_cmd(text: &str) -> Result<()> {
 #[allow(dead_code)]
 pub fn get_from_clipboard() -> Result<String> {
     use std::io::Read;
-    use wl_clipboard_rs::paste::{get_contents, ClipboardType, Seat, MimeType};
+    use wl_clipboard_rs::paste::{get_contents, ClipboardType, MimeType, Seat};
 
-    let (mut pipe, _mime_type) = get_contents(ClipboardType::Regular, Seat::Unspecified, MimeType::Text)?;
+    let (mut pipe, _mime_type) =
+        get_contents(ClipboardType::Regular, Seat::Unspecified, MimeType::Text)?;
 
     let mut text = String::new();
     pipe.read_to_string(&mut text)?;

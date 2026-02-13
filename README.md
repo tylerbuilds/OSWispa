@@ -12,7 +12,7 @@ A privacy-focused, local-first voice transcription tool powered by [Whisper.cpp]
 
 ## 🚧 Project Status & Transparency
 
-**Current State:** v0.2.0 (Alpha)
+**Current State:** v0.2.1 (Alpha)
 
 OSWispa is a **Linux-first** project, currently optimized for **Ubuntu/Debian** systems.
 

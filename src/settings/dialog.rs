@@ -5,14 +5,14 @@
 
 use crate::models::{self, ModelBenchmark, ModelInfo, AVAILABLE_MODELS};
 use crate::{
-    clear_remote_api_key, get_config_dir, get_remote_api_key, set_remote_api_key, AppEvent,
-    Config, HotkeyConfig, TranscriptionBackend,
+    clear_remote_api_key, get_config_dir, get_remote_api_key, set_remote_api_key, AppEvent, Config,
+    HotkeyConfig, TranscriptionBackend,
 };
 use crossbeam_channel::Sender;
 use gtk4::prelude::*;
 use gtk4::{
-    Application, ApplicationWindow, Box as GtkBox, Button, CheckButton, ComboBoxText, Entry,
-    Grid, Label, Notebook, Orientation, ScrolledWindow, Separator, SpinButton,
+    Application, ApplicationWindow, Box as GtkBox, Button, CheckButton, ComboBoxText, Entry, Grid,
+    Label, Notebook, Orientation, ScrolledWindow, Separator, SpinButton,
 };
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -506,7 +506,12 @@ fn create_models_tab(
         vbox.append(&custom_label);
 
         for model_path in custom_models {
-            let row = create_custom_model_row(&model_path, config, config_state.clone(), event_tx.clone());
+            let row = create_custom_model_row(
+                &model_path,
+                config,
+                config_state.clone(),
+                event_tx.clone(),
+            );
             vbox.append(&row);
         }
     }
@@ -564,7 +569,10 @@ fn create_custom_model_row(
                 if let Ok(mut guard) = config_state_clone.write() {
                     *guard = new_config;
                 }
-                info!("Active model changed to custom path: {:?}", model_path_clone);
+                info!(
+                    "Active model changed to custom path: {:?}",
+                    model_path_clone
+                );
                 let _ = event_tx.send(AppEvent::ReloadConfig);
             }
         });
@@ -593,7 +601,10 @@ fn create_model_row(
     name_label.add_css_class("heading");
     info_box.append(&name_label);
 
-    let desc_label = Label::new(Some(&format!("{} • {}MB", model.description, model.size_mb)));
+    let desc_label = Label::new(Some(&format!(
+        "{} • {}MB",
+        model.description, model.size_mb
+    )));
     desc_label.set_halign(gtk4::Align::Start);
     desc_label.add_css_class("dim-label");
     info_box.append(&desc_label);
@@ -705,7 +716,8 @@ fn create_backend_tab(
     endpoint_box.append(&Label::new(Some("Endpoint URL:")));
     let endpoint_entry = Entry::new();
     endpoint_entry.set_hexpand(true);
-    endpoint_entry.set_placeholder_text(Some("https://your-vps.example.com/v1/audio/transcriptions"));
+    endpoint_entry
+        .set_placeholder_text(Some("https://your-vps.example.com/v1/audio/transcriptions"));
     endpoint_entry.set_text(&config.remote_backend.endpoint);
     endpoint_box.append(&endpoint_entry);
     vbox.append(&endpoint_box);

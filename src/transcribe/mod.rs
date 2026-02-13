@@ -211,7 +211,10 @@ fn transcribe_with_fallback(audio_path: &PathBuf, config: &Config) -> Result<Str
 
     // Check available VRAM
     let available_vram = get_available_vram();
-    info!("Available VRAM: {:.2} GB", available_vram as f64 / 1024.0 / 1024.0 / 1024.0);
+    info!(
+        "Available VRAM: {:.2} GB",
+        available_vram as f64 / 1024.0 / 1024.0 / 1024.0
+    );
 
     // Strategy based on VRAM availability
     if available_vram >= MIN_VRAM_BYTES {
@@ -249,13 +252,18 @@ fn transcribe_with_fallback(audio_path: &PathBuf, config: &Config) -> Result<Str
         }
     } else {
         // Low VRAM - skip straight to fallback model if available
-        warn!("Low VRAM detected ({:.2} GB < {:.2} GB threshold), skipping primary GPU",
-              available_vram as f64 / 1024.0 / 1024.0 / 1024.0,
-              MIN_VRAM_BYTES as f64 / 1024.0 / 1024.0 / 1024.0);
+        warn!(
+            "Low VRAM detected ({:.2} GB < {:.2} GB threshold), skipping primary GPU",
+            available_vram as f64 / 1024.0 / 1024.0 / 1024.0,
+            MIN_VRAM_BYTES as f64 / 1024.0 / 1024.0 / 1024.0
+        );
 
         if let Some(fallback) = fallback_model {
             if fallback.exists() {
-                info!("Trying fallback model on GPU (smaller footprint): {:?}", fallback);
+                info!(
+                    "Trying fallback model on GPU (smaller footprint): {:?}",
+                    fallback
+                );
                 match transcribe_with_model(audio_path, fallback, config, true) {
                     Ok(text) if !is_garbage_output(text.trim()) => {
                         return Ok(text);
@@ -293,7 +301,10 @@ fn transcribe_with_fallback(audio_path: &PathBuf, config: &Config) -> Result<Str
     }
 
     // Last resort: primary model on CPU
-    info!("Trying primary model on CPU (last resort): {:?}", primary_model);
+    info!(
+        "Trying primary model on CPU (last resort): {:?}",
+        primary_model
+    );
     transcribe_with_model(audio_path, primary_model, config, false)
 }
 
@@ -305,7 +316,10 @@ fn transcribe_with_model(
     use_gpu: bool,
 ) -> Result<String> {
     let mode_str = if use_gpu { "GPU" } else { "CPU" };
-    info!("Creating Whisper context ({} mode) for {:?}", mode_str, model_path);
+    info!(
+        "Creating Whisper context ({} mode) for {:?}",
+        mode_str, model_path
+    );
 
     // Create context parameters
     let mut ctx_params = WhisperContextParameters::default();
@@ -315,7 +329,9 @@ fn transcribe_with_model(
 
     // Lazy initialization - create context just for this transcription
     let ctx = WhisperContext::new_with_params(
-        model_path.to_str().ok_or_else(|| anyhow::anyhow!("Invalid model path"))?,
+        model_path
+            .to_str()
+            .ok_or_else(|| anyhow::anyhow!("Invalid model path"))?,
         ctx_params,
     )?;
 
@@ -357,8 +373,10 @@ fn get_available_vram() -> u64 {
                 // Only consider GPUs with significant VRAM (>1GB = discrete GPU)
                 if total > 1024 * 1024 * 1024 {
                     let available = total.saturating_sub(used);
-                    debug!("Found GPU at {}: total={}, used={}, available={}",
-                           used_path, total, used, available);
+                    debug!(
+                        "Found GPU at {}: total={}, used={}, available={}",
+                        used_path, total, used, available
+                    );
                     return available;
                 }
             }
@@ -610,8 +628,14 @@ mod tests {
 
     #[test]
     fn test_validate_remote_endpoint_https_required() {
-        assert!(validate_remote_endpoint("https://example.com/v1/audio/transcriptions", false).is_ok());
-        assert!(validate_remote_endpoint("http://example.com/v1/audio/transcriptions", false).is_err());
-        assert!(validate_remote_endpoint("http://example.com/v1/audio/transcriptions", true).is_ok());
+        assert!(
+            validate_remote_endpoint("https://example.com/v1/audio/transcriptions", false).is_ok()
+        );
+        assert!(
+            validate_remote_endpoint("http://example.com/v1/audio/transcriptions", false).is_err()
+        );
+        assert!(
+            validate_remote_endpoint("http://example.com/v1/audio/transcriptions", true).is_ok()
+        );
     }
 }

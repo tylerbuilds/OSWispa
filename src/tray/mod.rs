@@ -43,7 +43,10 @@ impl Tray for OswispaTray {
     fn tool_tip(&self) -> ToolTip {
         let state = self.state.lock().unwrap();
         let (status, icon) = if state.is_recording {
-            ("RECORDING - Release Ctrl+Super to transcribe, ESC to cancel", "audio-input-microphone-high")
+            (
+                "RECORDING - Release Ctrl+Super to transcribe, ESC to cancel",
+                "audio-input-microphone-high",
+            )
         } else {
             ("Ready - Hold Ctrl+Super to record", "face-smile")
         };
@@ -166,7 +169,7 @@ pub fn run_tray(event_tx: Sender<AppEvent>, state: Arc<Mutex<AppState>>) -> Resu
         Err(e) => {
             tracing::error!(
                 "System tray failed: {}. Make sure AppIndicator extension is enabled:\n\
-                gnome-extensions enable ubuntu-appindicators@ubuntu.com", 
+                gnome-extensions enable ubuntu-appindicators@ubuntu.com",
                 e
             );
             Err(anyhow::anyhow!("Tray service failed: {}", e))
