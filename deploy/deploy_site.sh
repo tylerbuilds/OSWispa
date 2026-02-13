@@ -14,7 +14,10 @@ if [[ -n "${DEPLOY_KEY:-}" ]]; then
 fi
 
 rsync -rlz --delete \
+  --delete-excluded \
   --no-perms --no-owner --no-group \
+  --exclude '._*' \
+  --exclude '.DS_Store' \
   -e "${ssh_cmd[*]}" \
   website/ "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/"
 
