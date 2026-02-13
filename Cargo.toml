@@ -11,8 +11,8 @@ license = "MIT"
 cpal = "0.15"
 hound = "3.5"
 
-# Whisper.cpp bindings with ROCm GPU support
-whisper-rs = { version = "0.13", features = ["hipblas"] }
+# Whisper.cpp bindings (GPU backends enabled via crate features)
+whisper-rs = { version = "0.13", default-features = false }
 
 # Global hotkey detection (works on Wayland via evdev)
 evdev = "0.12"
@@ -64,6 +64,9 @@ futures-util = { version = "0.3", optional = true }
 [features]
 default = ["gui"]
 gui = ["gtk4", "reqwest", "tokio", "futures-util"]
+gpu-hipblas = ["whisper-rs/hipblas"]
+gpu-cuda = ["whisper-rs/cuda"]
+gpu-metal = ["whisper-rs/metal"]
 
 [profile.release]
 opt-level = 3

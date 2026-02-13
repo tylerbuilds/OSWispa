@@ -86,17 +86,14 @@ oswispa
 #### AMD GPU (ROCm)
 Required for fast transcription on AMD cards.
 1.  Install ROCm (6.0+).
-2.  Edit `Cargo.toml`: ensure `whisper-rs` uses `features = ["hipblas"]`.
-3.  Build: `AMDGPU_TARGETS="gfx1100" cargo build --release` (adjust `gfx...` for your card).
+2.  Build with ROCm feature: `AMDGPU_TARGETS="gfx1100" cargo build --release --features gpu-hipblas` (adjust `gfx...` for your card).
 
 #### NVIDIA GPU (CUDA)
 1.  Install CUDA Toolkit.
-2.  Edit `Cargo.toml`: use `features = ["cuda"]`.
-3.  Build: `cargo build --release`.
+2.  Build: `cargo build --release --features gpu-cuda`.
 
 #### macOS (Metal)
-1.  Edit `Cargo.toml`: use `features = ["metal"]`.
-2.  Build: `cargo build --release`.
+1.  Build: `cargo build --release --features gpu-metal`.
 
 ### 3. Build & Run
 ```bash
