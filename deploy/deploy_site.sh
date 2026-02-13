@@ -13,4 +13,8 @@ if [[ -n "${DEPLOY_KEY:-}" ]]; then
   ssh_cmd+=(-i "$DEPLOY_KEY")
 fi
 
-rsync -az --delete -e "${ssh_cmd[*]}" website/ "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/"
+rsync -az --delete \
+  --no-owner --no-group \
+  --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r \
+  -e "${ssh_cmd[*]}" \
+  website/ "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/"
