@@ -1,8 +1,8 @@
 [package]
 name = "oswispa"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
-description = "Voice-to-text with Whisper - hold Super+Ctrl to record and transcribe"
+description = "Voice-to-text with Whisper - local-first with configurable hotkeys and optional VPS backend"
 authors = ["OSWispa"]
 license = "MIT"
 
@@ -56,14 +56,14 @@ regex = "1.10"
 # GUI settings dialog (optional)
 gtk4 = { version = "0.7", optional = true }
 
-# Async model downloads (optional)
-reqwest = { version = "0.11", features = ["stream"], optional = true }
+# Networking (remote backend + model downloads)
+reqwest = { version = "0.11", features = ["blocking", "json", "multipart", "stream"] }
 tokio = { version = "1", features = ["rt-multi-thread", "sync"], optional = true }
 futures-util = { version = "0.3", optional = true }
 
 [features]
 default = ["gui"]
-gui = ["gtk4", "reqwest", "tokio", "futures-util"]
+gui = ["gtk4", "tokio", "futures-util"]
 gpu-hipblas = ["whisper-rs/hipblas"]
 gpu-cuda = ["whisper-rs/cuda"]
 gpu-metal = ["whisper-rs/metal"]

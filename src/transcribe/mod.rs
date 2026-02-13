@@ -7,11 +7,14 @@
 //! - Automatic fallback to smaller model when VRAM is constrained
 //! - CPU fallback when GPU is unavailable
 
-use crate::{AppEvent, Config};
+use crate::{AppEvent, Config, TranscriptionBackend};
 use anyhow::Result;
 use crossbeam_channel::{Receiver, Sender};
+use reqwest::blocking::{multipart, Client};
+use serde_json::Value;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
+use std::time::Duration;
 use tracing::{debug, error, info, warn};
 use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
 
@@ -45,8 +48,13 @@ pub fn transcription_worker(
 
         let current_config = config.read().unwrap().clone();
 
-        // Try transcription with fallback chain
-        let result = transcribe_with_fallback(&audio_path, &current_config);
+        // Select backend based on configuration.
+        let result = match current_config.backend {
+            TranscriptionBackend::Local => transcribe_with_fallback(&audio_path, &current_config),
+            TranscriptionBackend::Remote => {
+                transcribe_remote_with_local_fallback(&audio_path, &current_config)
+            }
+        };
 
         // Process result
         match result {
@@ -71,6 +79,129 @@ pub fn transcription_worker(
             debug!("Failed to remove temp audio file: {}", e);
         }
     }
+}
+
+/// Remote transcription with automatic fallback to local model execution.
+fn transcribe_remote_with_local_fallback(audio_path: &PathBuf, config: &Config) -> Result<String> {
+    match transcribe_with_remote_backend(audio_path, config) {
+        Ok(text) => Ok(text),
+        Err(err) => {
+            warn!("Remote backend transcription failed: {}", err);
+
+            if config.model_path.exists()
+                || config
+                    .fallback_model_path
+                    .as_ref()
+                    .map(|p| p.exists())
+                    .unwrap_or(false)
+            {
+                warn!("Falling back to local transcription backend");
+                transcribe_with_fallback(audio_path, config)
+            } else {
+                Err(anyhow::anyhow!(
+                    "Remote transcription failed and no local model is available: {}",
+                    err
+                ))
+            }
+        }
+    }
+}
+
+fn resolve_remote_api_key(config: &Config) -> Option<String> {
+    if let Some(env_var) = config
+        .remote_backend
+        .api_key_env
+        .as_ref()
+        .map(|v| v.trim())
+        .filter(|v| !v.is_empty())
+    {
+        return std::env::var(env_var)
+            .ok()
+            .map(|v| v.trim().to_string())
+            .filter(|v| !v.is_empty());
+    }
+
+    crate::get_remote_api_key()
+}
+
+fn validate_remote_endpoint(endpoint: &str, allow_insecure_http: bool) -> Result<()> {
+    let url = reqwest::Url::parse(endpoint)?;
+    if url.scheme() != "https" && !allow_insecure_http {
+        anyhow::bail!(
+            "Remote endpoint must use HTTPS. Enable allow_insecure_http to opt into plain HTTP."
+        );
+    }
+    Ok(())
+}
+
+fn transcribe_with_remote_backend(audio_path: &PathBuf, config: &Config) -> Result<String> {
+    let endpoint = config.remote_backend.endpoint.trim();
+    if endpoint.is_empty() {
+        anyhow::bail!("Remote backend endpoint is empty");
+    }
+
+    validate_remote_endpoint(endpoint, config.remote_backend.allow_insecure_http)?;
+
+    let timeout_ms = config.remote_backend.timeout_ms.max(1_000);
+    let client = Client::builder()
+        .timeout(Duration::from_millis(timeout_ms))
+        .build()?;
+
+    let mut form = multipart::Form::new().text("model", config.remote_backend.model.clone());
+
+    if config.language != "auto" {
+        form = form.text("language", config.language.clone());
+    }
+    if config.translate_to_english {
+        form = form.text("task", "translate");
+    }
+
+    let audio_bytes = std::fs::read(audio_path)?;
+    let audio_part = multipart::Part::bytes(audio_bytes)
+        .file_name("audio.wav")
+        .mime_str("audio/wav")?;
+    form = form.part("file", audio_part);
+
+    let mut request = client
+        .post(endpoint)
+        .header("Accept", "application/json")
+        .multipart(form);
+
+    if let Some(token) = resolve_remote_api_key(config) {
+        request = request.bearer_auth(token);
+    }
+
+    let response = request.send()?;
+    let status = response.status();
+    let body = response.text()?;
+
+    if !status.is_success() {
+        let snippet: String = body.chars().take(300).collect();
+        anyhow::bail!("Remote backend returned {}: {}", status, snippet);
+    }
+
+    if let Ok(json) = serde_json::from_str::<Value>(&body) {
+        if let Some(text) = json.get("text").and_then(|v| v.as_str()) {
+            return Ok(text.to_string());
+        }
+
+        if let Some(text) = json
+            .get("choices")
+            .and_then(|v| v.as_array())
+            .and_then(|arr| arr.first())
+            .and_then(|first| first.get("text"))
+            .and_then(|v| v.as_str())
+        {
+            return Ok(text.to_string());
+        }
+    }
+
+    let plain = body.trim();
+    if !plain.is_empty() {
+        return Ok(plain.to_string());
+    }
+
+    anyhow::bail!("Remote backend response did not include transcribed text")
 }
 
 /// Transcribe with fallback chain: Primary GPU -> Fallback GPU -> Primary CPU -> Fallback CPU
@@ -475,5 +606,12 @@ mod tests {
         let vram = get_available_vram();
         println!("Detected available VRAM: {} bytes", vram);
         // Just ensure it doesn't panic
+    }
+
+    #[test]
+    fn test_validate_remote_endpoint_https_required() {
+        assert!(validate_remote_endpoint("https://example.com/v1/audio/transcriptions", false).is_ok());
+        assert!(validate_remote_endpoint("http://example.com/v1/audio/transcriptions", false).is_err());
+        assert!(validate_remote_endpoint("http://example.com/v1/audio/transcriptions", true).is_ok());
     }
 }

@@ -65,6 +65,9 @@ pub struct HotkeyConfig {
     /// Use Super/Meta modifier (Windows key)
     #[serde(default = "default_true")]
     pub super_key: bool,
+    /// Optional trigger key used with modifiers (for example: "space", "f8", "r")
+    #[serde(default)]
+    pub trigger_key: Option<String>,
 }
 
 impl Default for HotkeyConfig {
@@ -74,6 +77,59 @@ impl Default for HotkeyConfig {
             alt: false,
             shift: false,
             super_key: true,
+            trigger_key: None,
+        }
+    }
+}
+
+/// Transcription backend selection
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum TranscriptionBackend {
+    Local,
+    Remote,
+}
+
+fn default_backend() -> TranscriptionBackend {
+    TranscriptionBackend::Local
+}
+
+/// Remote backend configuration (VPS/hosted endpoint)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RemoteBackendConfig {
+    /// Endpoint URL for transcription requests
+    #[serde(default)]
+    pub endpoint: String,
+    /// Remote model identifier (for OpenAI-compatible endpoints)
+    #[serde(default = "default_remote_model")]
+    pub model: String,
+    /// HTTP request timeout in milliseconds
+    #[serde(default = "default_remote_timeout_ms")]
+    pub timeout_ms: u64,
+    /// Allow plain HTTP instead of HTTPS (not recommended)
+    #[serde(default)]
+    pub allow_insecure_http: bool,
+    /// Optional environment variable name to read API key from
+    #[serde(default)]
+    pub api_key_env: Option<String>,
+}
+
+fn default_remote_model() -> String {
+    "whisper-1".to_string()
+}
+
+fn default_remote_timeout_ms() -> u64 {
+    20_000
+}
+
+impl Default for RemoteBackendConfig {
+    fn default() -> Self {
+        Self {
+            endpoint: String::new(),
+            model: default_remote_model(),
+            timeout_ms: default_remote_timeout_ms(),
+            allow_insecure_http: false,
+            api_key_env: None,
         }
     }
 }
@@ -173,6 +229,12 @@ pub struct Config {
     /// Enable punctuation commands (say "period" for ".")
     #[serde(default = "default_true")]
     pub punctuation_commands: bool,
+    /// Active transcription backend
+    #[serde(default = "default_backend")]
+    pub backend: TranscriptionBackend,
+    /// Remote backend settings for VPS/hosted inference
+    #[serde(default)]
+    pub remote_backend: RemoteBackendConfig,
 }
 
 fn default_true() -> bool {
@@ -199,7 +261,39 @@ impl Default for Config {
             vad: VadConfig::default(),
             streaming: StreamingConfig::default(),
             punctuation_commands: true,
+            backend: TranscriptionBackend::Local,
+            remote_backend: RemoteBackendConfig::default(),
         }
+    }
+}
+
+fn format_hotkey(hotkey: &HotkeyConfig) -> String {
+    let mut parts = Vec::new();
+    if hotkey.ctrl {
+        parts.push("Ctrl");
+    }
+    if hotkey.alt {
+        parts.push("Alt");
+    }
+    if hotkey.shift {
+        parts.push("Shift");
+    }
+    if hotkey.super_key {
+        parts.push("Super");
+    }
+    if let Some(trigger) = hotkey
+        .trigger_key
+        .as_ref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+    {
+        parts.push(trigger);
+    }
+
+    if parts.is_empty() {
+        "None".to_string()
+    } else {
+        parts.join("+")
     }
 }
 
@@ -237,6 +331,49 @@ fn load_config() -> Config {
         let _ = fs::write(&config_path, serde_json::to_string_pretty(&config).unwrap());
         config
     }
+}
+
+fn remote_api_key_path() -> PathBuf {
+    get_config_dir().join("secrets").join("remote_api_key")
+}
+
+/// Persist remote API key to a local 0600 file.
+pub fn set_remote_api_key(token: &str) -> Result<()> {
+    let token = token.trim();
+    if token.is_empty() {
+        return clear_remote_api_key();
+    }
+
+    let path = remote_api_key_path();
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    std::fs::write(&path, token)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600))?;
+    }
+
+    Ok(())
+}
+
+/// Load remote API key from local secure file.
+pub fn get_remote_api_key() -> Option<String> {
+    let path = remote_api_key_path();
+    std::fs::read_to_string(path)
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+}
+
+/// Remove remote API key from secure file fallback.
+pub fn clear_remote_api_key() -> Result<()> {
+    let path = remote_api_key_path();
+    if path.exists() {
+        std::fs::remove_file(path)?;
+    }
+    Ok(())
 }
 
 fn load_history() -> Vec<ClipboardEntry> {
@@ -280,12 +417,10 @@ fn main() -> Result<()> {
         initial_config.language, initial_config.audio_feedback
     );
     info!(
-        "Hotkey: {}{}{}{}",
-        if initial_config.hotkey.ctrl { "Ctrl+" } else { "" },
-        if initial_config.hotkey.alt { "Alt+" } else { "" },
-        if initial_config.hotkey.shift { "Shift+" } else { "" },
-        if initial_config.hotkey.super_key { "Super" } else { "" }
+        "Hotkey: {}",
+        format_hotkey(&initial_config.hotkey)
     );
+    info!("Backend: {:?}", initial_config.backend);
     if initial_config.vad.enabled {
         info!(
             "VAD enabled: threshold={}, silence={}ms",
@@ -299,19 +434,26 @@ fn main() -> Result<()> {
         );
     }
 
-    // Verify model exists
+    // Verify model exists when local backend is required at startup.
     if !initial_config.model_path.exists() {
-        error!(
-            "Whisper model not found at {:?}. Run the install script first.",
-            initial_config.model_path
-        );
-        eprintln!(
-            "\n[ERROR] Whisper model not found!\n\
-            Please run: ./install.sh\n\
-            Or manually download a model to {:?}\n",
-            initial_config.model_path
-        );
-        std::process::exit(1);
+        if initial_config.backend == TranscriptionBackend::Local {
+            error!(
+                "Whisper model not found at {:?}. Run the install script first.",
+                initial_config.model_path
+            );
+            eprintln!(
+                "\n[ERROR] Whisper model not found!\n\
+                Please run: ./install.sh\n\
+                Or manually download a model to {:?}\n",
+                initial_config.model_path
+            );
+            std::process::exit(1);
+        } else {
+            warn!(
+                "Local model {:?} not found. Remote backend is enabled; local fallback will be unavailable.",
+                initial_config.model_path
+            );
+        }
     }
 
     // Create communication channels
@@ -440,11 +582,8 @@ fn main() -> Result<()> {
 
     info!("All workers started.");
     info!(
-        "Hotkey: {}{}{}{}",
-        if initial_config.hotkey.ctrl { "Ctrl+" } else { "" },
-        if initial_config.hotkey.alt { "Alt+" } else { "" },
-        if initial_config.hotkey.shift { "Shift+" } else { "" },
-        if initial_config.hotkey.super_key { "Super" } else { "" }
+        "Hotkey: {}",
+        format_hotkey(&initial_config.hotkey)
     );
 
     // Main event loop
