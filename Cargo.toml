@@ -1,6 +1,6 @@
 [package]
 name = "oswispa"
-version = "0.2.2"
+version = "0.3.0"
 edition = "2021"
 description = "Voice-to-text with Whisper - local-first with configurable hotkeys and optional VPS backend"
 authors = ["OSWispa"]
@@ -72,3 +72,17 @@ gpu-metal = ["whisper-rs/metal"]
 opt-level = 3
 lto = true
 strip = true
+
+[package.metadata.deb]
+section = "utils"
+priority = "optional"
+assets = [
+  ["target/release/oswispa", "usr/bin/", "755"],
+  ["scripts/oswispa-toggle.sh", "usr/bin/oswispa-toggle", "755"],
+  ["packaging/linux/oswispa.desktop", "usr/share/applications/oswispa.desktop", "644"],
+  ["packaging/linux/oswispa.svg", "usr/share/icons/hicolor/scalable/apps/oswispa.svg", "644"],
+  ["README.md", "usr/share/doc/oswispa/README.md", "644"],
+  ["LICENSE", "usr/share/doc/oswispa/LICENSE", "644"],
+]
+# Additional runtime tools used by OSWispa (beyond shared libs detected automatically).
+depends = "alsa-utils, ydotool, netcat-openbsd"

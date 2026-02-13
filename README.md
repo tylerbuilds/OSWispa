@@ -12,7 +12,7 @@ A privacy-focused, local-first voice transcription tool powered by [Whisper.cpp]
 
 ## 🚧 Project Status & Transparency
 
-**Current State:** v0.2.2 (Alpha)
+**Current State:** v0.3.0 (Alpha)
 
 OSWispa is a **Linux-first** project, currently optimized for **Ubuntu/Debian** systems.
 
@@ -57,7 +57,19 @@ If you can help, please fork the repo and submit a PR! See [CONTRIBUTING.md](CON
 
 ## 🚀 Installation (Ubuntu/Debian)
 
-The easiest way to get started on Ubuntu 22.04/24.04:
+### Option A (Recommended): Install the `.deb`
+
+1. Download the latest `amd64` `.deb` from GitHub Releases.
+2. Install it with `apt` (preferred, pulls dependencies):
+
+```bash
+sudo apt install ./oswispa_*_amd64.deb
+oswispa
+```
+
+### Option B: Build From Source
+
+The source installer is best if you're hacking on OSWispa or you want to enable GPU features.
 
 ```bash
 # Clone and install

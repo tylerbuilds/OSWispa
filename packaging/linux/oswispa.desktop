@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=OSWispa
+Comment=Local-first voice dictation powered by Whisper
+Exec=oswispa
+Icon=oswispa
+Terminal=false
+Categories=Utility;Audio;
+Keywords=voice;speech;dictation;transcription;whisper;
+StartupNotify=false
+
