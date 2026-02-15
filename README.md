@@ -63,7 +63,8 @@ If you can help, please fork the repo and submit a PR! See [CONTRIBUTING.md](CON
 2. Install it with `apt` (preferred, pulls dependencies):
 
 ```bash
-sudo apt install ./oswispa_*_amd64.deb
+curl -LO https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa_amd64.deb
+sudo apt install ./oswispa_amd64.deb
 oswispa
 ```
 
