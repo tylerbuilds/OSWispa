@@ -80,4 +80,4 @@ assets = [
   ["LICENSE", "usr/share/doc/oswispa/LICENSE", "644"],
 ]
 # Additional runtime tools used by OSWispa (beyond shared libs detected automatically).
-depends = "$auto, alsa-utils, ydotool, netcat-openbsd"
+depends = "$auto, alsa-utils, ydotool, netcat-openbsd, wl-clipboard, xclip, xdotool"
