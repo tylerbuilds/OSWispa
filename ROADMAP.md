@@ -4,7 +4,7 @@ OSWispa is a local-first, privacy-first voice dictation app inspired by Wispr Fl
 
 This roadmap is intentionally versioned and biased toward shipping real artifacts people can install and run without building from source.
 
-## v0.3.0 (Next) - Standalone Linux Desktop App
+## v0.3.0 (Released) - Standalone Linux Desktop App
 
 Goal: "Download -> install/run -> dictate" on Ubuntu/Debian.
 
@@ -20,9 +20,17 @@ Engineering notes:
 - Keep Linux-first behavior unchanged.
 - Add buildability guardrails so `cargo check --no-default-features` works on macOS and Windows (prep work for v0.4.0/v0.5.0).
 
-Known Linux/Wayland constraints (won't be fully solved in v0.3.0):
+Known Linux/Wayland constraints (still true in v0.3.x):
 - Global hotkeys require `/dev/input` access (user must be in the `input` group).
 - Auto-paste uses `ydotoold`/`uinput` and may require extra permissions depending on distro/session.
+
+## v0.3.1 (Patch) - Debian Packaging Fix
+
+Goal: ensure the Ubuntu/Debian `.deb` installs cleanly by pulling in the required runtime shared libraries.
+
+Deliverables:
+- Include Debian auto-dependencies (`$auto`) alongside helper tools (`alsa-utils`, `ydotool`, `netcat-openbsd`).
+- No behavior changes: packaging-only patch.
 
 ## v0.4.0 - macOS Desktop App
 
