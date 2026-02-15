@@ -33,3 +33,30 @@ if (navToggle && nav) {
     }
   });
 }
+
+async function hydrateLatestReleaseTag() {
+  const nodes = document.querySelectorAll('[data-latest-release]');
+  if (!nodes.length) return;
+
+  try {
+    const res = await fetch('https://api.github.com/repos/tylerbuilds/OSWispa/releases/latest', {
+      headers: {
+        'Accept': 'application/vnd.github+json',
+      },
+    });
+
+    if (!res.ok) return;
+    const json = await res.json();
+    const tag = (json && json.tag_name ? String(json.tag_name) : '').trim();
+    if (!tag) return;
+
+    nodes.forEach((node) => {
+      node.textContent = tag;
+    });
+  } catch (_) {
+    // Ignore network errors; the page already renders a sensible fallback.
+  }
+}
+
+hydrateLatestReleaseTag();
+
