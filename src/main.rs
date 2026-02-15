@@ -309,6 +309,7 @@ pub fn get_config_dir() -> PathBuf {
         .unwrap_or_else(|| PathBuf::from(".oswispa"))
 }
 
+#[cfg(unix)]
 pub fn get_socket_path() -> PathBuf {
     if let Ok(runtime_dir) = std::env::var("XDG_RUNTIME_DIR") {
         return PathBuf::from(runtime_dir).join("oswispa.sock");
@@ -316,6 +317,12 @@ pub fn get_socket_path() -> PathBuf {
 
     let uid = unsafe { libc::geteuid() };
     PathBuf::from(format!("/tmp/oswispa-{}.sock", uid))
+}
+
+#[cfg(not(unix))]
+pub fn get_socket_path() -> PathBuf {
+    // Placeholder for future platform-native IPC transports.
+    std::env::temp_dir().join("oswispa.sock")
 }
 
 fn load_config() -> Config {
@@ -481,6 +488,7 @@ fn main() -> Result<()> {
             hotkey::listen_for_hotkey(event_tx_hotkey, hotkey_config_rx, config_for_initial_hotkey)
         {
             error!("Hotkey listener error: {}", e);
+            #[cfg(target_os = "linux")]
             eprintln!(
                 "\n[ERROR] Hotkey listener failed: {}\n\
                 Make sure you're in the 'input' group:\n\
@@ -488,6 +496,8 @@ fn main() -> Result<()> {
                 Then log out and back in.\n",
                 e
             );
+            #[cfg(not(target_os = "linux"))]
+            eprintln!("\n[ERROR] Hotkey listener failed: {}\n", e);
         }
     });
 
@@ -508,6 +518,8 @@ fn main() -> Result<()> {
         }
     });
 
+    #[cfg(unix)]
+    {
     // Start Unix socket listener for IPC (GNOME shortcut integration)
     let event_tx_socket = event_tx.clone();
     let state_for_socket = Arc::clone(&state);
@@ -577,6 +589,13 @@ fn main() -> Result<()> {
             }
         }
     });
+
+    }
+
+    #[cfg(not(unix))]
+    {
+        warn!("IPC listener is not implemented on this OS yet");
+    }
 
     info!("All workers started.");
     info!("Hotkey: {}", format_hotkey(&initial_config.hotkey));
@@ -682,11 +701,18 @@ fn main() -> Result<()> {
                     } else {
                         text.clone()
                     };
-                    let _ = notify_rust::Notification::new()
-                        .summary("OSWispa")
-                        .body(&format!("Transcribed: {}", preview))
-                        .timeout(3000)
-                        .show();
+                    #[cfg(target_os = "linux")]
+                    {
+                        let _ = notify_rust::Notification::new()
+                            .summary("OSWispa")
+                            .body(&format!("Transcribed: {}", preview))
+                            .timeout(3000)
+                            .show();
+                    }
+                    #[cfg(not(target_os = "linux"))]
+                    {
+                        info!("Transcribed: {}", preview);
+                    }
                 }
             }
             AppEvent::Error(msg) => {
@@ -696,11 +722,14 @@ fn main() -> Result<()> {
                     feedback::play_error_sound();
                 }
 
-                let _ = notify_rust::Notification::new()
-                    .summary("OSWispa Error")
-                    .body(&msg)
-                    .timeout(5000)
-                    .show();
+                #[cfg(target_os = "linux")]
+                {
+                    let _ = notify_rust::Notification::new()
+                        .summary("OSWispa Error")
+                        .body(&msg)
+                        .timeout(5000)
+                        .show();
+                }
             }
             AppEvent::ShowHistory => {
                 info!("Show history requested");
