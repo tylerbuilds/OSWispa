@@ -520,76 +520,79 @@ fn main() -> Result<()> {
 
     #[cfg(unix)]
     {
-    // Start Unix socket listener for IPC (GNOME shortcut integration)
-    let event_tx_socket = event_tx.clone();
-    let state_for_socket = Arc::clone(&state);
-    std::thread::spawn(move || {
-        use std::io::Read;
-        use std::os::unix::fs::PermissionsExt;
-        use std::os::unix::net::UnixListener;
-        let socket_path = get_socket_path();
-        let socket_path_display = socket_path.display().to_string();
+        // Start Unix socket listener for IPC (GNOME shortcut integration)
+        let event_tx_socket = event_tx.clone();
+        let state_for_socket = Arc::clone(&state);
+        std::thread::spawn(move || {
+            use std::io::Read;
+            use std::os::unix::fs::PermissionsExt;
+            use std::os::unix::net::UnixListener;
+            let socket_path = get_socket_path();
+            let socket_path_display = socket_path.display().to_string();
 
-        // Remove old socket if exists
-        let _ = std::fs::remove_file(&socket_path);
+            // Remove old socket if exists
+            let _ = std::fs::remove_file(&socket_path);
 
-        if let Some(parent) = socket_path.parent() {
-            let _ = std::fs::create_dir_all(parent);
-        }
+            if let Some(parent) = socket_path.parent() {
+                let _ = std::fs::create_dir_all(parent);
+            }
 
-        match UnixListener::bind(&socket_path) {
-            Ok(listener) => {
-                let _ =
-                    std::fs::set_permissions(&socket_path, std::fs::Permissions::from_mode(0o600));
-                info!("Unix socket listener started at {}", socket_path_display);
-                info!(
-                    "To toggle recording, run: printf toggle | nc -U {}",
-                    socket_path_display
-                );
+            match UnixListener::bind(&socket_path) {
+                Ok(listener) => {
+                    let _ = std::fs::set_permissions(
+                        &socket_path,
+                        std::fs::Permissions::from_mode(0o600),
+                    );
+                    info!("Unix socket listener started at {}", socket_path_display);
+                    info!(
+                        "To toggle recording, run: printf toggle | nc -U {}",
+                        socket_path_display
+                    );
 
-                for stream in listener.incoming() {
-                    match stream {
-                        Ok(mut stream) => {
-                            let mut buf = String::new();
-                            if stream.read_to_string(&mut buf).is_ok() {
-                                let cmd = buf.trim().to_ascii_lowercase();
-                                match cmd.as_str() {
-                                    "toggle" => {
-                                        let state = state_for_socket.lock().unwrap();
-                                        let is_recording = state.is_recording;
-                                        drop(state);
+                    for stream in listener.incoming() {
+                        match stream {
+                            Ok(mut stream) => {
+                                let mut buf = String::new();
+                                if stream.read_to_string(&mut buf).is_ok() {
+                                    let cmd = buf.trim().to_ascii_lowercase();
+                                    match cmd.as_str() {
+                                        "toggle" => {
+                                            let state = state_for_socket.lock().unwrap();
+                                            let is_recording = state.is_recording;
+                                            drop(state);
 
-                                        if is_recording {
-                                            let _ = event_tx_socket.send(AppEvent::StopRecording);
-                                        } else {
+                                            if is_recording {
+                                                let _ =
+                                                    event_tx_socket.send(AppEvent::StopRecording);
+                                            } else {
+                                                let _ =
+                                                    event_tx_socket.send(AppEvent::StartRecording);
+                                            }
+                                        }
+                                        "start" => {
                                             let _ = event_tx_socket.send(AppEvent::StartRecording);
                                         }
-                                    }
-                                    "start" => {
-                                        let _ = event_tx_socket.send(AppEvent::StartRecording);
-                                    }
-                                    "stop" => {
-                                        let _ = event_tx_socket.send(AppEvent::StopRecording);
-                                    }
-                                    "cancel" => {
-                                        let _ = event_tx_socket.send(AppEvent::CancelRecording);
-                                    }
-                                    _ => {
-                                        warn!("Ignoring unknown socket command: '{}'", cmd);
+                                        "stop" => {
+                                            let _ = event_tx_socket.send(AppEvent::StopRecording);
+                                        }
+                                        "cancel" => {
+                                            let _ = event_tx_socket.send(AppEvent::CancelRecording);
+                                        }
+                                        _ => {
+                                            warn!("Ignoring unknown socket command: '{}'", cmd);
+                                        }
                                     }
                                 }
                             }
+                            Err(e) => warn!("Socket connection failed: {}", e),
                         }
-                        Err(e) => warn!("Socket connection failed: {}", e),
                     }
                 }
+                Err(e) => {
+                    warn!("Failed to create Unix socket: {}", e);
+                }
             }
-            Err(e) => {
-                warn!("Failed to create Unix socket: {}", e);
-            }
-        }
-    });
-
+        });
     }
 
     #[cfg(not(unix))]
@@ -668,15 +671,23 @@ fn main() -> Result<()> {
                     feedback::play_complete_sound();
                 }
 
-                if let Err(e) = input::copy_to_clipboard(&text) {
-                    warn!("Failed to copy to clipboard: {}", e);
-                }
+                let copied = match input::copy_to_clipboard(&text) {
+                    Ok(_) => true,
+                    Err(e) => {
+                        warn!("Failed to copy to clipboard: {}", e);
+                        false
+                    }
+                };
 
-                if current_config.auto_paste {
+                // Only auto-paste if we successfully updated the clipboard; otherwise we'd risk
+                // pasting stale clipboard contents.
+                if current_config.auto_paste && copied {
                     std::thread::sleep(std::time::Duration::from_millis(150));
                     if let Err(e) = input::paste_text(&text) {
                         warn!("Failed to paste text: {}", e);
                     }
+                } else if current_config.auto_paste && !copied {
+                    warn!("Auto-paste skipped because clipboard copy failed. Paste manually from the app output or retry.");
                 }
 
                 // Add to history

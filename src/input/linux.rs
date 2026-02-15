@@ -1,8 +1,12 @@
-//! Input simulation and clipboard management for Linux (Wayland)
+//! Input simulation and clipboard management for Linux (Wayland/X11)
 //!
-//! On Wayland/Linux, we use:
-//! - wl-clipboard-rs for clipboard operations
-//! - ydotool for text input simulation (requires ydotoold daemon)
+//! On Linux we support both Wayland and X11 sessions:
+//! - Clipboard:
+//!   - Wayland: `wl-clipboard-rs` (with optional `wl-copy` fallback)
+//!   - X11: `xclip` (clipboard)
+//! - Text insertion:
+//!   - X11: `xdotool` Ctrl+V when available
+//!   - Wayland/X11: `ydotool` Ctrl+V (requires `ydotoold`)
 //!
 //! ydotool works by writing to /dev/uinput which requires permissions.
 
@@ -12,26 +16,140 @@ use std::process::{Command, Stdio};
 use tracing::{debug, info, warn};
 use wl_clipboard_rs::copy::{MimeType, Options, Source};
 
-/// Copy text to the Wayland clipboard
-pub fn copy_to_clipboard(text: &str) -> Result<()> {
-    info!("Copying {} chars to clipboard", text.len());
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SessionKind {
+    Wayland,
+    X11,
+    Unknown,
+}
 
+fn session_kind() -> SessionKind {
+    let xdg = std::env::var("XDG_SESSION_TYPE")
+        .unwrap_or_default()
+        .trim()
+        .to_ascii_lowercase();
+
+    if xdg == "wayland" {
+        return SessionKind::Wayland;
+    }
+    if xdg == "x11" {
+        return SessionKind::X11;
+    }
+
+    // Prefer explicit Wayland indicator. Note: DISPLAY is often set on Wayland due to XWayland.
+    if std::env::var_os("WAYLAND_DISPLAY").is_some() {
+        return SessionKind::Wayland;
+    }
+    if std::env::var_os("DISPLAY").is_some() {
+        return SessionKind::X11;
+    }
+
+    SessionKind::Unknown
+}
+
+fn command_exists(name: &str) -> bool {
+    std::env::var_os("PATH")
+        .map(|paths| {
+            for dir in std::env::split_paths(&paths) {
+                let candidate = dir.join(name);
+                if candidate.is_file() {
+                    return true;
+                }
+            }
+            false
+        })
+        .unwrap_or(false)
+}
+
+fn copy_to_wayland_clipboard_rs(text: &str) -> Result<()> {
     let opts = Options::new();
     opts.copy(Source::Bytes(text.as_bytes().into()), MimeType::Text)
         .context("Failed to copy to Wayland clipboard")?;
 
-    debug!("Text copied to clipboard successfully");
+    debug!("Text copied to Wayland clipboard");
     Ok(())
 }
 
-/// Paste text by simulating keyboard input
+fn copy_to_x11_clipboard_xclip(text: &str) -> Result<()> {
+    if !command_exists("xclip") {
+        anyhow::bail!("xclip not found. Install with: sudo apt install xclip");
+    }
+
+    let mut child = Command::new("xclip")
+        .args(["-selection", "clipboard", "-in"])
+        .stdin(Stdio::piped())
+        .spawn()
+        .context("Failed to run xclip. Install with: sudo apt install xclip")?;
+
+    if let Some(stdin) = child.stdin.as_mut() {
+        stdin.write_all(text.as_bytes())?;
+    }
+
+    let status = child.wait()?;
+    if !status.success() {
+        anyhow::bail!("xclip failed");
+    }
+
+    debug!("Text copied to X11 clipboard via xclip");
+    Ok(())
+}
+
+/// Copy text to the clipboard.
+///
+/// On Wayland we use `wl-clipboard-rs` (with a `wl-copy` fallback).
+/// On X11 we use `xclip`.
+pub fn copy_to_clipboard(text: &str) -> Result<()> {
+    info!("Copying {} chars to clipboard", text.len());
+
+    match session_kind() {
+        SessionKind::Wayland => copy_to_wayland_clipboard_rs(text).or_else(|e| {
+            warn!("Wayland clipboard copy failed (wl-clipboard-rs): {}", e);
+            copy_to_clipboard_cmd(text)
+        }),
+        SessionKind::X11 => copy_to_x11_clipboard_xclip(text),
+        SessionKind::Unknown => {
+            // Best-effort: try Wayland first, then X11.
+            copy_to_wayland_clipboard_rs(text).or_else(|_| copy_to_x11_clipboard_xclip(text))
+        }
+    }
+}
+
+/// Paste text by simulating keyboard input.
 ///
 /// To avoid leaking dictated text in process arguments, we never pass the
 /// transcript to command-line tools. We paste from clipboard via Ctrl+V.
 pub fn paste_text(_text: &str) -> Result<()> {
     info!("Pasting clipboard contents via simulated Ctrl+V");
 
-    // First, try to check if ydotoold is running
+    let kind = session_kind();
+
+    // On X11, xdotool is usually the most reliable "no daemon" option.
+    if kind == SessionKind::X11 && command_exists("xdotool") {
+        if paste_with_xdotool_ctrl_v().is_ok() {
+            debug!("Clipboard pasted via xdotool Ctrl+V");
+            return Ok(());
+        }
+    }
+
+    check_ydotoold_running();
+
+    if let Err(e) = paste_with_ydotool_ctrl_v() {
+        warn!("ydotool Ctrl+V failed: {}", e);
+
+        // wtype fallback is for wlroots-based Wayland compositors. It won't help on GNOME.
+        if kind == SessionKind::Wayland && command_exists("wtype") {
+            info!("Trying wtype Ctrl+V fallback...");
+            return paste_with_wtype_ctrl_v();
+        }
+
+        return Err(e);
+    }
+
+    debug!("Clipboard pasted via ydotool Ctrl+V");
+    Ok(())
+}
+
+fn check_ydotoold_running() {
     let daemon_check = Command::new("pgrep").arg("ydotoold").output();
 
     match daemon_check {
@@ -40,21 +158,25 @@ pub fn paste_text(_text: &str) -> Result<()> {
         }
         _ => {
             debug!("ydotoold may not be running.");
-            // We don't try to spawn it here as the binary is often missing or requires sudo
         }
     }
+}
 
-    if let Err(e) = paste_with_ctrl_v() {
-        warn!("ydotool Ctrl+V failed: {}", e);
-        info!("Trying wtype Ctrl+V fallback...");
-        return paste_with_wtype_ctrl_v();
+/// X11-only: use xdotool to send Ctrl+V.
+fn paste_with_xdotool_ctrl_v() -> Result<()> {
+    let status = Command::new("xdotool")
+        .args(["key", "--clearmodifiers", "ctrl+v"])
+        .status()
+        .context("Failed to run xdotool. Install with: sudo apt install xdotool")?;
+
+    if !status.success() {
+        anyhow::bail!("xdotool Ctrl+V failed");
     }
 
-    debug!("Clipboard pasted successfully via ydotool Ctrl+V");
     Ok(())
 }
 
-/// Alternative: use wtype to send Ctrl+V
+/// Alternative: use wtype to send Ctrl+V.
 fn paste_with_wtype_ctrl_v() -> Result<()> {
     let status = Command::new("wtype")
         .args(["-M", "ctrl", "v", "-m", "ctrl"])
@@ -71,9 +193,9 @@ fn paste_with_wtype_ctrl_v() -> Result<()> {
     Ok(())
 }
 
-/// Fallback: simulate Ctrl+V keystroke
-/// This assumes text is already in clipboard
-fn paste_with_ctrl_v() -> Result<()> {
+/// Fallback: simulate Ctrl+V keystroke using ydotool.
+/// This assumes text is already in clipboard.
+fn paste_with_ydotool_ctrl_v() -> Result<()> {
     // Small delay to ensure clipboard is ready
     std::thread::sleep(std::time::Duration::from_millis(50));
 
@@ -89,7 +211,7 @@ fn paste_with_ctrl_v() -> Result<()> {
     Ok(())
 }
 
-/// Alternative clipboard copy using wl-copy command
+/// Alternative clipboard copy using wl-copy command (Wayland only).
 #[allow(dead_code)]
 pub fn copy_to_clipboard_cmd(text: &str) -> Result<()> {
     let mut child = Command::new("wl-copy")
@@ -109,7 +231,7 @@ pub fn copy_to_clipboard_cmd(text: &str) -> Result<()> {
     Ok(())
 }
 
-/// Get text from clipboard
+/// Get text from clipboard (Wayland only).
 #[allow(dead_code)]
 pub fn get_from_clipboard() -> Result<String> {
     use std::io::Read;
