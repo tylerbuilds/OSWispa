@@ -27,5 +27,18 @@ First off, thank you for considering contributing to OSWispa! It's people like y
 2.  **Build**: `cargo build`
 3.  **Run**: `cargo run --features gui`
 
+## Common Issues
+
+### File Locking (External Drives / Network Mounts)
+If you keep the repo on a filesystem that does not support file locking (for example exFAT or some network mounts), Cargo may fail with errors like:
+`incremental compilation: could not create session directory lock file: Operation not supported (os error 45)`.
+
+Workaround: run Cargo with incremental compilation disabled and a target directory on a local filesystem:
+```bash
+CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/tmp/oswispa-target cargo build
+```
+
+Git note: if you hit `.git/index.lock`, ensure no other git process is running, then remove the lock file.
+
 ## License
 By contributing, you agree that your contributions will be licensed under the MIT License.
