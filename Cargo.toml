@@ -14,22 +14,10 @@ hound = "3.5"
 # Whisper.cpp bindings (GPU backends enabled via crate features)
 whisper-rs = { version = "0.13", default-features = false }
 
-# Global hotkey detection (works on Wayland via evdev)
-evdev = "0.12"
-
-# Wayland clipboard
-wl-clipboard-rs = "0.8"
-
-# System tray (using libappindicator for GNOME)
-ksni = "0.2"
-
 # Config and state
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 directories = "5.0"
-
-# Notifications
-notify-rust = "4.10"
 
 # Logging
 tracing = "0.1"
@@ -60,6 +48,13 @@ gtk4 = { version = "0.7", optional = true }
 reqwest = { version = "0.11", features = ["blocking", "json", "multipart", "stream"] }
 tokio = { version = "1", features = ["rt-multi-thread", "sync"], optional = true }
 futures-util = { version = "0.3", optional = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# Linux-only: /dev/input hotkeys (Wayland) + Wayland clipboard + tray icon + desktop notifications.
+evdev = "0.12"
+wl-clipboard-rs = "0.8"
+ksni = "0.2"
+notify-rust = "4.10"
 
 [features]
 default = ["gui"]
