@@ -1,6 +1,6 @@
 [package]
 name = "oswispa"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 description = "Voice-to-text with Whisper - local-first with configurable hotkeys and optional VPS backend"
 authors = ["OSWispa"]
@@ -80,4 +80,4 @@ assets = [
   ["LICENSE", "usr/share/doc/oswispa/LICENSE", "644"],
 ]
 # Additional runtime tools used by OSWispa (beyond shared libs detected automatically).
-depends = "alsa-utils, ydotool, netcat-openbsd"
+depends = "$auto, alsa-utils, ydotool, netcat-openbsd"
