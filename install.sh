@@ -136,10 +136,48 @@ EOF
 sudo udevadm control --reload-rules
 sudo udevadm trigger
 
-# 8. Build the application
-print_status "Building OSWispa..."
+# 8. Detect GPU and build the application
+print_status "Detecting GPU acceleration..."
 cd "$SCRIPT_DIR"
-cargo build --release
+
+GPU_FEATURES=""
+GPU_TYPE="cpu"
+
+# Check for AMD ROCm
+if [ -f "/opt/rocm/bin/hipcc" ] || compgen -G "/opt/rocm-*/bin/hipcc" >/dev/null 2>&1; then
+    ROCM_PATH=$(dirname "$(dirname "$(ls /opt/rocm*/bin/hipcc 2>/dev/null | head -1)")" 2>/dev/null)
+    if [ -n "$ROCM_PATH" ] && [ -d "$ROCM_PATH" ]; then
+        print_status "AMD ROCm detected at $ROCM_PATH"
+        GPU_FEATURES="--features gpu-hipblas"
+        GPU_TYPE="amd"
+        export PATH="$ROCM_PATH/bin:$PATH"
+        export HIP_PATH="$ROCM_PATH"
+        # Auto-detect GPU architecture
+        if command -v rocminfo &>/dev/null; then
+            GFX_ARCH=$(rocminfo 2>/dev/null | grep -oP 'gfx\d+' | head -1)
+            if [ -n "$GFX_ARCH" ]; then
+                export AMDGPU_TARGETS="$GFX_ARCH"
+                print_status "Detected AMD GPU architecture: $GFX_ARCH"
+            fi
+        fi
+    fi
+# Check for NVIDIA CUDA
+elif command -v nvcc &>/dev/null || [ -d "/usr/local/cuda" ]; then
+    print_status "NVIDIA CUDA detected"
+    GPU_FEATURES="--features gpu-cuda"
+    GPU_TYPE="nvidia"
+    if [ -d "/usr/local/cuda" ]; then
+        export PATH="/usr/local/cuda/bin:$PATH"
+    fi
+fi
+
+if [ -n "$GPU_FEATURES" ]; then
+    print_status "Building OSWispa with GPU acceleration ($GPU_TYPE)..."
+    cargo build --release $GPU_FEATURES
+else
+    print_status "No GPU toolkit found, building CPU-only..."
+    cargo build --release
+fi
 
 # 9. Install binary
 print_status "Installing binary..."
@@ -175,7 +213,52 @@ print_status "Creating autostart entry..."
 mkdir -p "$HOME/.config/autostart"
 cp "$HOME/.local/share/applications/oswispa.desktop" "$HOME/.config/autostart/"
 
-# 12. Create config file
+# 12. Create systemd user service for OSWispa
+print_status "Creating systemd user service..."
+mkdir -p "$HOME/.config/systemd/user"
+
+# Build environment block for GPU
+GPU_ENV=""
+if [ "$GPU_TYPE" = "amd" ]; then
+    GPU_ENV="Environment=HIP_VISIBLE_DEVICES=0
+Environment=ROCR_VISIBLE_DEVICES=0"
+    # Derive HSA_OVERRIDE_GFX_VERSION from detected architecture (e.g. gfx1100 -> 11.0.0)
+    if [ -n "$GFX_ARCH" ]; then
+        HSA_DIGITS="${GFX_ARCH#gfx}"
+        HSA_MAJOR="${HSA_DIGITS:0:2}"
+        HSA_MINOR="${HSA_DIGITS:2:1}"
+        HSA_PATCH="${HSA_DIGITS:3:1}"
+        HSA_VERSION="${HSA_MAJOR}.${HSA_MINOR}.${HSA_PATCH}"
+        GPU_ENV="$GPU_ENV
+Environment=HSA_OVERRIDE_GFX_VERSION=$HSA_VERSION"
+        print_status "HSA_OVERRIDE_GFX_VERSION set to $HSA_VERSION"
+    fi
+    if [ -n "$ROCM_PATH" ]; then
+        GPU_ENV="$GPU_ENV
+Environment=LD_LIBRARY_PATH=$ROCM_PATH/lib:$ROCM_PATH/hip/lib"
+    fi
+fi
+
+cat > "$HOME/.config/systemd/user/oswispa.service" << EOF
+[Unit]
+Description=OSWispa Voice-to-Text Service
+Documentation=https://github.com/tylerbuilds/OSWispa
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/oswispa
+Restart=on-failure
+RestartSec=5
+$GPU_ENV
+
+[Install]
+WantedBy=default.target
+EOF
+
+print_status "Enable with: systemctl --user enable --now oswispa"
+
+# 13. Create config file
 if [ ! -f "$CONFIG_DIR/config.json" ]; then
     print_status "Creating default config..."
     cat > "$CONFIG_DIR/config.json" << EOF

@@ -346,16 +346,36 @@ fn transcribe_with_model(
     result
 }
 
-/// Get available VRAM in bytes by querying the AMD GPU
+/// Get available VRAM in bytes by querying the GPU.
+///
+/// Detection chain: AMD sysfs → rocm-smi → nvidia-smi → assume sufficient.
 fn get_available_vram() -> u64 {
-    // Try to read from sysfs (works for AMD GPUs)
-    // Look for the discrete GPU (card1 typically, but we'll check for the larger one)
+    // 1. AMD sysfs (fastest, no subprocess)
+    if let Some(vram) = detect_vram_amd_sysfs() {
+        return vram;
+    }
 
+    // 2. rocm-smi (AMD fallback)
+    if let Some(vram) = detect_vram_rocm_smi() {
+        return vram;
+    }
+
+    // 3. nvidia-smi (NVIDIA GPUs)
+    if let Some(vram) = detect_vram_nvidia_smi() {
+        return vram;
+    }
+
+    // If we can't determine VRAM, assume we have enough (optimistic)
+    warn!("Could not determine available VRAM, assuming sufficient");
+    MIN_VRAM_BYTES + 1
+}
+
+/// Detect available VRAM via AMD sysfs paths.
+fn detect_vram_amd_sysfs() -> Option<u64> {
     let cards = [
         "/sys/class/drm/card1/device/mem_info_vram_used",
         "/sys/class/drm/card0/device/mem_info_vram_used",
     ];
-
     let totals = [
         "/sys/class/drm/card1/device/mem_info_vram_total",
         "/sys/class/drm/card0/device/mem_info_vram_total",
@@ -374,48 +394,77 @@ fn get_available_vram() -> u64 {
                 if total > 1024 * 1024 * 1024 {
                     let available = total.saturating_sub(used);
                     debug!(
-                        "Found GPU at {}: total={}, used={}, available={}",
+                        "AMD sysfs GPU at {}: total={}, used={}, available={}",
                         used_path, total, used, available
                     );
-                    return available;
+                    return Some(available);
                 }
             }
         }
     }
 
-    // Fallback: try rocm-smi
-    if let Ok(output) = std::process::Command::new("rocm-smi")
+    None
+}
+
+/// Detect available VRAM via rocm-smi (AMD).
+fn detect_vram_rocm_smi() -> Option<u64> {
+    let output = std::process::Command::new("rocm-smi")
         .args(["--showmeminfo", "vram"])
         .output()
-    {
-        if let Ok(stdout) = String::from_utf8(output.stdout) {
-            // Parse rocm-smi output for VRAM info
-            // Look for lines like "GPU[0]		: VRAM Total Used Memory (B): 16974520320"
-            let mut total: u64 = 0;
-            let mut used: u64 = 0;
+        .ok()?;
 
-            for line in stdout.lines() {
-                if line.contains("VRAM Total Memory") && line.contains("GPU[0]") {
-                    if let Some(val) = line.split(':').last() {
-                        total = val.trim().parse().unwrap_or(0);
-                    }
-                }
-                if line.contains("VRAM Total Used") && line.contains("GPU[0]") {
-                    if let Some(val) = line.split(':').last() {
-                        used = val.trim().parse().unwrap_or(0);
-                    }
-                }
+    let stdout = String::from_utf8(output.stdout).ok()?;
+    let mut total: u64 = 0;
+    let mut used: u64 = 0;
+
+    for line in stdout.lines() {
+        if line.contains("VRAM Total Memory") && line.contains("GPU[0]") {
+            if let Some(val) = line.split(':').last() {
+                total = val.trim().parse().unwrap_or(0);
             }
-
-            if total > 0 {
-                return total.saturating_sub(used);
+        }
+        if line.contains("VRAM Total Used") && line.contains("GPU[0]") {
+            if let Some(val) = line.split(':').last() {
+                used = val.trim().parse().unwrap_or(0);
             }
         }
     }
 
-    // If we can't determine VRAM, assume we have enough (optimistic)
-    warn!("Could not determine available VRAM, assuming sufficient");
-    MIN_VRAM_BYTES + 1
+    if total > 0 {
+        let available = total.saturating_sub(used);
+        debug!("rocm-smi: total={}, used={}, available={}", total, used, available);
+        Some(available)
+    } else {
+        None
+    }
+}
+
+/// Detect available VRAM via nvidia-smi (NVIDIA).
+///
+/// Uses a single nvidia-smi call to query both total and free memory,
+/// avoiding a TOCTOU race between two separate calls.
+fn detect_vram_nvidia_smi() -> Option<u64> {
+    let output = std::process::Command::new("nvidia-smi")
+        .args(["--query-gpu=memory.total,memory.free", "--format=csv,noheader,nounits"])
+        .output()
+        .ok()?;
+
+    let stdout = String::from_utf8(output.stdout).ok()?;
+
+    // First line = first GPU. Format: "total_mib, free_mib"
+    let line = stdout.lines().next()?.trim();
+    let mut parts = line.split(',');
+    let total_mib: u64 = parts.next()?.trim().parse().ok()?;
+    let free_mib: u64 = parts.next()?.trim().parse().ok()?;
+
+    let available = free_mib * 1024 * 1024;
+
+    debug!(
+        "nvidia-smi: total={}MiB, free={}MiB",
+        total_mib, free_mib
+    );
+
+    Some(available)
 }
 
 /// Check if output is garbage (repeated punctuation from GPU failure)
@@ -550,7 +599,10 @@ impl StreamingTranscriber {
     /// Create a new streaming transcriber
     pub fn new(config: &Config) -> Result<Self> {
         let ctx = WhisperContext::new_with_params(
-            config.model_path.to_str().unwrap(),
+            config
+                .model_path
+                .to_str()
+                .ok_or_else(|| anyhow::anyhow!("Invalid model path"))?,
             WhisperContextParameters::default(),
         )?;
 

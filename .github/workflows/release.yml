@@ -32,7 +32,7 @@ jobs:
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
 
-      - name: Build release binary
+      - name: Build release binary (CPU-only)
         run: cargo build --release --locked
 
       - name: Install cargo-deb
@@ -52,14 +52,14 @@ jobs:
           mkdir -p dist
           cp target/release/oswispa dist/oswispa
           cp README.md LICENSE dist/
-          tar -czf oswispa-linux-amd64.tar.gz -C dist .
+          tar -czf oswispa-linux-amd64-cpu.tar.gz -C dist .
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: oswispa-linux-amd64
           path: |
-            oswispa-linux-amd64.tar.gz
+            oswispa-linux-amd64-cpu.tar.gz
             target/debian/*.deb
             oswispa_amd64.deb
 
@@ -68,6 +68,40 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            oswispa-linux-amd64.tar.gz
+            oswispa-linux-amd64-cpu.tar.gz
             target/debian/*.deb
             oswispa_amd64.deb
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build release binary (CPU-only, no GUI)
+        run: cargo build --release --locked --no-default-features
+
+      - name: Package artifact
+        run: |
+          mkdir -p dist
+          cp target/release/oswispa dist/oswispa
+          cp README.md LICENSE dist/
+          tar -czf oswispa-macos-arm64-cpu.tar.gz -C dist .
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: oswispa-macos-arm64
+          path: oswispa-macos-arm64-cpu.tar.gz
+
+      - name: Publish GitHub Release Asset
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: oswispa-macos-arm64-cpu.tar.gz

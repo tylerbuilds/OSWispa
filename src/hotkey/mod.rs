@@ -11,7 +11,13 @@ mod linux;
 #[cfg(target_os = "linux")]
 pub use linux::listen_for_hotkey;
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "macos")]
+mod macos;
+
+#[cfg(target_os = "macos")]
+pub use macos::listen_for_hotkey;
+
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 pub fn listen_for_hotkey(
     _event_tx: Sender<AppEvent>,
     _config_rx: Receiver<Arc<Config>>,

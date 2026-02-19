@@ -1,6 +1,6 @@
 [package]
 name = "oswispa"
-version = "0.3.3"
+version = "0.4.0"
 edition = "2021"
 description = "Voice-to-text with Whisper - local-first with configurable hotkeys and optional VPS backend"
 authors = ["OSWispa"]
@@ -55,6 +55,12 @@ evdev = "0.12"
 wl-clipboard-rs = "0.8"
 ksni = "0.2"
 notify-rust = "4.10"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+# macOS: clipboard, text injection, global hotkeys.
+arboard = "3"
+enigo = "0.6"
+rdev = "0.5"
 
 [features]
 default = ["gui"]

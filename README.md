@@ -3,7 +3,7 @@
 **Open Source Whisper Assistant** - Lightning-fast voice-to-text for your desktop.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Platform: Linux](https://img.shields.io/badge/Platform-Linux-green.svg)](#)
+[![Platform: Linux & macOS](https://img.shields.io/badge/Platform-Linux%20%26%20macOS-green.svg)](#)
 [![Status: Release Ready](https://img.shields.io/badge/Status-Release--Ready-blue.svg)](#)
 
 A privacy-focused, local-first voice transcription tool powered by [Whisper.cpp](https://github.com/ggerganov/whisper.cpp). Hold a hotkey, speak, release - your words appear instantly.
@@ -12,21 +12,20 @@ A privacy-focused, local-first voice transcription tool powered by [Whisper.cpp]
 
 ## 🚧 Project Status & Transparency
 
-**Current State:** v0.3.2 (Alpha)
-
-OSWispa is a **Linux-first** project, currently optimized for **Ubuntu/Debian** systems.
+**Current State:** v0.4.0 (Alpha)
 
 | Platform | Status | Notes |
 |----------|--------|-------|
-| **Ubuntu/Debian** | ✅ **Supported** | Primary dev environment. Automated installer available. |
+| **Ubuntu/Debian** | ✅ **Supported** | Primary dev environment. Automated installer with GPU auto-detection. |
+| **macOS** | ✅ **Supported** | Audio, hotkeys, clipboard all working. Metal GPU untested. |
 | **Fedora/Arch** | ⚠️ **Manual** | Works, but `install.sh` uses `apt`. Manual dependency install required. |
-| **macOS** | 🧪 **Experimental** | Theoretically supported via Metal, but untested. **Help wanted!** |
 | **Windows** | 🧪 **Experimental** | Theoretically supported, but untested. **Help wanted!** |
 
 ### 🛑 Known Limitations
-1.  **Installer**: The provided `install.sh` is strictly for **Ubuntu/Debian** (uses `apt`). Users on other distros must install dependencies manually (see below).
-2.  **Auto-Paste Friction**: On Wayland/Linux, we use `ydotool` to simulate typing. This requires a background daemon (`ydotoold`) running, often as root. If text doesn't appear, this is usually why.
-3.  **Global Hotkeys**: Wayland security model makes global hotkeys hard. We read directly from `/dev/input`, which requires your user to be in the `input` group.
+1.  **Installer**: The provided `install.sh` is for **Ubuntu/Debian** (uses `apt`). Other distros: install deps manually.
+2.  **Auto-Paste (Linux)**: Uses `ydotool` to simulate typing. Requires `ydotoold` daemon running.
+3.  **Global Hotkeys (Linux)**: Reads `/dev/input` directly, requires `input` group membership.
+4.  **Global Hotkeys (macOS)**: Requires Accessibility permission in System Settings.
 
 ---
 
@@ -44,12 +43,11 @@ OSWispa is a **Linux-first** project, currently optimized for **Ubuntu/Debian** 
 
 ## 🤝 Call for Contributors
 
-We need your help to make OSWispa truly cross-platform! We are actively looking for contributions to:
-
 - [ ] Create installation scripts for **Fedora**, **Arch**, and **macOS** (Homebrew).
 - [ ] Test and debug the **Windows** build process.
-- [ ] Improve the specific **Wayland** integration without requiring root/input group hacks.
+- [ ] Improve **Wayland** integration without requiring root/input group hacks.
 - [ ] Add a proper GUI settings menu (currently experimental).
+- [ ] Test **Metal GPU** acceleration on macOS Apple Silicon.
 
 If you can help, please fork the repo and submit a PR! See [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -68,24 +66,62 @@ sudo apt install ./oswispa_amd64.deb
 oswispa
 ```
 
-### Option B: Build From Source
+> **Note:** The `.deb` ships a CPU-only binary. For GPU acceleration, build from source (see below).
 
-The source installer is best if you're hacking on OSWispa or you want to enable GPU features.
+### Option B: Build From Source (with GPU auto-detection)
+
+The install script automatically detects your GPU and builds with the right features.
 
 ```bash
-# Clone and install
 git clone https://github.com/tylerbuilds/OSWispa.git
 cd OSWispa
 ./install.sh
-
-# Run
-oswispa
 ```
 
+The installer will:
+- Detect AMD ROCm or NVIDIA CUDA and build with GPU acceleration
+- Fall back to CPU-only if no GPU toolkit is found
+- Create a systemd service with the correct GPU environment variables
+
 **After install:**
-1.  Log out and back in (to refresh user groups).
-2.  Ensure `ydotoold` is running if you want auto-paste (`sudo ydotoold &`).
+1.  Log out and back in (for `input` group permissions).
+2.  Ensure `ydotoold` is running for auto-paste (`sudo ydotoold &`).
 3.  Press your configured hotkey (default **Ctrl+Super**), speak, and release!
+
+---
+
+## 🍎 Installation (macOS)
+
+### Prerequisites
+
+- [Rust](https://rustup.rs/) (1.70+)
+- CMake 3.16+ (`brew install cmake`)
+- Xcode Command Line Tools (`xcode-select --install`)
+
+### Build & Run
+
+```bash
+git clone https://github.com/tylerbuilds/OSWispa.git
+cd OSWispa
+cargo build --release --no-default-features
+./target/release/oswispa
+```
+
+> **Note:** `--no-default-features` disables the GTK4 GUI (Linux-only). All core features work without it.
+
+### macOS Permissions
+
+OSWispa needs two permissions on macOS:
+
+1. **Microphone**: Granted automatically on first recording attempt.
+2. **Accessibility**: Required for global hotkeys. Go to **System Settings > Privacy & Security > Accessibility** and add `oswispa`.
+
+### macOS Limitations (v0.4.0)
+
+- No system tray icon (runs in terminal only)
+- No `.pkg` installer (manual build required)
+- Metal GPU is available via `--features gpu-metal` but untested
+- CPU transcription is the default
 
 ---
 
@@ -99,18 +135,38 @@ oswispa
 ### 2. GPU Acceleration (Optional but Recommended)
 
 #### AMD GPU (ROCm)
-Required for fast transcription on AMD cards.
-1.  Install ROCm (6.0+).
-2.  Build with ROCm feature: `AMDGPU_TARGETS="gfx1100" cargo build --release --features gpu-hipblas` (adjust `gfx...` for your card).
+
+```bash
+# Ensure ROCm is installed (6.0+) and hipcc is in PATH
+export PATH="/opt/rocm/bin:$PATH"
+
+# Auto-detect GPU architecture
+GFX_ARCH=$(rocminfo | grep -oP 'gfx\d+' | head -1)
+
+# Build with HIPBlas
+AMDGPU_TARGETS="$GFX_ARCH" cargo build --release --features gpu-hipblas
+```
+
+**Common GPU architectures:** `gfx1100` (RX 7900), `gfx1030` (RX 6800), `gfx900` (Vega), `gfx906` (MI50).
+
+**Multi-GPU systems:** Set `HIP_VISIBLE_DEVICES=0` to select a specific GPU. Add `HSA_OVERRIDE_GFX_VERSION=11.0.0` if you get architecture mismatch errors.
 
 #### NVIDIA GPU (CUDA)
-1.  Install CUDA Toolkit.
-2.  Build: `cargo build --release --features gpu-cuda`.
+
+```bash
+# Ensure CUDA toolkit is installed and nvcc is in PATH
+cargo build --release --features gpu-cuda
+```
+
+**Multi-GPU systems:** Set `CUDA_VISIBLE_DEVICES=0` to select a specific GPU.
 
 #### macOS (Metal)
-1.  Build: `cargo build --release --features gpu-metal`.
 
-### 3. Build & Run
+```bash
+cargo build --release --features gpu-metal
+```
+
+### 3. Build & Run (CPU-only)
 ```bash
 cargo build --release
 ./target/release/oswispa
@@ -120,18 +176,23 @@ cargo build --release
 
 ## 📥 Models
 
-OSWispa needs a model file to work.
+OSWispa needs a model file to work. Save models to `~/.local/share/oswispa/models/`.
 
-| Model | Size | Speed | Recommendation |
-|-------|------|-------|----------------|
-| `base.en` | 142MB | ⚡⚡⚡ | Fast dictation |
-| `medium.en` | 1.5GB | ⚡ | **Good balance** |
-| `distil-large-v3` | 1.5GB | ⚡ | **Best performance/size** |
-| `large-v3` | 2.9GB | 🐢 | High accuracy, multilingual |
+| Model | Size | Speed | GPU VRAM | Recommendation |
+|-------|------|-------|----------|----------------|
+| `tiny.en` | 75MB | ⚡⚡⚡⚡ | <1GB | Quick testing |
+| `base.en` | 142MB | ⚡⚡⚡ | <1GB | Fast dictation |
+| `small.en` | 466MB | ⚡⚡ | ~1GB | Good accuracy |
+| `medium.en` | 1.5GB | ⚡ | ~2.5GB | **Good balance** |
+| `large-v3-turbo` | 1.6GB | ⚡⚡ | ~3GB | **Best speed/accuracy** |
+| `large-v3` | 2.9GB | 🐢 | ~5GB | Highest accuracy, multilingual |
 
-**Manual Download:**
-Save models to `~/.local/share/oswispa/models/`.
-Download links: [Hugging Face ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp/tree/main)
+**Download:** [Hugging Face ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp/tree/main)
+
+**GPU model recommendations:**
+- **<4GB VRAM**: `base.en` or `small.en`
+- **4-8GB VRAM**: `medium.en` or `large-v3-turbo`
+- **8GB+ VRAM**: `large-v3-turbo` (recommended) or `large-v3`
 
 ---
 
@@ -158,7 +219,10 @@ OSWispa is local-first by default, but you can optionally route transcription to
     *   **Log out and log back in.**
 
 **"The app crashes with a 'segmentation fault'."**
-*   Usually a GPU driver mismatch. Try building without GPU features (default `Cargo.toml`) to test CPU mode first.
+*   Usually a GPU driver mismatch. Try building without GPU features to test CPU mode first.
+
+**macOS: "Hotkeys don't work"**
+*   Grant Accessibility permission: **System Settings > Privacy & Security > Accessibility**.
 
 ---
 
