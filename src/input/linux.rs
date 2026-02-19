@@ -81,7 +81,7 @@ fn copy_to_x11_clipboard_xclip(text: &str) -> Result<()> {
         .spawn()
         .context("Failed to run xclip. Install with: sudo apt install xclip")?;
 
-    if let Some(stdin) = child.stdin.as_mut() {
+    if let Some(mut stdin) = child.stdin.take() {
         stdin.write_all(text.as_bytes())?;
     }
 
@@ -114,14 +114,24 @@ pub fn copy_to_clipboard(text: &str) -> Result<()> {
     }
 }
 
-/// Paste text by simulating keyboard input.
+/// Paste text by typing it directly via ydotool (preferred) or simulating Ctrl+V.
 ///
-/// To avoid leaking dictated text in process arguments, we never pass the
-/// transcript to command-line tools. We paste from clipboard via Ctrl+V.
-pub fn paste_text(_text: &str) -> Result<()> {
-    info!("Pasting clipboard contents via simulated Ctrl+V");
-
+/// Direct typing via `ydotool type --file -` is the most reliable method on
+/// GNOME Wayland as it bypasses clipboard ownership races entirely. Text is
+/// piped via stdin so it never appears in process arguments.
+pub fn paste_text(text: &str) -> Result<()> {
     let kind = session_kind();
+
+    // Preferred: type text directly via ydotool (bypasses clipboard entirely)
+    if command_exists("ydotool") {
+        info!("Typing {} chars directly via ydotool", text.len());
+        if let Ok(()) = type_with_ydotool(text) {
+            return Ok(());
+        }
+        warn!("ydotool type failed, falling back to Ctrl+V");
+    }
+
+    info!("Pasting clipboard contents via simulated Ctrl+V");
 
     // On X11, xdotool is usually the most reliable "no daemon" option.
     if kind == SessionKind::X11 && command_exists("xdotool") {
@@ -136,7 +146,6 @@ pub fn paste_text(_text: &str) -> Result<()> {
     if let Err(e) = paste_with_ydotool_ctrl_v() {
         warn!("ydotool Ctrl+V failed: {}", e);
 
-        // wtype fallback is for wlroots-based Wayland compositors. It won't help on GNOME.
         if kind == SessionKind::Wayland && command_exists("wtype") {
             info!("Trying wtype Ctrl+V fallback...");
             return paste_with_wtype_ctrl_v();
@@ -146,6 +155,26 @@ pub fn paste_text(_text: &str) -> Result<()> {
     }
 
     debug!("Clipboard pasted via ydotool Ctrl+V");
+    Ok(())
+}
+
+/// Type text directly using ydotool via stdin (no clipboard needed).
+fn type_with_ydotool(text: &str) -> Result<()> {
+    let mut child = Command::new("ydotool")
+        .args(["type", "--file", "-"])
+        .stdin(Stdio::piped())
+        .spawn()
+        .context("Failed to run ydotool type")?;
+
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin.write_all(text.as_bytes())?;
+    }
+
+    let status = child.wait()?;
+    if !status.success() {
+        anyhow::bail!("ydotool type failed");
+    }
+
     Ok(())
 }
 
@@ -212,14 +241,13 @@ fn paste_with_ydotool_ctrl_v() -> Result<()> {
 }
 
 /// Alternative clipboard copy using wl-copy command (Wayland only).
-#[allow(dead_code)]
 pub fn copy_to_clipboard_cmd(text: &str) -> Result<()> {
     let mut child = Command::new("wl-copy")
         .stdin(Stdio::piped())
         .spawn()
         .context("Failed to run wl-copy. Install with: sudo apt install wl-clipboard")?;
 
-    if let Some(stdin) = child.stdin.as_mut() {
+    if let Some(mut stdin) = child.stdin.take() {
         stdin.write_all(text.as_bytes())?;
     }
 
@@ -228,6 +256,48 @@ pub fn copy_to_clipboard_cmd(text: &str) -> Result<()> {
         anyhow::bail!("wl-copy failed");
     }
 
+    Ok(())
+}
+
+/// Read clipboard contents via wl-paste command.
+fn read_clipboard_cmd() -> Result<String> {
+    let output = Command::new("wl-paste")
+        .arg("--no-newline")
+        .output()
+        .context("Failed to run wl-paste")?;
+
+    if !output.status.success() {
+        anyhow::bail!("wl-paste failed");
+    }
+
+    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
+/// Copy text to clipboard and verify it actually landed before returning.
+/// Retries up to 5 times with 100ms sleeps to handle the race between
+/// wl-copy establishing clipboard ownership and wl-paste reading it back.
+pub fn copy_to_clipboard_verified(text: &str) -> Result<()> {
+    copy_to_clipboard(text)?;
+
+    for attempt in 0..5 {
+        std::thread::sleep(std::time::Duration::from_millis(100));
+
+        if let Ok(contents) = read_clipboard_cmd() {
+            if contents.trim() == text.trim() {
+                debug!("Clipboard verified on attempt {}", attempt + 1);
+                return Ok(());
+            }
+            debug!(
+                "Clipboard mismatch attempt {}: got '{}', expected '{}'",
+                attempt + 1,
+                contents.chars().take(30).collect::<String>(),
+                text.chars().take(30).collect::<String>()
+            );
+        }
+    }
+
+    // Even if verification fails, the copy may have worked — don't error out.
+    warn!("Clipboard verification timed out, proceeding anyway");
     Ok(())
 }
 

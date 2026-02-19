@@ -671,7 +671,7 @@ fn main() -> Result<()> {
                     feedback::play_complete_sound();
                 }
 
-                let copied = match input::copy_to_clipboard(&text) {
+                let copied = match input::copy_to_clipboard_verified(&text) {
                     Ok(_) => true,
                     Err(e) => {
                         warn!("Failed to copy to clipboard: {}", e);
@@ -682,7 +682,6 @@ fn main() -> Result<()> {
                 // Only auto-paste if we successfully updated the clipboard; otherwise we'd risk
                 // pasting stale clipboard contents.
                 if current_config.auto_paste && copied {
-                    std::thread::sleep(std::time::Duration::from_millis(150));
                     if let Err(e) = input::paste_text(&text) {
                         warn!("Failed to paste text: {}", e);
                     }
