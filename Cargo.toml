@@ -41,6 +41,9 @@ num_cpus = "1.16"
 # Regex for punctuation commands
 regex = "1.10"
 
+# CLI progress bars (first-run setup wizard)
+indicatif = "0.17"
+
 # GUI settings dialog (optional)
 gtk4 = { version = "0.7", optional = true }
 
@@ -87,3 +90,16 @@ assets = [
 ]
 # Additional runtime tools used by OSWispa (beyond shared libs detected automatically).
 depends = "$auto, alsa-utils, ydotool, netcat-openbsd, wl-clipboard, xclip, xdotool"
+
+[package.metadata.generate-rpm]
+assets = [
+  { source = "target/release/oswispa", dest = "/usr/bin/oswispa", mode = "755" },
+  { source = "scripts/oswispa-toggle.sh", dest = "/usr/bin/oswispa-toggle", mode = "755" },
+  { source = "packaging/linux/oswispa.desktop", dest = "/usr/share/applications/oswispa.desktop", mode = "644" },
+  { source = "packaging/linux/oswispa.svg", dest = "/usr/share/icons/hicolor/scalable/apps/oswispa.svg", mode = "644" },
+  { source = "README.md", dest = "/usr/share/doc/oswispa/README.md", mode = "644", doc = true },
+  { source = "LICENSE", dest = "/usr/share/doc/oswispa/LICENSE", mode = "644", doc = true },
+]
+[package.metadata.generate-rpm.requires]
+alsa-utils = "*"
+ydotool = "*"

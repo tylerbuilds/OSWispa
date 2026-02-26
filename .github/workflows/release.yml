@@ -41,36 +41,45 @@ jobs:
       - name: Build .deb package
         run: cargo deb --locked
 
+      - name: Install cargo-generate-rpm
+        run: cargo install cargo-generate-rpm --locked
+
+      - name: Build .rpm package
+        run: cargo generate-rpm
+
       - name: Prepare stable asset names
         run: |
           set -euo pipefail
           deb_path="$(ls -1 target/debian/*.deb | head -n 1)"
           cp "$deb_path" oswispa_amd64.deb
 
-      - name: Package artifact
+          rpm_path="$(ls -1 target/generate-rpm/*.rpm | head -n 1)"
+          cp "$rpm_path" oswispa_x86_64.rpm
+
+      - name: Package tarball
         run: |
           mkdir -p dist
           cp target/release/oswispa dist/oswispa
           cp README.md LICENSE dist/
-          tar -czf oswispa-linux-amd64-cpu.tar.gz -C dist .
+          tar -czf oswispa-linux-amd64.tar.gz -C dist .
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: oswispa-linux-amd64
           path: |
-            oswispa-linux-amd64-cpu.tar.gz
-            target/debian/*.deb
+            oswispa-linux-amd64.tar.gz
             oswispa_amd64.deb
+            oswispa_x86_64.rpm
 
       - name: Publish GitHub Release Asset
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            oswispa-linux-amd64-cpu.tar.gz
-            target/debian/*.deb
+            oswispa-linux-amd64.tar.gz
             oswispa_amd64.deb
+            oswispa_x86_64.rpm
 
   build-macos:
     runs-on: macos-latest
@@ -87,21 +96,40 @@ jobs:
       - name: Build release binary (CPU-only, no GUI)
         run: cargo build --release --locked --no-default-features
 
-      - name: Package artifact
+      - name: Package macOS zip
         run: |
-          mkdir -p dist
-          cp target/release/oswispa dist/oswispa
-          cp README.md LICENSE dist/
-          tar -czf oswispa-macos-arm64-cpu.tar.gz -C dist .
+          mkdir -p OSWispa
+          cp target/release/oswispa OSWispa/oswispa
+          cp README.md LICENSE OSWispa/
+          cat > OSWispa/INSTALL.txt << 'EOF'
+          OSWispa — Quick Start
+          =====================
+
+          1. Move the binary to your PATH:
+             sudo cp oswispa /usr/local/bin/
+
+          2. Run it:
+             oswispa
+
+          3. On first launch, OSWispa will detect your hardware
+             and guide you through downloading a Whisper model.
+
+          4. Grant Accessibility permission when prompted:
+             System Settings > Privacy & Security > Accessibility
+
+          5. Hold your configured hotkey (default: Ctrl+Super),
+             speak, and release to transcribe.
+          EOF
+          zip -r oswispa-macos-arm64.zip OSWispa/
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: oswispa-macos-arm64
-          path: oswispa-macos-arm64-cpu.tar.gz
+          path: oswispa-macos-arm64.zip
 
       - name: Publish GitHub Release Asset
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: oswispa-macos-arm64-cpu.tar.gz
+          files: oswispa-macos-arm64.zip

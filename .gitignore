@@ -33,3 +33,7 @@ recording_*.wav
 
 # Claude/AI assistant files
 .claude/
+task_plan.md
+findings.md
+progress.md
+LEARNED.md

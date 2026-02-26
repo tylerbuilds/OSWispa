@@ -205,7 +205,7 @@ pub fn estimate_model_benchmark(path: &Path) -> Result<ModelBenchmark> {
     })
 }
 
-/// Download a model with progress callback
+/// Download a model with progress callback (async, requires GUI feature for tokio runtime)
 #[cfg(feature = "gui")]
 pub async fn download_model<F>(model: &ModelInfo, progress_callback: F) -> Result<PathBuf>
 where
@@ -241,6 +241,58 @@ where
     }
 
     // Rename temp file to final name
+    std::fs::rename(&temp_path, &dest_path)?;
+
+    info!("Download complete: {:?}", dest_path);
+    Ok(dest_path)
+}
+
+/// Blocking model download for CLI use (no tokio/GUI required).
+///
+/// Downloads the model file with a simple progress callback and atomic rename.
+pub fn download_model_blocking<F>(model: &ModelInfo, progress_callback: F) -> Result<PathBuf>
+where
+    F: Fn(u64, u64),
+{
+    use std::io::{Read, Write};
+
+    let models_dir = get_models_dir();
+    std::fs::create_dir_all(&models_dir)?;
+
+    let dest_path = models_dir.join(model.filename);
+    let temp_path = models_dir.join(format!("{}.downloading", model.filename));
+
+    info!("Downloading {} to {:?}", model.name, dest_path);
+
+    let client = reqwest::blocking::Client::builder()
+        .timeout(None)
+        .build()?;
+
+    let response = client.get(model.url).send()?;
+
+    if !response.status().is_success() {
+        anyhow::bail!("Download failed: HTTP {}", response.status());
+    }
+
+    let total_size = response
+        .content_length()
+        .unwrap_or(model.size_mb as u64 * 1024 * 1024);
+
+    let mut file = std::fs::File::create(&temp_path)?;
+    let mut reader = response;
+    let mut downloaded: u64 = 0;
+    let mut buf = [0u8; 32768];
+
+    loop {
+        let n = reader.read(&mut buf)?;
+        if n == 0 {
+            break;
+        }
+        file.write_all(&buf[..n])?;
+        downloaded += n as u64;
+        progress_callback(downloaded, total_size);
+    }
+
     std::fs::rename(&temp_path, &dest_path)?;
 
     info!("Download complete: {:?}", dest_path);

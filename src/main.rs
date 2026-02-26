@@ -5,6 +5,7 @@ mod input;
 mod models;
 mod punctuation;
 mod settings;
+mod setup;
 mod transcribe;
 mod tray;
 
@@ -444,17 +445,36 @@ fn main() -> Result<()> {
     // Verify model exists when local backend is required at startup.
     if !initial_config.model_path.exists() {
         if initial_config.backend == TranscriptionBackend::Local {
-            error!(
-                "Whisper model not found at {:?}. Run the install script first.",
-                initial_config.model_path
-            );
-            eprintln!(
-                "\n[ERROR] Whisper model not found!\n\
-                Please run: ./install.sh\n\
-                Or manually download a model to {:?}\n",
-                initial_config.model_path
-            );
-            std::process::exit(1);
+            info!("No local model found — launching first-time setup wizard");
+
+            match setup::run_first_time_setup() {
+                Ok(model_path) => {
+                    // Update the in-memory config with the downloaded model path
+                    let mut cfg = config.write().unwrap();
+                    cfg.model_path = model_path;
+
+                    // Persist to disk so the wizard doesn't run again
+                    let config_path = get_config_dir().join("config.json");
+                    let _ = fs::create_dir_all(get_config_dir());
+                    let _ = fs::write(
+                        &config_path,
+                        serde_json::to_string_pretty(&*cfg).unwrap(),
+                    );
+                    info!("Config updated with new model path: {:?}", cfg.model_path);
+                }
+                Err(e) => {
+                    error!("Setup wizard failed: {}", e);
+                    eprintln!(
+                        "\n[ERROR] Setup wizard failed: {}\n\
+                        You can manually download a model:\n\
+                        1. Visit https://huggingface.co/ggerganov/whisper.cpp/tree/main\n\
+                        2. Save a .bin file to {:?}\n",
+                        e,
+                        models::get_models_dir()
+                    );
+                    std::process::exit(1);
+                }
+            }
         } else {
             warn!(
                 "Local model {:?} not found. Remote backend is enabled; local fallback will be unavailable.",
