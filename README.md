@@ -18,11 +18,11 @@ A privacy-focused, local-first voice transcription tool powered by [Whisper.cpp]
 |----------|--------|-------|
 | **Ubuntu/Debian** | ✅ **Supported** | Primary dev environment. Automated installer with GPU auto-detection. |
 | **macOS** | ✅ **Supported** | Audio, hotkeys, clipboard all working. Metal GPU untested. |
-| **Fedora/Arch** | ⚠️ **Manual** | Works, but `install.sh` uses `apt`. Manual dependency install required. |
+| **Fedora/Arch** | ✅ **Supported** | Automated installer with `dnf`/`pacman` support. |
 | **Windows** | 🧪 **Experimental** | Theoretically supported, but untested. **Help wanted!** |
 
 ### 🛑 Known Limitations
-1.  **Installer**: The provided `install.sh` is for **Ubuntu/Debian** (uses `apt`). Other distros: install deps manually.
+1.  **Installer**: Supports Ubuntu/Debian, Fedora/RHEL, and Arch/Manjaro. Other distros: install deps manually.
 2.  **Auto-Paste (Linux)**: Uses `ydotool` to simulate typing. Requires `ydotoold` daemon running.
 3.  **Global Hotkeys (Linux)**: Reads `/dev/input` directly, requires `input` group membership.
 4.  **Global Hotkeys (macOS)**: Requires Accessibility permission in System Settings.
@@ -43,7 +43,7 @@ A privacy-focused, local-first voice transcription tool powered by [Whisper.cpp]
 
 ## 🤝 Call for Contributors
 
-- [ ] Create installation scripts for **Fedora**, **Arch**, and **macOS** (Homebrew).
+- [x] ~~Create installation scripts for **Fedora**, **Arch**~~ (done) and **macOS** (Homebrew).
 - [ ] Test and debug the **Windows** build process.
 - [ ] Improve **Wayland** integration without requiring root/input group hacks.
 - [ ] Add a proper GUI settings menu (currently experimental).
@@ -53,7 +53,7 @@ If you can help, please fork the repo and submit a PR! See [CONTRIBUTING.md](CON
 
 ---
 
-## 🚀 Installation (Ubuntu/Debian)
+## 🚀 Installation (Linux)
 
 ### Option A (Recommended): Install the `.deb`
 

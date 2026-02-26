@@ -1,8 +1,9 @@
 #!/bin/bash
 set -e
 
-# OSWispa Installation Script for Ubuntu
+# OSWispa Installation Script
 # Voice-to-text with Whisper - hold Ctrl+Super to record
+# Supports: Ubuntu/Debian, Fedora/RHEL, Arch/Manjaro
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DATA_DIR="$HOME/.local/share/oswispa"
@@ -13,12 +14,6 @@ echo "================================"
 echo "  OSWispa Installation Script"
 echo "================================"
 echo ""
-
-# Check if running on Ubuntu/Debian
-if ! command -v apt &> /dev/null; then
-    echo "[WARNING] apt not found. This script is designed for Ubuntu/Debian."
-    echo "You may need to install dependencies manually."
-fi
 
 # Color output
 RED='\033[0;31m'
@@ -38,22 +33,72 @@ print_error() {
     echo -e "${RED}[!]${NC} $1"
 }
 
+# Detect Linux distribution family
+detect_distro() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        case "$ID" in
+            ubuntu|debian|pop|linuxmint|elementary|zorin)
+                DISTRO_FAMILY="debian"
+                ;;
+            fedora|rhel|centos|rocky|alma)
+                DISTRO_FAMILY="fedora"
+                ;;
+            arch|manjaro|endeavouros|garuda)
+                DISTRO_FAMILY="arch"
+                ;;
+            *)
+                # Check ID_LIKE as fallback
+                case "$ID_LIKE" in
+                    *debian*|*ubuntu*) DISTRO_FAMILY="debian" ;;
+                    *fedora*|*rhel*)   DISTRO_FAMILY="fedora" ;;
+                    *arch*)            DISTRO_FAMILY="arch" ;;
+                    *)                 DISTRO_FAMILY="unknown" ;;
+                esac
+                ;;
+        esac
+        print_status "Detected distro: $PRETTY_NAME ($DISTRO_FAMILY family)"
+    else
+        DISTRO_FAMILY="unknown"
+    fi
+
+    if [ "$DISTRO_FAMILY" = "unknown" ]; then
+        print_error "Unsupported distribution. Please install dependencies manually."
+        print_error "See README.md for the list of required packages."
+        exit 1
+    fi
+}
+
+detect_distro
+
 # 1. Install system dependencies
 print_status "Installing system dependencies..."
-sudo apt update
-sudo apt install -y \
-    build-essential \
-    cmake \
-    pkg-config \
-    libasound2-dev \
-    libpulse-dev \
-    libdbus-1-dev \
-    libappindicator3-dev \
-    wl-clipboard \
-    ydotool \
-    netcat-openbsd \
-    curl \
-    git
+case "$DISTRO_FAMILY" in
+    debian)
+        sudo apt update
+        sudo apt install -y \
+            build-essential cmake pkg-config \
+            libasound2-dev libpulse-dev libdbus-1-dev libappindicator3-dev \
+            wl-clipboard ydotool netcat-openbsd xclip xdotool \
+            curl git
+        ;;
+    fedora)
+        sudo dnf install -y \
+            gcc gcc-c++ cmake pkgconf-pkg-config \
+            alsa-lib-devel pulseaudio-libs-devel dbus-devel \
+            libappindicator-gtk3-devel openssl-devel \
+            alsa-plugins-pulseaudio \
+            alsa-utils ydotool nmap-ncat wl-clipboard xclip xdotool \
+            curl git
+        ;;
+    arch)
+        sudo pacman -S --needed --noconfirm \
+            base-devel cmake pkg-config \
+            alsa-lib libpulse dbus libappindicator-gtk3 \
+            alsa-utils ydotool openbsd-netcat wl-clipboard xclip xdotool \
+            curl git
+        ;;
+esac
 
 # 2. Install Rust if not present
 if ! command -v cargo &> /dev/null; then
