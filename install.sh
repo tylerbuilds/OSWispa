@@ -2,12 +2,20 @@
 set -e
 
 # OSWispa Installation Script
-# Voice-to-text with Whisper - hold Ctrl+Super to record
-# Supports: Ubuntu/Debian, Fedora/RHEL, Arch/Manjaro
+# Voice-to-text with Whisper - hold a hotkey to record
+# Supports: Ubuntu/Debian, Fedora/RHEL, Arch/Manjaro, macOS
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DATA_DIR="$HOME/.local/share/oswispa"
-CONFIG_DIR="$HOME/.config/oswispa"
+PLATFORM="$(uname -s)"
+
+# Platform-appropriate directories
+if [ "$PLATFORM" = "Darwin" ]; then
+    DATA_DIR="$HOME/Library/Application Support/oswispa"
+    CONFIG_DIR="$DATA_DIR"
+else
+    DATA_DIR="$HOME/.local/share/oswispa"
+    CONFIG_DIR="$HOME/.config/oswispa"
+fi
 MODEL_DIR="$DATA_DIR/models"
 
 echo "================================"
@@ -33,8 +41,19 @@ print_error() {
     echo -e "${RED}[!]${NC} $1"
 }
 
-# Detect Linux distribution family
-detect_distro() {
+# Detect platform and Linux distribution family
+detect_platform() {
+    if [ "$PLATFORM" = "Darwin" ]; then
+        DISTRO_FAMILY="macos"
+        print_status "Detected platform: macOS $(sw_vers -productVersion 2>/dev/null || echo '')"
+        return
+    fi
+
+    if [ "$PLATFORM" != "Linux" ]; then
+        print_error "Unsupported platform: $PLATFORM"
+        exit 1
+    fi
+
     if [ -f /etc/os-release ]; then
         . /etc/os-release
         case "$ID" in
@@ -69,11 +88,27 @@ detect_distro() {
     fi
 }
 
-detect_distro
+detect_platform
 
 # 1. Install system dependencies
 print_status "Installing system dependencies..."
 case "$DISTRO_FAMILY" in
+    macos)
+        # Xcode Command Line Tools (provides clang, make, etc.)
+        if ! xcode-select -p &>/dev/null; then
+            print_status "Installing Xcode Command Line Tools..."
+            xcode-select --install
+            echo ""
+            print_warning "Xcode CLT is installing. Re-run this script when it finishes."
+            exit 0
+        fi
+        # Homebrew
+        if ! command -v brew &>/dev/null; then
+            print_status "Installing Homebrew..."
+            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        fi
+        brew install cmake
+        ;;
     debian)
         sudo apt update
         sudo apt install -y \
@@ -140,22 +175,24 @@ else
     print_status "Whisper model already exists at $MODEL_FILE"
 fi
 
-# 5. Setup input group permissions for evdev
-print_status "Setting up input permissions..."
-if ! groups | grep -q '\binput\b'; then
-    print_warning "Adding user to 'input' group for keyboard access..."
-    sudo usermod -aG input "$USER"
-    echo ""
-    print_warning "IMPORTANT: You need to log out and back in for group changes to take effect!"
-    echo ""
-fi
+# 5-7: Linux-only setup (input group, ydotool, udev)
+if [ "$PLATFORM" != "Darwin" ]; then
+    # 5. Setup input group permissions for evdev
+    print_status "Setting up input permissions..."
+    if ! groups | grep -q '\binput\b'; then
+        print_warning "Adding user to 'input' group for keyboard access..."
+        sudo usermod -aG input "$USER"
+        echo ""
+        print_warning "IMPORTANT: You need to log out and back in for group changes to take effect!"
+        echo ""
+    fi
 
-# 6. Setup ydotool daemon
-print_status "Setting up ydotool daemon..."
+    # 6. Setup ydotool daemon
+    print_status "Setting up ydotool daemon..."
 
-# Create systemd user service for ydotoold
-mkdir -p "$HOME/.config/systemd/user"
-cat > "$HOME/.config/systemd/user/ydotoold.service" << 'EOF'
+    # Create systemd user service for ydotoold
+    mkdir -p "$HOME/.config/systemd/user"
+    cat > "$HOME/.config/systemd/user/ydotoold.service" << 'EOF'
 [Unit]
 Description=ydotool daemon
 Documentation=man:ydotool(1)
@@ -169,22 +206,23 @@ RestartSec=5
 WantedBy=default.target
 EOF
 
-# Note: ydotoold typically needs root, but we'll try user mode first
-# If it fails, user needs to run: sudo ydotoold &
+    # Note: ydotoold typically needs root, but we'll try user mode first
+    # If it fails, user needs to run: sudo ydotoold &
 
-print_warning "ydotoold may require root permissions."
-echo "If typing doesn't work, run: sudo ydotoold &"
-echo "Or set up a udev rule for /dev/uinput access."
-echo ""
+    print_warning "ydotoold may require root permissions."
+    echo "If typing doesn't work, run: sudo ydotoold &"
+    echo "Or set up a udev rule for /dev/uinput access."
+    echo ""
 
-# 7. Create udev rule for uinput (for ydotool without sudo)
-print_status "Creating udev rule for uinput access..."
-sudo tee /etc/udev/rules.d/60-uinput.rules > /dev/null << EOF
+    # 7. Create udev rule for uinput (for ydotool without sudo)
+    print_status "Creating udev rule for uinput access..."
+    sudo tee /etc/udev/rules.d/60-uinput.rules > /dev/null << EOF
 KERNEL=="uinput", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"
 EOF
 
-sudo udevadm control --reload-rules
-sudo udevadm trigger
+    sudo udevadm control --reload-rules
+    sudo udevadm trigger
+fi
 
 # 8. Detect GPU and build the application
 print_status "Detecting GPU acceleration..."
@@ -192,41 +230,53 @@ cd "$SCRIPT_DIR"
 
 GPU_FEATURES=""
 GPU_TYPE="cpu"
+BUILD_FLAGS=""
 
-# Check for AMD ROCm
-if [ -f "/opt/rocm/bin/hipcc" ] || compgen -G "/opt/rocm-*/bin/hipcc" >/dev/null 2>&1; then
-    ROCM_PATH=$(dirname "$(dirname "$(ls /opt/rocm*/bin/hipcc 2>/dev/null | head -1)")" 2>/dev/null)
-    if [ -n "$ROCM_PATH" ] && [ -d "$ROCM_PATH" ]; then
-        print_status "AMD ROCm detected at $ROCM_PATH"
-        GPU_FEATURES="--features gpu-hipblas"
-        GPU_TYPE="amd"
-        export PATH="$ROCM_PATH/bin:$PATH"
-        export HIP_PATH="$ROCM_PATH"
-        # Auto-detect GPU architecture
-        if command -v rocminfo &>/dev/null; then
-            GFX_ARCH=$(rocminfo 2>/dev/null | grep -oP 'gfx\d+' | head -1)
-            if [ -n "$GFX_ARCH" ]; then
-                export AMDGPU_TARGETS="$GFX_ARCH"
-                print_status "Detected AMD GPU architecture: $GFX_ARCH"
+if [ "$PLATFORM" = "Darwin" ]; then
+    # macOS: disable GTK4 GUI (Linux-only)
+    BUILD_FLAGS="--no-default-features"
+    # Check for Apple Silicon (Metal GPU)
+    if [ "$(uname -m)" = "arm64" ]; then
+        print_status "Apple Silicon detected — Metal GPU available"
+        GPU_FEATURES="--features gpu-metal"
+        GPU_TYPE="metal"
+    fi
+else
+    # Linux: Check for AMD ROCm
+    if [ -f "/opt/rocm/bin/hipcc" ] || compgen -G "/opt/rocm-*/bin/hipcc" >/dev/null 2>&1; then
+        ROCM_PATH=$(dirname "$(dirname "$(ls /opt/rocm*/bin/hipcc 2>/dev/null | head -1)")" 2>/dev/null)
+        if [ -n "$ROCM_PATH" ] && [ -d "$ROCM_PATH" ]; then
+            print_status "AMD ROCm detected at $ROCM_PATH"
+            GPU_FEATURES="--features gpu-hipblas"
+            GPU_TYPE="amd"
+            export PATH="$ROCM_PATH/bin:$PATH"
+            export HIP_PATH="$ROCM_PATH"
+            # Auto-detect GPU architecture
+            if command -v rocminfo &>/dev/null; then
+                GFX_ARCH=$(rocminfo 2>/dev/null | grep -oP 'gfx\d+' | head -1)
+                if [ -n "$GFX_ARCH" ]; then
+                    export AMDGPU_TARGETS="$GFX_ARCH"
+                    print_status "Detected AMD GPU architecture: $GFX_ARCH"
+                fi
             fi
         fi
-    fi
-# Check for NVIDIA CUDA
-elif command -v nvcc &>/dev/null || [ -d "/usr/local/cuda" ]; then
-    print_status "NVIDIA CUDA detected"
-    GPU_FEATURES="--features gpu-cuda"
-    GPU_TYPE="nvidia"
-    if [ -d "/usr/local/cuda" ]; then
-        export PATH="/usr/local/cuda/bin:$PATH"
+    # Check for NVIDIA CUDA
+    elif command -v nvcc &>/dev/null || [ -d "/usr/local/cuda" ]; then
+        print_status "NVIDIA CUDA detected"
+        GPU_FEATURES="--features gpu-cuda"
+        GPU_TYPE="nvidia"
+        if [ -d "/usr/local/cuda" ]; then
+            export PATH="/usr/local/cuda/bin:$PATH"
+        fi
     fi
 fi
 
 if [ -n "$GPU_FEATURES" ]; then
     print_status "Building OSWispa with GPU acceleration ($GPU_TYPE)..."
-    cargo build --release $GPU_FEATURES
+    cargo build --release $BUILD_FLAGS $GPU_FEATURES
 else
     print_status "No GPU toolkit found, building CPU-only..."
-    cargo build --release
+    cargo build --release $BUILD_FLAGS
 fi
 
 # 9. Install binary
@@ -241,10 +291,42 @@ if [ -f "$SCRIPT_DIR/scripts/oswispa-toggle.sh" ]; then
     sudo chmod +x /usr/local/bin/oswispa-toggle
 fi
 
-# 10. Create desktop entry
-print_status "Creating desktop entry..."
-mkdir -p "$HOME/.local/share/applications"
-cat > "$HOME/.local/share/applications/oswispa.desktop" << EOF
+# 10-12: Platform-specific service and autostart setup
+if [ "$PLATFORM" = "Darwin" ]; then
+    # macOS: Create LaunchAgent for auto-start
+    print_status "Creating LaunchAgent for auto-start..."
+    mkdir -p "$HOME/Library/LaunchAgents"
+    cat > "$HOME/Library/LaunchAgents/com.oswispa.agent.plist" << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.oswispa.agent</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/oswispa</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <false/>
+    <key>StandardOutPath</key>
+    <string>$HOME/Library/Logs/oswispa.log</string>
+    <key>StandardErrorPath</key>
+    <string>$HOME/Library/Logs/oswispa.log</string>
+</dict>
+</plist>
+EOF
+    print_status "Enable with: launchctl load ~/Library/LaunchAgents/com.oswispa.agent.plist"
+
+else
+    # Linux: Desktop entry, autostart, and systemd service
+
+    # 10. Create desktop entry
+    print_status "Creating desktop entry..."
+    mkdir -p "$HOME/.local/share/applications"
+    cat > "$HOME/.local/share/applications/oswispa.desktop" << EOF
 [Desktop Entry]
 Type=Application
 Name=OSWispa
@@ -258,38 +340,38 @@ StartupNotify=false
 X-GNOME-Autostart-enabled=true
 EOF
 
-# 11. Create autostart entry
-print_status "Creating autostart entry..."
-mkdir -p "$HOME/.config/autostart"
-cp "$HOME/.local/share/applications/oswispa.desktop" "$HOME/.config/autostart/"
+    # 11. Create autostart entry
+    print_status "Creating autostart entry..."
+    mkdir -p "$HOME/.config/autostart"
+    cp "$HOME/.local/share/applications/oswispa.desktop" "$HOME/.config/autostart/"
 
-# 12. Create systemd user service for OSWispa
-print_status "Creating systemd user service..."
-mkdir -p "$HOME/.config/systemd/user"
+    # 12. Create systemd user service for OSWispa
+    print_status "Creating systemd user service..."
+    mkdir -p "$HOME/.config/systemd/user"
 
-# Build environment block for GPU
-GPU_ENV=""
-if [ "$GPU_TYPE" = "amd" ]; then
-    GPU_ENV="Environment=HIP_VISIBLE_DEVICES=0
+    # Build environment block for GPU
+    GPU_ENV=""
+    if [ "$GPU_TYPE" = "amd" ]; then
+        GPU_ENV="Environment=HIP_VISIBLE_DEVICES=0
 Environment=ROCR_VISIBLE_DEVICES=0"
-    # Derive HSA_OVERRIDE_GFX_VERSION from detected architecture (e.g. gfx1100 -> 11.0.0)
-    if [ -n "$GFX_ARCH" ]; then
-        HSA_DIGITS="${GFX_ARCH#gfx}"
-        HSA_MAJOR="${HSA_DIGITS:0:2}"
-        HSA_MINOR="${HSA_DIGITS:2:1}"
-        HSA_PATCH="${HSA_DIGITS:3:1}"
-        HSA_VERSION="${HSA_MAJOR}.${HSA_MINOR}.${HSA_PATCH}"
-        GPU_ENV="$GPU_ENV
+        # Derive HSA_OVERRIDE_GFX_VERSION from detected architecture (e.g. gfx1100 -> 11.0.0)
+        if [ -n "$GFX_ARCH" ]; then
+            HSA_DIGITS="${GFX_ARCH#gfx}"
+            HSA_MAJOR="${HSA_DIGITS:0:2}"
+            HSA_MINOR="${HSA_DIGITS:2:1}"
+            HSA_PATCH="${HSA_DIGITS:3:1}"
+            HSA_VERSION="${HSA_MAJOR}.${HSA_MINOR}.${HSA_PATCH}"
+            GPU_ENV="$GPU_ENV
 Environment=HSA_OVERRIDE_GFX_VERSION=$HSA_VERSION"
-        print_status "HSA_OVERRIDE_GFX_VERSION set to $HSA_VERSION"
-    fi
-    if [ -n "$ROCM_PATH" ]; then
-        GPU_ENV="$GPU_ENV
+            print_status "HSA_OVERRIDE_GFX_VERSION set to $HSA_VERSION"
+        fi
+        if [ -n "$ROCM_PATH" ]; then
+            GPU_ENV="$GPU_ENV
 Environment=LD_LIBRARY_PATH=$ROCM_PATH/lib:$ROCM_PATH/hip/lib"
+        fi
     fi
-fi
 
-cat > "$HOME/.config/systemd/user/oswispa.service" << EOF
+    cat > "$HOME/.config/systemd/user/oswispa.service" << EOF
 [Unit]
 Description=OSWispa Voice-to-Text Service
 Documentation=https://github.com/tylerbuilds/OSWispa
@@ -306,7 +388,8 @@ $GPU_ENV
 WantedBy=default.target
 EOF
 
-print_status "Enable with: systemctl --user enable --now oswispa"
+    print_status "Enable with: systemctl --user enable --now oswispa"
+fi
 
 # 13. Create config file
 if [ ! -f "$CONFIG_DIR/config.json" ]; then
@@ -326,30 +409,55 @@ echo "================================"
 echo "  Installation Complete!"
 echo "================================"
 echo ""
-echo "IMPORTANT STEPS:"
-echo ""
-echo "1. Log out and back in (for 'input' group permissions)"
-echo ""
-echo "2. Start the ydotool daemon (for text injection):"
-echo "   sudo ydotoold &"
-echo "   (Or use systemd: systemctl --user enable --now ydotoold)"
-echo ""
-echo "3. Install GNOME AppIndicator extension (for system tray):"
-echo "   - Open 'Extensions' app or visit extensions.gnome.org"
-echo "   - Search for 'AppIndicator' or 'KStatusNotifierItem'"
-echo "   - Enable the extension"
-echo ""
-echo "4. Run OSWispa:"
-echo "   oswispa"
-echo ""
-echo "USAGE:"
-echo "  - Hold Ctrl+Super to start recording"
-echo "  - Release to stop and transcribe"
-echo "  - Text is copied to clipboard AND pasted automatically"
-echo ""
-echo "Troubleshooting:"
-echo "  - No tray icon? Install AppIndicator GNOME extension"
-echo "  - Text not typing? Run: sudo ydotoold &"
-echo "  - Permission denied? Log out/in for input group"
+
+if [ "$PLATFORM" = "Darwin" ]; then
+    echo "IMPORTANT STEPS:"
+    echo ""
+    echo "1. Grant Accessibility permission:"
+    echo "   System Settings > Privacy & Security > Accessibility"
+    echo "   Add and enable 'oswispa'"
+    echo ""
+    echo "2. Run OSWispa:"
+    echo "   oswispa"
+    echo ""
+    echo "3. (Optional) Auto-start on login:"
+    echo "   launchctl load ~/Library/LaunchAgents/com.oswispa.agent.plist"
+    echo ""
+    echo "USAGE:"
+    echo "  - Hold Ctrl+Super to start recording"
+    echo "  - Release to stop and transcribe"
+    echo "  - Text is copied to clipboard AND pasted automatically"
+    echo ""
+    echo "Troubleshooting:"
+    echo "  - Hotkeys don't work? Grant Accessibility permission (step 1)"
+    echo "  - Microphone permission is requested automatically on first use"
+else
+    echo "IMPORTANT STEPS:"
+    echo ""
+    echo "1. Log out and back in (for 'input' group permissions)"
+    echo ""
+    echo "2. Start the ydotool daemon (for text injection):"
+    echo "   sudo ydotoold &"
+    echo "   (Or use systemd: systemctl --user enable --now ydotoold)"
+    echo ""
+    echo "3. Install GNOME AppIndicator extension (for system tray):"
+    echo "   - Open 'Extensions' app or visit extensions.gnome.org"
+    echo "   - Search for 'AppIndicator' or 'KStatusNotifierItem'"
+    echo "   - Enable the extension"
+    echo ""
+    echo "4. Run OSWispa:"
+    echo "   oswispa"
+    echo ""
+    echo "USAGE:"
+    echo "  - Hold Ctrl+Super to start recording"
+    echo "  - Release to stop and transcribe"
+    echo "  - Text is copied to clipboard AND pasted automatically"
+    echo ""
+    echo "Troubleshooting:"
+    echo "  - No tray icon? Install AppIndicator GNOME extension"
+    echo "  - Text not typing? Run: sudo ydotoold &"
+    echo "  - Permission denied? Log out/in for input group"
+fi
+
 echo ""
 print_status "Enjoy OSWispa!"

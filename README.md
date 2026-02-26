@@ -22,7 +22,7 @@ A privacy-focused, local-first voice transcription tool powered by [Whisper.cpp]
 | **Windows** | 🧪 **Experimental** | Theoretically supported, but untested. **Help wanted!** |
 
 ### 🛑 Known Limitations
-1.  **Installer**: Supports Ubuntu/Debian, Fedora/RHEL, and Arch/Manjaro. Other distros: install deps manually.
+1.  **Installer**: Supports Ubuntu/Debian, Fedora/RHEL, Arch/Manjaro, and macOS. Other distros: install deps manually.
 2.  **Auto-Paste (Linux)**: Uses `ydotool` to simulate typing. Requires `ydotoold` daemon running.
 3.  **Global Hotkeys (Linux)**: Reads `/dev/input` directly, requires `input` group membership.
 4.  **Global Hotkeys (macOS)**: Requires Accessibility permission in System Settings.
@@ -43,7 +43,7 @@ A privacy-focused, local-first voice transcription tool powered by [Whisper.cpp]
 
 ## 🤝 Call for Contributors
 
-- [x] ~~Create installation scripts for **Fedora**, **Arch**~~ (done) and **macOS** (Homebrew).
+- [x] ~~Create installation scripts for **Fedora**, **Arch**, and **macOS**~~ (done).
 - [ ] Test and debug the **Windows** build process.
 - [ ] Improve **Wayland** integration without requiring root/input group hacks.
 - [ ] Add a proper GUI settings menu (currently experimental).
@@ -92,17 +92,24 @@ The installer will:
 
 ## 🍎 Installation (macOS)
 
-### Prerequisites
-
-- [Rust](https://rustup.rs/) (1.70+)
-- CMake 3.16+ (`brew install cmake`)
-- Xcode Command Line Tools (`xcode-select --install`)
-
-### Build & Run
+### Option A (Recommended): Install Script
 
 ```bash
 git clone https://github.com/tylerbuilds/OSWispa.git
 cd OSWispa
+./install.sh
+```
+
+The installer will:
+- Install Xcode CLT and Homebrew (if needed) + cmake
+- Auto-detect Apple Silicon and build with Metal GPU acceleration
+- Download the Whisper model
+- Create a LaunchAgent for auto-start on login
+
+### Option B: Manual Build
+
+```bash
+brew install cmake
 cargo build --release --no-default-features
 ./target/release/oswispa
 ```
@@ -119,9 +126,9 @@ OSWispa needs two permissions on macOS:
 ### macOS Limitations (v0.4.0)
 
 - No system tray icon (runs in terminal only)
-- No `.pkg` installer (manual build required)
-- Metal GPU is available via `--features gpu-metal` but untested
-- CPU transcription is the default
+- No `.pkg` installer
+- Metal GPU auto-enabled on Apple Silicon, untested on Intel Macs
+- CPU transcription is the default on Intel Macs
 
 ---
 
