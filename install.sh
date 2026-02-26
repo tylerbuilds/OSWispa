@@ -57,7 +57,7 @@ detect_distro() {
                 esac
                 ;;
         esac
-        print_status "Detected distro: $PRETTY_NAME ($DISTRO_FAMILY family)"
+        print_status "Detected distro: ${PRETTY_NAME:-$ID} ($DISTRO_FAMILY family)"
     else
         DISTRO_FAMILY="unknown"
     fi
@@ -79,14 +79,15 @@ case "$DISTRO_FAMILY" in
         sudo apt install -y \
             build-essential cmake pkg-config \
             libasound2-dev libpulse-dev libdbus-1-dev libappindicator3-dev \
-            wl-clipboard ydotool netcat-openbsd xclip xdotool \
+            libssl-dev libgtk-4-dev \
+            alsa-utils wl-clipboard ydotool netcat-openbsd xclip xdotool \
             curl git
         ;;
     fedora)
         sudo dnf install -y \
             gcc gcc-c++ cmake pkgconf-pkg-config \
             alsa-lib-devel pulseaudio-libs-devel dbus-devel \
-            libappindicator-gtk3-devel openssl-devel \
+            libappindicator-gtk3-devel openssl-devel gtk4-devel \
             alsa-plugins-pulseaudio \
             alsa-utils ydotool nmap-ncat wl-clipboard xclip xdotool \
             curl git
@@ -94,9 +95,13 @@ case "$DISTRO_FAMILY" in
     arch)
         sudo pacman -S --needed --noconfirm \
             base-devel cmake pkg-config \
-            alsa-lib libpulse dbus libappindicator-gtk3 \
+            alsa-lib libpulse dbus libappindicator-gtk3 openssl gtk4 \
             alsa-utils ydotool openbsd-netcat wl-clipboard xclip xdotool \
             curl git
+        ;;
+    *)
+        print_error "Internal error: unexpected DISTRO_FAMILY='$DISTRO_FAMILY'"
+        exit 1
         ;;
 esac
 
