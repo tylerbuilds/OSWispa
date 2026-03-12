@@ -5,13 +5,15 @@
 //!
 //! arecord is part of alsa-utils and is universally available on Linux.
 
-use crate::{AppEvent, RecordCommand};
+use crate::{AppEvent, Config, RecordCommand, StreamingAudioMessage, TranscriptionBackend};
 use anyhow::{Context, Result};
 use crossbeam_channel::{Receiver, Sender};
+use std::fs::File;
+use std::io::{Read, Seek, SeekFrom};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use std::time::Duration;
 use tracing::{debug, error, info};
 
@@ -23,7 +25,9 @@ const DEFAULT_AUDIO_DEVICE: &str = "pulse";
 pub fn audio_worker(
     record_rx: Receiver<RecordCommand>,
     audio_tx: Sender<Option<PathBuf>>,
+    stream_tx: Sender<StreamingAudioMessage>,
     status_tx: Sender<AppEvent>,
+    config: Arc<RwLock<Config>>,
 ) {
     info!("Audio worker thread started");
     let recording = Arc::new(AtomicBool::new(false));
@@ -42,7 +46,9 @@ pub fn audio_worker(
                 let recording_clone = Arc::clone(&recording);
                 let cancelled_clone = Arc::clone(&cancelled);
                 let audio_tx_clone = audio_tx.clone();
+                let stream_tx_clone = stream_tx.clone();
                 let status_tx_clone = status_tx.clone();
+                let config_snapshot = config.read().unwrap().clone();
 
                 recording.store(true, Ordering::SeqCst);
                 cancelled.store(false, Ordering::SeqCst);
@@ -50,13 +56,20 @@ pub fn audio_worker(
                 // Spawn Supervisor Thread
                 _recording_thread = Some(std::thread::spawn(move || {
                     info!("AudioWorker: Starting arecord session");
-                    let result = run_arecord_session(&recording_clone, &status_tx_clone);
+                    let result = run_arecord_session(
+                        &recording_clone,
+                        &cancelled_clone,
+                        &status_tx_clone,
+                        &stream_tx_clone,
+                        &config_snapshot,
+                    );
 
                     match result {
                         Ok(path) => {
                             if cancelled_clone.load(Ordering::SeqCst) {
                                 info!("Recording was cancelled, deleting file");
                                 let _ = std::fs::remove_file(&path);
+                                let _ = stream_tx_clone.send(StreamingAudioMessage::Cancel);
                                 let _ = audio_tx_clone.send(None);
                             } else {
                                 info!("Recording saved to {:?}", path);
@@ -95,7 +108,10 @@ pub fn audio_worker(
 /// Manages the arecord process execution
 fn run_arecord_session(
     recording: &Arc<AtomicBool>,
+    cancelled: &Arc<AtomicBool>,
     _status_tx: &Sender<AppEvent>,
+    stream_tx: &Sender<StreamingAudioMessage>,
+    config: &Config,
 ) -> Result<PathBuf> {
     let temp_dir = std::env::temp_dir();
     let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S_%3f");
@@ -124,8 +140,28 @@ fn run_arecord_session(
     let child_pid = child.id();
     debug!("arecord started with PID {}", child_pid);
 
+    let streaming_active = config.backend == TranscriptionBackend::Local && config.streaming.enabled;
+    let chunk_duration_ms = config.streaming.chunk_duration_ms.clamp(250, 1000);
+    let chunk_bytes = chunk_duration_ms as usize * 16000 * 2 / 1000;
+    let mut stream_offset = 44_u64;
+    let mut pending_pcm = Vec::new();
+
+    if streaming_active {
+        let _ = stream_tx.send(StreamingAudioMessage::Begin);
+    }
+
     // Monitoring loop
     while recording.load(Ordering::SeqCst) {
+        if streaming_active {
+            stream_new_pcm_data(
+                &audio_path,
+                &mut stream_offset,
+                &mut pending_pcm,
+                chunk_bytes,
+                stream_tx,
+            )?;
+        }
+
         // check if child exited unexpectedly
         match child.try_wait() {
             Ok(Some(status)) => {
@@ -156,6 +192,25 @@ fn run_arecord_session(
     // Wait for it to close
     let _ = child.wait();
 
+    if streaming_active {
+        stream_new_pcm_data(
+            &audio_path,
+            &mut stream_offset,
+            &mut pending_pcm,
+            chunk_bytes,
+            stream_tx,
+        )?;
+        if !pending_pcm.is_empty() {
+            let samples = pcm_bytes_to_samples(&pending_pcm);
+            if !samples.is_empty() {
+                let _ = stream_tx.send(StreamingAudioMessage::Chunk(samples));
+            }
+        }
+        if !cancelled.load(Ordering::SeqCst) {
+            let _ = stream_tx.send(StreamingAudioMessage::Finalize);
+        }
+    }
+
     // Verify file
     if !audio_path.exists() {
         anyhow::bail!("Audio file not created");
@@ -177,6 +232,51 @@ fn run_arecord_session(
 
     info!("Audio file ready: {} bytes", metadata.len());
     Ok(audio_path)
+}
+
+fn stream_new_pcm_data(
+    audio_path: &std::path::Path,
+    offset: &mut u64,
+    pending_pcm: &mut Vec<u8>,
+    chunk_bytes: usize,
+    stream_tx: &Sender<StreamingAudioMessage>,
+) -> Result<()> {
+    if !audio_path.exists() {
+        return Ok(());
+    }
+
+    let mut file = File::open(audio_path)?;
+    let file_len = file.metadata()?.len();
+    if file_len <= *offset {
+        return Ok(());
+    }
+
+    file.seek(SeekFrom::Start(*offset))?;
+    let mut new_bytes = Vec::new();
+    file.read_to_end(&mut new_bytes)?;
+    *offset += new_bytes.len() as u64;
+
+    pending_pcm.extend_from_slice(&new_bytes);
+    if pending_pcm.len() % 2 != 0 {
+        pending_pcm.pop();
+    }
+
+    while pending_pcm.len() >= chunk_bytes {
+        let chunk: Vec<u8> = pending_pcm.drain(..chunk_bytes).collect();
+        let samples = pcm_bytes_to_samples(&chunk);
+        if !samples.is_empty() {
+            let _ = stream_tx.send(StreamingAudioMessage::Chunk(samples));
+        }
+    }
+
+    Ok(())
+}
+
+fn pcm_bytes_to_samples(bytes: &[u8]) -> Vec<f32> {
+    bytes
+        .chunks_exact(2)
+        .map(|chunk| i16::from_le_bytes([chunk[0], chunk[1]]) as f32 / 32768.0)
+        .collect()
 }
 
 /// Patch a WAV file's RIFF and data chunk sizes to match the actual file size.

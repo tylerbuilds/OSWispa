@@ -76,6 +76,13 @@ pub const AVAILABLE_MODELS: &[ModelInfo] = &[
         description: "Slow, high accuracy",
     },
     ModelInfo {
+        name: "Distil Large v3",
+        filename: "ggml-distil-large-v3.bin",
+        size_mb: 1530,
+        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-distil-large-v3.bin",
+        description: "Best speed/accuracy for high-end English dictation",
+    },
+    ModelInfo {
         name: "Large",
         filename: "ggml-large.bin",
         size_mb: 3000,

@@ -7,9 +7,9 @@
 //! - Automatic fallback to smaller model when VRAM is constrained
 //! - CPU fallback when GPU is unavailable
 
-use crate::{AppEvent, Config, TranscriptionBackend};
+use crate::{AppEvent, Config, StreamingAudioMessage, TranscriptionBackend};
 use anyhow::Result;
-use crossbeam_channel::{Receiver, Sender};
+use crossbeam_channel::{select, Receiver, Sender};
 use reqwest::blocking::{multipart, Client};
 use serde_json::Value;
 use std::path::{Path, PathBuf};
@@ -20,10 +20,101 @@ use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextPar
 
 /// Minimum available VRAM in bytes to attempt GPU transcription (2GB)
 const MIN_VRAM_BYTES: u64 = 2 * 1024 * 1024 * 1024;
+/// Keep a conservative reserve so OSWispa does not consume the last chunk of free VRAM.
+const GPU_RESERVED_HEADROOM_BYTES: u64 = 6 * 1024 * 1024 * 1024;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct CacheSignature {
+    backend: TranscriptionBackend,
+    model_path: PathBuf,
+    fallback_model_path: Option<PathBuf>,
+}
+
+impl From<&Config> for CacheSignature {
+    fn from(config: &Config) -> Self {
+        Self {
+            backend: config.backend.clone(),
+            model_path: config.model_path.clone(),
+            fallback_model_path: config.fallback_model_path.clone(),
+        }
+    }
+}
+
+struct CachedContext {
+    model_path: PathBuf,
+    use_gpu: bool,
+    ctx: WhisperContext,
+}
+
+#[derive(Default)]
+struct LiveStreamState {
+    transcript: String,
+}
+
+#[derive(Default)]
+struct ContextCache {
+    contexts: Vec<CachedContext>,
+}
+
+impl ContextCache {
+    fn clear(&mut self) {
+        self.contexts.clear();
+    }
+
+    fn contains(&self, model_path: &Path, use_gpu: bool) -> bool {
+        self.contexts
+            .iter()
+            .any(|entry| entry.use_gpu == use_gpu && entry.model_path == model_path)
+    }
+
+    fn get_or_create(&mut self, model_path: &Path, use_gpu: bool) -> Result<&WhisperContext> {
+        if let Some(index) = self
+            .contexts
+            .iter()
+            .position(|entry| entry.use_gpu == use_gpu && entry.model_path == model_path)
+        {
+            debug!(
+                "Reusing Whisper context ({} mode) for {:?}",
+                if use_gpu { "GPU" } else { "CPU" },
+                model_path
+            );
+            return Ok(&self.contexts[index].ctx);
+        }
+
+        let mode_str = if use_gpu { "GPU" } else { "CPU" };
+        info!(
+            "Creating Whisper context ({} mode) for {:?}",
+            mode_str, model_path
+        );
+
+        let mut ctx_params = WhisperContextParameters::default();
+        if !use_gpu {
+            ctx_params.use_gpu(false);
+        }
+
+        let ctx = WhisperContext::new_with_params(
+            model_path
+                .to_str()
+                .ok_or_else(|| anyhow::anyhow!("Invalid model path"))?,
+            ctx_params,
+        )?;
+
+        info!("Whisper {} context created successfully", mode_str);
+
+        self.contexts.push(CachedContext {
+            model_path: model_path.to_path_buf(),
+            use_gpu,
+            ctx,
+        });
+        let index = self.contexts.len() - 1;
+        Ok(&self.contexts[index].ctx)
+    }
+}
 
 /// Transcription worker that processes audio files with lazy context initialization
 pub fn transcription_worker(
     audio_rx: Receiver<Option<PathBuf>>,
+    stream_rx: Receiver<StreamingAudioMessage>,
     event_tx: Sender<AppEvent>,
     config: Arc<RwLock<Config>>,
 ) {
@@ -33,56 +124,186 @@ pub fn transcription_worker(
     if let Some(ref fallback) = startup_config.fallback_model_path {
         info!("Fallback model configured: {:?}", fallback);
     }
+    let mut context_cache = ContextCache::default();
+    let mut cache_signature = CacheSignature::from(&startup_config);
+    let mut live_stream = LiveStreamState::default();
 
-    for audio_path_opt in audio_rx {
-        // Handle cancelled recordings (None)
-        let audio_path = match audio_path_opt {
-            Some(path) => path,
-            None => {
-                debug!("Received None - recording was cancelled, skipping transcription");
-                continue;
-            }
-        };
+    if startup_config.backend == TranscriptionBackend::Local {
+        prewarm_active_local_context(&startup_config, &mut context_cache);
+    }
 
-        info!("Processing audio file: {:?}", audio_path);
+    loop {
+        select! {
+            recv(stream_rx) -> stream_msg => {
+                let current_config = refresh_config_cache(
+                    &config,
+                    &mut context_cache,
+                    &mut cache_signature,
+                );
 
-        let current_config = config.read().unwrap().clone();
+                match stream_msg {
+                    Ok(StreamingAudioMessage::Begin) => {
+                        live_stream = LiveStreamState::default();
+                    }
+                    Ok(StreamingAudioMessage::Chunk(samples)) => {
+                        if !should_use_live_streaming(&current_config) {
+                            continue;
+                        }
 
-        // Select backend based on configuration.
-        let result = match current_config.backend {
-            TranscriptionBackend::Local => transcribe_with_fallback(&audio_path, &current_config),
-            TranscriptionBackend::Remote => {
-                transcribe_remote_with_local_fallback(&audio_path, &current_config)
-            }
-        };
-
-        // Process result
-        match result {
-            Ok(text) => {
-                let text = text.trim().to_string();
-                if !text.is_empty() && !is_garbage_output(&text) {
-                    info!("Transcription successful: {} chars", text.len());
-                    let _ = event_tx.send(AppEvent::TranscriptionComplete(text));
-                } else {
-                    info!("Empty or garbage transcription");
-                    let _ = event_tx.send(AppEvent::Error("No speech detected".to_string()));
+                        match transcribe_stream_chunk(&samples, &current_config, &mut context_cache) {
+                            Ok(text) => {
+                                let text = text.trim();
+                                if !text.is_empty() && !is_garbage_output(text) {
+                                    append_stream_text(&mut live_stream.transcript, text);
+                                    let _ = event_tx.send(AppEvent::StreamingPartial(
+                                        live_stream.transcript.clone(),
+                                    ));
+                                }
+                            }
+                            Err(err) => warn!("Streaming chunk transcription failed: {}", err),
+                        }
+                    }
+                    Ok(StreamingAudioMessage::Finalize) => {
+                        debug!(
+                            "Streaming finalized with {} chars of partial text; waiting for full-file pass",
+                            live_stream.transcript.len()
+                        );
+                    }
+                    Ok(StreamingAudioMessage::Cancel) => {
+                        live_stream = LiveStreamState::default();
+                    }
+                    Err(_) => break,
                 }
             }
-            Err(e) => {
-                error!("Transcription failed: {}", e);
-                let _ = event_tx.send(AppEvent::Error(format!("Transcription failed: {}", e)));
-            }
-        }
+            recv(audio_rx) -> audio_path_opt => {
+                let current_config = refresh_config_cache(
+                    &config,
+                    &mut context_cache,
+                    &mut cache_signature,
+                );
 
-        // Clean up temp file
-        if let Err(e) = std::fs::remove_file(&audio_path) {
-            debug!("Failed to remove temp audio file: {}", e);
+                let audio_path = match audio_path_opt {
+                    Ok(Some(path)) => path,
+                    Ok(None) => {
+                        debug!("Received None - recording was cancelled, skipping transcription");
+                        live_stream = LiveStreamState::default();
+                        continue;
+                    }
+                    Err(_) => break,
+                };
+
+                info!("Processing audio file: {:?}", audio_path);
+
+                let result = match current_config.backend {
+                    TranscriptionBackend::Local => {
+                        transcribe_with_fallback(&audio_path, &current_config, &mut context_cache)
+                    }
+                    TranscriptionBackend::Remote => transcribe_remote_with_local_fallback(
+                        &audio_path,
+                        &current_config,
+                        &mut context_cache,
+                    ),
+                };
+
+                emit_transcription_result(result, &event_tx);
+                live_stream = LiveStreamState::default();
+
+                if let Err(e) = std::fs::remove_file(&audio_path) {
+                    debug!("Failed to remove temp audio file: {}", e);
+                }
+            }
         }
     }
 }
 
+fn refresh_config_cache(
+    config: &Arc<RwLock<Config>>,
+    context_cache: &mut ContextCache,
+    cache_signature: &mut CacheSignature,
+) -> Config {
+    let current_config = config.read().unwrap().clone();
+    let current_signature = CacheSignature::from(&current_config);
+    if current_signature != *cache_signature {
+        info!("Transcription config changed - resetting cached Whisper contexts");
+        context_cache.clear();
+        *cache_signature = current_signature;
+
+        if current_config.backend == TranscriptionBackend::Local {
+            prewarm_active_local_context(&current_config, context_cache);
+        }
+    }
+
+    current_config
+}
+
+fn should_use_live_streaming(config: &Config) -> bool {
+    config.backend == TranscriptionBackend::Local && config.streaming.enabled
+}
+
+fn emit_transcription_result(result: Result<String>, event_tx: &Sender<AppEvent>) {
+    match result {
+        Ok(text) => {
+            let text = text.trim().to_string();
+            if !text.is_empty() && !is_garbage_output(&text) {
+                info!("Transcription successful: {} chars", text.len());
+                let _ = event_tx.send(AppEvent::TranscriptionComplete(text));
+            } else {
+                info!("Empty or garbage transcription");
+                let _ = event_tx.send(AppEvent::Error("No speech detected".to_string()));
+            }
+        }
+        Err(e) => {
+            error!("Transcription failed: {}", e);
+            let _ = event_tx.send(AppEvent::Error(format!("Transcription failed: {}", e)));
+        }
+    }
+}
+
+fn append_stream_text(existing: &mut String, incoming: &str) {
+    let incoming_words: Vec<&str> = incoming.split_whitespace().collect();
+    if incoming_words.is_empty() {
+        return;
+    }
+
+    if existing.trim().is_empty() {
+        existing.push_str(incoming.trim());
+        return;
+    }
+
+    let existing_words: Vec<&str> = existing.split_whitespace().collect();
+    let max_overlap = existing_words.len().min(incoming_words.len()).min(6);
+    let mut overlap = 0;
+
+    for candidate in (1..=max_overlap).rev() {
+        let existing_tail = &existing_words[existing_words.len() - candidate..];
+        let incoming_head = &incoming_words[..candidate];
+        if existing_tail
+            .iter()
+            .zip(incoming_head.iter())
+            .all(|(left, right)| left.eq_ignore_ascii_case(right))
+        {
+            overlap = candidate;
+            break;
+        }
+    }
+
+    let suffix = incoming_words[overlap..].join(" ");
+    if suffix.is_empty() {
+        return;
+    }
+
+    if !existing.ends_with(' ') {
+        existing.push(' ');
+    }
+    existing.push_str(&suffix);
+}
+
 /// Remote transcription with automatic fallback to local model execution.
-fn transcribe_remote_with_local_fallback(audio_path: &PathBuf, config: &Config) -> Result<String> {
+fn transcribe_remote_with_local_fallback(
+    audio_path: &PathBuf,
+    config: &Config,
+    context_cache: &mut ContextCache,
+) -> Result<String> {
     match transcribe_with_remote_backend(audio_path, config) {
         Ok(text) => Ok(text),
         Err(err) => {
@@ -96,7 +317,7 @@ fn transcribe_remote_with_local_fallback(audio_path: &PathBuf, config: &Config) 
                     .unwrap_or(false)
             {
                 warn!("Falling back to local transcription backend");
-                transcribe_with_fallback(audio_path, config)
+                transcribe_with_fallback(audio_path, config, context_cache)
             } else {
                 Err(anyhow::anyhow!(
                     "Remote transcription failed and no local model is available: {}",
@@ -205,7 +426,11 @@ fn transcribe_with_remote_backend(audio_path: &PathBuf, config: &Config) -> Resu
 }
 
 /// Transcribe with fallback chain: Primary GPU -> Fallback GPU -> Primary CPU -> Fallback CPU
-fn transcribe_with_fallback(audio_path: &PathBuf, config: &Config) -> Result<String> {
+fn transcribe_with_fallback(
+    audio_path: &PathBuf,
+    config: &Config,
+    context_cache: &mut ContextCache,
+) -> Result<String> {
     let primary_model = &config.model_path;
     let fallback_model = config.fallback_model_path.as_ref();
 
@@ -217,11 +442,13 @@ fn transcribe_with_fallback(audio_path: &PathBuf, config: &Config) -> Result<Str
     );
 
     // Strategy based on VRAM availability
-    if available_vram >= MIN_VRAM_BYTES {
+    let primary_gpu_safe =
+        context_cache.contains(primary_model, true) || can_run_model_on_gpu(primary_model, available_vram);
+    if primary_gpu_safe {
         // Enough VRAM - try primary model on GPU
         info!("Sufficient VRAM available, attempting GPU transcription with primary model");
 
-        match transcribe_with_model(audio_path, primary_model, config, true) {
+        match transcribe_with_model(audio_path, primary_model, config, true, context_cache) {
             Ok(text) if !is_garbage_output(text.trim()) => {
                 return Ok(text);
             }
@@ -233,50 +460,13 @@ fn transcribe_with_fallback(audio_path: &PathBuf, config: &Config) -> Result<Str
             }
         }
 
-        // GPU failed - try fallback model on GPU if available
-        if let Some(fallback) = fallback_model {
-            if fallback.exists() {
-                info!("Trying fallback model on GPU: {:?}", fallback);
-                match transcribe_with_model(audio_path, fallback, config, true) {
-                    Ok(text) if !is_garbage_output(text.trim()) => {
-                        return Ok(text);
-                    }
-                    Ok(_) => {
-                        warn!("Fallback GPU returned garbage output");
-                    }
-                    Err(e) => {
-                        warn!("Fallback GPU transcription failed: {}", e);
-                    }
-                }
-            }
-        }
+        warn!("Primary GPU attempt did not complete cleanly, skipping further GPU fallback");
     } else {
-        // Low VRAM - skip straight to fallback model if available
+        // Safe GPU headroom unavailable - skip GPU entirely.
         warn!(
-            "Low VRAM detected ({:.2} GB < {:.2} GB threshold), skipping primary GPU",
+            "Safe GPU headroom unavailable ({:.2} GB free), skipping primary GPU",
             available_vram as f64 / 1024.0 / 1024.0 / 1024.0,
-            MIN_VRAM_BYTES as f64 / 1024.0 / 1024.0 / 1024.0
         );
-
-        if let Some(fallback) = fallback_model {
-            if fallback.exists() {
-                info!(
-                    "Trying fallback model on GPU (smaller footprint): {:?}",
-                    fallback
-                );
-                match transcribe_with_model(audio_path, fallback, config, true) {
-                    Ok(text) if !is_garbage_output(text.trim()) => {
-                        return Ok(text);
-                    }
-                    Ok(_) => {
-                        warn!("Fallback GPU returned garbage output");
-                    }
-                    Err(e) => {
-                        warn!("Fallback GPU transcription failed: {}", e);
-                    }
-                }
-            }
-        }
     }
 
     // All GPU attempts failed - fall back to CPU
@@ -286,7 +476,7 @@ fn transcribe_with_fallback(audio_path: &PathBuf, config: &Config) -> Result<Str
     if let Some(fallback) = fallback_model {
         if fallback.exists() {
             info!("Trying fallback model on CPU: {:?}", fallback);
-            match transcribe_with_model(audio_path, fallback, config, false) {
+            match transcribe_with_model(audio_path, fallback, config, false, context_cache) {
                 Ok(text) if !is_garbage_output(text.trim()) => {
                     return Ok(text);
                 }
@@ -305,45 +495,35 @@ fn transcribe_with_fallback(audio_path: &PathBuf, config: &Config) -> Result<Str
         "Trying primary model on CPU (last resort): {:?}",
         primary_model
     );
-    transcribe_with_model(audio_path, primary_model, config, false)
+    transcribe_with_model(audio_path, primary_model, config, false, context_cache)
 }
 
-/// Transcribe using a specific model with lazy context initialization
+fn prewarm_active_local_context(config: &Config, context_cache: &mut ContextCache) {
+    if !config.model_path.exists() {
+        return;
+    }
+
+    let use_gpu = can_run_model_on_gpu(&config.model_path, get_available_vram());
+    match context_cache.get_or_create(&config.model_path, use_gpu) {
+        Ok(_) => info!(
+            "Prewarmed active local model ({}) for {:?}",
+            if use_gpu { "GPU" } else { "CPU" },
+            config.model_path
+        ),
+        Err(err) => warn!("Failed to prewarm active local model: {}", err),
+    }
+}
+
+/// Transcribe using a specific model with a reusable cached context
 fn transcribe_with_model(
     audio_path: &PathBuf,
     model_path: &Path,
     config: &Config,
     use_gpu: bool,
+    context_cache: &mut ContextCache,
 ) -> Result<String> {
-    let mode_str = if use_gpu { "GPU" } else { "CPU" };
-    info!(
-        "Creating Whisper context ({} mode) for {:?}",
-        mode_str, model_path
-    );
-
-    // Create context parameters
-    let mut ctx_params = WhisperContextParameters::default();
-    if !use_gpu {
-        ctx_params.use_gpu(false);
-    }
-
-    // Lazy initialization - create context just for this transcription
-    let ctx = WhisperContext::new_with_params(
-        model_path
-            .to_str()
-            .ok_or_else(|| anyhow::anyhow!("Invalid model path"))?,
-        ctx_params,
-    )?;
-
-    info!("Whisper {} context created successfully", mode_str);
-
-    // Perform transcription
-    let result = transcribe_audio(&ctx, audio_path, config);
-
-    // Context is dropped here, releasing VRAM
-    info!("Whisper {} context released", mode_str);
-
-    result
+    let ctx = context_cache.get_or_create(model_path, use_gpu)?;
+    transcribe_audio(ctx, audio_path, config)
 }
 
 /// Get available VRAM in bytes by querying the GPU.
@@ -365,9 +545,9 @@ fn get_available_vram() -> u64 {
         return vram;
     }
 
-    // If we can't determine VRAM, assume we have enough (optimistic)
-    warn!("Could not determine available VRAM, assuming sufficient");
-    MIN_VRAM_BYTES + 1
+    // If we can't determine VRAM, stay conservative and avoid GPU use.
+    warn!("Could not determine available VRAM, defaulting to CPU-safe mode");
+    0
 }
 
 /// Detect available VRAM via AMD sysfs paths.
@@ -432,7 +612,10 @@ fn detect_vram_rocm_smi() -> Option<u64> {
 
     if total > 0 {
         let available = total.saturating_sub(used);
-        debug!("rocm-smi: total={}, used={}, available={}", total, used, available);
+        debug!(
+            "rocm-smi: total={}, used={}, available={}",
+            total, used, available
+        );
         Some(available)
     } else {
         None
@@ -445,7 +628,10 @@ fn detect_vram_rocm_smi() -> Option<u64> {
 /// avoiding a TOCTOU race between two separate calls.
 fn detect_vram_nvidia_smi() -> Option<u64> {
     let output = std::process::Command::new("nvidia-smi")
-        .args(["--query-gpu=memory.total,memory.free", "--format=csv,noheader,nounits"])
+        .args([
+            "--query-gpu=memory.total,memory.free",
+            "--format=csv,noheader,nounits",
+        ])
         .output()
         .ok()?;
 
@@ -459,10 +645,7 @@ fn detect_vram_nvidia_smi() -> Option<u64> {
 
     let available = free_mib * 1024 * 1024;
 
-    debug!(
-        "nvidia-smi: total={}MiB, free={}MiB",
-        total_mib, free_mib
-    );
+    debug!("nvidia-smi: total={}MiB, free={}MiB", total_mib, free_mib);
 
     Some(available)
 }
@@ -486,6 +669,64 @@ fn is_garbage_output(text: &str) -> bool {
     punct_ratio > 0.8
 }
 
+fn transcribe_stream_chunk(
+    samples: &[f32],
+    config: &Config,
+    context_cache: &mut ContextCache,
+) -> Result<String> {
+    if samples.is_empty() {
+        return Ok(String::new());
+    }
+
+    let available_vram = get_available_vram();
+    if samples.len() < 16_000 {
+        return Ok(String::new());
+    }
+
+    let use_gpu = context_cache.contains(&config.model_path, true)
+        || can_run_model_on_gpu(&config.model_path, available_vram);
+    let model_path = if use_gpu {
+        &config.model_path
+    } else {
+        config
+            .fallback_model_path
+            .as_ref()
+            .filter(|path| path.exists())
+            .unwrap_or(&config.model_path)
+    };
+    let ctx = context_cache.get_or_create(model_path, use_gpu)?;
+    transcribe_samples(
+        ctx,
+        samples,
+        config,
+        (num_cpus::get() / 2).max(1) as i32,
+        true,
+    )
+}
+
+fn can_run_model_on_gpu(model_path: &Path, available_vram: u64) -> bool {
+    if available_vram < MIN_VRAM_BYTES {
+        return false;
+    }
+
+    let model_bytes = std::fs::metadata(model_path)
+        .map(|metadata| metadata.len())
+        .unwrap_or(0);
+    let required_vram = model_bytes.saturating_add(GPU_RESERVED_HEADROOM_BYTES);
+
+    if available_vram < required_vram {
+        warn!(
+            "Keeping model {:?} off GPU: need {:.2} GB free including reserve, have {:.2} GB",
+            model_path,
+            required_vram as f64 / 1024.0 / 1024.0 / 1024.0,
+            available_vram as f64 / 1024.0 / 1024.0 / 1024.0
+        );
+        return false;
+    }
+
+    true
+}
+
 /// Transcribe a single audio file
 fn transcribe_audio(ctx: &WhisperContext, audio_path: &PathBuf, config: &Config) -> Result<String> {
     // Load audio file
@@ -497,6 +738,16 @@ fn transcribe_audio(ctx: &WhisperContext, audio_path: &PathBuf, config: &Config)
         samples.len() as f32 / 16000.0
     );
 
+    transcribe_samples(ctx, &samples, config, num_cpus::get() as i32, false)
+}
+
+fn transcribe_samples(
+    ctx: &WhisperContext,
+    samples: &[f32],
+    config: &Config,
+    n_threads: i32,
+    single_segment: bool,
+) -> Result<String> {
     // Create whisper state
     let mut state = ctx.create_state()?;
 
@@ -504,7 +755,7 @@ fn transcribe_audio(ctx: &WhisperContext, audio_path: &PathBuf, config: &Config)
     let mut params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
 
     // Performance settings
-    params.set_n_threads(num_cpus::get() as i32);
+    params.set_n_threads(n_threads);
 
     // Language settings from config
     let language = if config.language == "auto" {
@@ -528,10 +779,10 @@ fn transcribe_audio(ctx: &WhisperContext, audio_path: &PathBuf, config: &Config)
 
     // Quality settings
     params.set_no_context(true);
-    params.set_single_segment(false);
+    params.set_single_segment(single_segment);
 
     // Run transcription
-    state.full(params, &samples)?;
+    state.full(params, samples)?;
 
     // Collect results
     let num_segments = state.full_n_segments()?;
@@ -543,7 +794,7 @@ fn transcribe_audio(ctx: &WhisperContext, audio_path: &PathBuf, config: &Config)
         result.push(' ');
     }
 
-    Ok(result)
+    Ok(result.trim().to_string())
 }
 
 /// Load WAV file as f32 samples (16kHz mono expected)
@@ -617,45 +868,13 @@ impl StreamingTranscriber {
         if samples.is_empty() {
             return Ok(String::new());
         }
-
-        let mut state = self.ctx.create_state()?;
-        let mut params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
-
-        // Performance settings - use fewer threads for streaming to reduce latency
-        params.set_n_threads((num_cpus::get() / 2).max(1) as i32);
-
-        // Language settings
-        let language = if self.config.language == "auto" {
-            None
-        } else {
-            Some(self.config.language.as_str())
-        };
-        params.set_language(language);
-        params.set_translate(self.config.translate_to_english);
-
-        // Output settings
-        params.set_print_special(false);
-        params.set_print_progress(false);
-        params.set_print_realtime(false);
-        params.set_print_timestamps(false);
-
-        // Streaming-optimized settings
-        params.set_no_context(true);
-        params.set_single_segment(true); // Single segment for faster response
-
-        // Run transcription
-        state.full(params, samples)?;
-
-        // Collect result
-        let num_segments = state.full_n_segments()?;
-        let mut result = String::new();
-
-        for i in 0..num_segments {
-            let segment = state.full_get_segment_text(i)?;
-            result.push_str(&segment);
-        }
-
-        Ok(result.trim().to_string())
+        transcribe_samples(
+            &self.ctx,
+            samples,
+            &self.config,
+            (num_cpus::get() / 2).max(1) as i32,
+            true,
+        )
     }
 }
 
@@ -669,6 +888,13 @@ mod tests {
         assert!(is_garbage_output("!!!???..."));
         assert!(!is_garbage_output("Hello world"));
         assert!(!is_garbage_output("Hello, world!"));
+    }
+
+    #[test]
+    fn test_append_stream_text_deduplicates_overlap() {
+        let mut text = "hello world".to_string();
+        append_stream_text(&mut text, "world again");
+        assert_eq!(text, "hello world again");
     }
 
     #[test]

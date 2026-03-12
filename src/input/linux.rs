@@ -102,9 +102,9 @@ pub fn copy_to_clipboard(text: &str) -> Result<()> {
     info!("Copying {} chars to clipboard", text.len());
 
     match session_kind() {
-        SessionKind::Wayland => copy_to_wayland_clipboard_rs(text).or_else(|e| {
-            warn!("Wayland clipboard copy failed (wl-clipboard-rs): {}", e);
-            copy_to_clipboard_cmd(text)
+        SessionKind::Wayland => copy_to_clipboard_cmd(text).or_else(|e| {
+            warn!("Wayland clipboard copy via wl-copy failed: {}", e);
+            copy_to_wayland_clipboard_rs(text)
         }),
         SessionKind::X11 => copy_to_x11_clipboard_xclip(text),
         SessionKind::Unknown => {
@@ -114,21 +114,18 @@ pub fn copy_to_clipboard(text: &str) -> Result<()> {
     }
 }
 
-/// Paste text by typing it directly via ydotool (preferred) or simulating Ctrl+V.
+/// Paste text by simulating Ctrl+V first, then fall back to direct typing.
 ///
-/// Direct typing via `ydotool type --file -` is the most reliable method on
-/// GNOME Wayland as it bypasses clipboard ownership races entirely. Text is
-/// piped via stdin so it never appears in process arguments.
+/// For dictation UX, dropping a whole block at once is much better than
+/// character-by-character injection. Only fall back to direct typing if a real
+/// paste shortcut cannot be sent successfully.
 pub fn paste_text(text: &str) -> Result<()> {
     let kind = session_kind();
 
-    // Preferred: type text directly via ydotool (bypasses clipboard entirely)
-    if command_exists("ydotool") {
-        info!("Typing {} chars directly via ydotool", text.len());
-        if let Ok(()) = type_with_ydotool(text) {
-            return Ok(());
-        }
-        warn!("ydotool type failed, falling back to Ctrl+V");
+    if kind == SessionKind::Wayland && command_exists("ydotool") {
+        check_ydotoold_running();
+        info!("Typing transcribed text directly on Wayland");
+        return type_with_ydotool(text);
     }
 
     info!("Pasting clipboard contents via simulated Ctrl+V");
@@ -148,7 +145,13 @@ pub fn paste_text(text: &str) -> Result<()> {
 
         if kind == SessionKind::Wayland && command_exists("wtype") {
             info!("Trying wtype Ctrl+V fallback...");
-            return paste_with_wtype_ctrl_v();
+            if paste_with_wtype_ctrl_v().is_ok() {
+                return Ok(());
+            }
+        }
+        if command_exists("ydotool") {
+            info!("Falling back to direct ydotool typing for {} chars", text.len());
+            return type_with_ydotool(text);
         }
 
         return Err(e);
@@ -160,6 +163,9 @@ pub fn paste_text(text: &str) -> Result<()> {
 
 /// Type text directly using ydotool via stdin (no clipboard needed).
 fn type_with_ydotool(text: &str) -> Result<()> {
+    // Let the hotkey release settle before injecting text into the focused app.
+    std::thread::sleep(std::time::Duration::from_millis(60));
+
     let mut child = Command::new("ydotool")
         .args(["type", "--file", "-"])
         .stdin(Stdio::piped())
@@ -240,9 +246,55 @@ fn paste_with_ydotool_ctrl_v() -> Result<()> {
     Ok(())
 }
 
+fn paste_with_ydotool_ctrl_shift_v() -> Result<()> {
+    let status = Command::new("ydotool")
+        .args(["key", "29:1", "42:1", "47:1", "47:0", "42:0", "29:0"])
+        .status()
+        .context("Failed to simulate Ctrl+Shift+V with ydotool")?;
+
+    if !status.success() {
+        anyhow::bail!("Failed to paste with Ctrl+Shift+V simulation");
+    }
+
+    Ok(())
+}
+
+fn paste_with_ydotool_shift_insert() -> Result<()> {
+    let status = Command::new("ydotool")
+        .args(["key", "42:1", "110:1", "110:0", "42:0"])
+        .status()
+        .context("Failed to simulate Shift+Insert with ydotool")?;
+
+    if !status.success() {
+        anyhow::bail!("Failed to paste with Shift+Insert simulation");
+    }
+
+    Ok(())
+}
+
+fn try_wayland_paste_shortcuts() -> Result<()> {
+    check_ydotoold_running();
+    paste_with_ydotool_ctrl_v()?;
+    debug!("Issued Wayland paste shortcut Ctrl+V");
+    Ok(())
+}
+
 /// Alternative clipboard copy using wl-copy command (Wayland only).
 pub fn copy_to_clipboard_cmd(text: &str) -> Result<()> {
+    copy_to_clipboard_cmd_internal(text, false)
+}
+
+fn prepare_wayland_clipboard_for_autopaste(text: &str) -> Result<()> {
+    copy_to_clipboard_cmd_internal(text, true)
+}
+
+fn copy_to_clipboard_cmd_internal(text: &str, paste_once: bool) -> Result<()> {
     let mut child = Command::new("wl-copy")
+        .args(if paste_once {
+            vec!["--paste-once", "--trim-newline"]
+        } else {
+            vec!["--trim-newline"]
+        })
         .stdin(Stdio::piped())
         .spawn()
         .context("Failed to run wl-copy. Install with: sudo apt install wl-clipboard")?;

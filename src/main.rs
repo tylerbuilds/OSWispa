@@ -51,6 +51,15 @@ pub enum AppEvent {
     Quit,
 }
 
+/// Streaming audio messages flowing from the recorder to the transcription worker.
+#[derive(Debug)]
+pub enum StreamingAudioMessage {
+    Begin,
+    Chunk(Vec<f32>),
+    Finalize,
+    Cancel,
+}
+
 /// Hotkey configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HotkeyConfig {
@@ -435,10 +444,10 @@ fn main() -> Result<()> {
             initial_config.vad.threshold, initial_config.vad.silence_duration_ms
         );
     }
-    if initial_config.streaming.enabled {
+    if initial_config.backend == TranscriptionBackend::Local && initial_config.streaming.enabled {
         info!(
-            "Streaming mode enabled: chunk={}ms",
-            initial_config.streaming.chunk_duration_ms
+            "Live local streaming active: chunk={}ms",
+            initial_config.streaming.chunk_duration_ms.clamp(250, 1000)
         );
     }
 
@@ -486,10 +495,15 @@ fn main() -> Result<()> {
     // Create communication channels
     let (event_tx, event_rx): (Sender<AppEvent>, Receiver<AppEvent>) = bounded(100);
     let (audio_tx, audio_rx): (Sender<Option<PathBuf>>, Receiver<Option<PathBuf>>) = bounded(1);
+    let (stream_tx, stream_rx): (
+        Sender<StreamingAudioMessage>,
+        Receiver<StreamingAudioMessage>,
+    ) = bounded(32);
     let (record_tx, record_rx): (Sender<RecordCommand>, Receiver<RecordCommand>) = bounded(10);
 
     // Clone handles for threads
     let config_for_main = Arc::clone(&config);
+    let config_for_audio = Arc::clone(&config);
     let config_for_transcribe = Arc::clone(&config);
     let state_for_main = Arc::clone(&state);
     let state_for_tray = Arc::clone(&state);
@@ -522,13 +536,24 @@ fn main() -> Result<()> {
     });
 
     // Start audio recording thread
+    #[cfg(target_os = "linux")]
+    std::thread::spawn(move || {
+        audio::audio_worker(record_rx, audio_tx, stream_tx, event_tx_audio, config_for_audio);
+    });
+
+    #[cfg(target_os = "macos")]
     std::thread::spawn(move || {
         audio::audio_worker(record_rx, audio_tx, event_tx_audio);
     });
 
     // Start transcription thread
     std::thread::spawn(move || {
-        transcribe::transcription_worker(audio_rx, event_tx_transcribe, config_for_transcribe);
+        transcribe::transcription_worker(
+            audio_rx,
+            stream_rx,
+            event_tx_transcribe,
+            config_for_transcribe,
+        );
     });
 
     // Start system tray in separate thread

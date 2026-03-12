@@ -131,13 +131,19 @@ fn find_keyboards() -> Result<Vec<Device>> {
             let name = name.to_string_lossy();
             if name.starts_with("event") {
                 if let Ok(device) = Device::open(&path) {
+                    let device_name = device.name().unwrap_or("Unknown");
+                    if should_ignore_keyboard(device_name) {
+                        info!("Ignoring virtual keyboard: {} at {:?}", device_name, path);
+                        continue;
+                    }
+
                     // Check if device has keyboard capabilities
                     if device.supported_keys().map_or(false, |keys| {
                         keys.contains(Key::KEY_LEFTCTRL) || keys.contains(Key::KEY_LEFTALT)
                     }) {
                         info!(
                             "Found keyboard: {} at {:?}",
-                            device.name().unwrap_or("Unknown"),
+                            device_name,
                             path
                         );
                         keyboards.push(device);
@@ -156,6 +162,11 @@ fn find_keyboards() -> Result<Vec<Device>> {
     }
 
     Ok(keyboards)
+}
+
+fn should_ignore_keyboard(name: &str) -> bool {
+    let normalized = name.trim().to_ascii_lowercase();
+    normalized.contains("ydotool")
 }
 
 /// Check if the configured hotkey combination is currently pressed
