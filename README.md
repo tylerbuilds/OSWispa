@@ -12,7 +12,7 @@ A privacy-focused, local-first voice transcription tool powered by [Whisper.cpp]
 
 ## 🚧 Project Status & Transparency
 
-**Current State:** v0.4.0 (Alpha)
+**Current State:** v0.4.1 (Alpha)
 
 | Platform | Status | Notes |
 |----------|--------|-------|
@@ -123,7 +123,7 @@ OSWispa needs two permissions on macOS:
 1. **Microphone**: Granted automatically on first recording attempt.
 2. **Accessibility**: Required for global hotkeys. Go to **System Settings > Privacy & Security > Accessibility** and add `oswispa`.
 
-### macOS Limitations (v0.4.0)
+### macOS Limitations (v0.4.1)
 
 - No system tray icon (runs in terminal only)
 - No `.pkg` installer

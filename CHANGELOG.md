@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.4.0 - 2026-03-12
+## v0.4.1 - 2026-03-12
 
 ### Added
 - Added `distil-large-v3` to the curated local model list.
