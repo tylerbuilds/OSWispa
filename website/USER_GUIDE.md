@@ -8,7 +8,7 @@ Welcome to OSWispa! This guide will help you get the most out of your new voice-
     - You'll hear a subtle "beep" (if audio feedback is enabled) and see a "Recording..." notification.
 2.  **Speak**: Talk naturally. OSWispa uses Whisper models locally on your machine by default (or an optional VPS backend if enabled).
 3.  **Release**: Let go of the keys.
-    - OSWispa will transcribe your speech and automatically paste it into your active window.
+    - OSWispa will transcribe your speech and automatically type it into your active window. It also copies the transcript to your clipboard.
 
 ## Tips for Best Accuracy
 
@@ -22,5 +22,5 @@ Right-click the OSWispa icon in your system tray to:
 - Change hotkey modifiers and optional trigger key.
 - Select or import a different Whisper model.
 - Enable/Disable audio feedback.
-- Toggle auto-paste.
+- Toggle automatic text insertion.
 - Configure optional remote VPS backend.

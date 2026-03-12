@@ -164,10 +164,10 @@ pub fn paste_text(text: &str) -> Result<()> {
 /// Type text directly using ydotool via stdin (no clipboard needed).
 fn type_with_ydotool(text: &str) -> Result<()> {
     // Let the hotkey release settle before injecting text into the focused app.
-    std::thread::sleep(std::time::Duration::from_millis(60));
+    std::thread::sleep(std::time::Duration::from_millis(20));
 
     let mut child = Command::new("ydotool")
-        .args(["type", "--file", "-"])
+        .args(["type", "--key-delay", "1", "--key-hold", "1", "--file", "-"])
         .stdin(Stdio::piped())
         .spawn()
         .context("Failed to run ydotool type")?;

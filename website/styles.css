@@ -567,6 +567,32 @@ p {
   gap: 16px;
 }
 
+.release-notes {
+  list-style: none;
+  display: grid;
+  gap: 12px;
+  color: var(--muted-2);
+}
+
+.release-notes li::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 10px;
+  border-radius: 50%;
+  background: var(--accent-2);
+  vertical-align: middle;
+}
+
+.release-changelog-link {
+  color: var(--muted);
+}
+
+.release-changelog-link a {
+  color: var(--accent);
+}
+
 .release-item {
   background: rgba(8, 14, 26, 0.8);
   border-radius: 16px;

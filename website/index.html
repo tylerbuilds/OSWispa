@@ -35,6 +35,7 @@
       </div>
       <nav class="site-nav" id="primary-nav" aria-label="Primary" data-site-nav>
         <a href="#release">Release</a>
+        <a href="#changelog">Changelog</a>
         <a href="#features">Features</a>
         <a href="#workflow">Workflow</a>
         <a href="#install">Install</a>
@@ -139,8 +140,8 @@
             <p class="eyebrow">Release</p>
             <h2><span data-latest-release>latest</span> is published.</h2>
             <p class="section-lead">
-              Patch release: the Ubuntu/Debian .deb now pulls the required runtime libraries automatically.
-              Download, install with apt, and start dictating.
+              OSWispa v0.4.0 ships the stabilized Linux dictation path: warm local Whisper contexts,
+              direct Wayland text insertion, and a safer ROCm GPU path that keeps desktop headroom intact.
             </p>
             <div class="release-actions">
               <a class="btn btn-primary" href="https://github.com/tylerbuilds/OSWispa/releases/latest">Release notes</a>
@@ -150,7 +151,7 @@
           <div class="release-grid">
             <div class="release-item">
               <p class="label">Status</p>
-              <p class="value">Alpha</p>
+              <p class="value">Alpha, stable on Linux</p>
             </div>
             <div class="release-item">
               <p class="label">Primary OS</p>
@@ -165,6 +166,26 @@
               <p class="value">Configurable</p>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section id="changelog" class="section">
+        <div class="section-heading reveal" style="--delay: 0.05s">
+          <p class="eyebrow">Changelog</p>
+          <h2>What changed in v0.4.0.</h2>
+          <p class="section-lead">This release is about one thing: making Linux dictation feel dependable enough to keep on all day.</p>
+        </div>
+        <div class="release-card reveal" style="--delay: 0.1s">
+          <ul class="release-notes">
+            <li>Local Whisper contexts stay warm between dictations, which cuts the heavy re-init cost after every release.</li>
+            <li>Wayland now types directly into the focused app and still copies the transcript to the clipboard for backup.</li>
+            <li>The hotkey listener ignores the `ydotoold` virtual keyboard, so text insertion no longer retriggers recording.</li>
+            <li>ROCm runs with a more conservative free-VRAM reserve to avoid pushing the desktop into unstable territory.</li>
+            <li>`distil-large-v3` is now included in the curated model list for faster local dictation on capable GPUs.</li>
+          </ul>
+          <p class="release-changelog-link">
+            Full changelog: <a href="https://github.com/tylerbuilds/OSWispa/blob/master/CHANGELOG.md">CHANGELOG.md</a>
+          </p>
         </div>
       </section>
 
@@ -297,11 +318,11 @@ oswispa</code></pre>
           </div>
           <div class="install-card reveal" style="--delay: 0.2s">
             <h3>Auto paste tips</h3>
-            <p>Wayland needs ydotoold for simulated typing. Clipboard copy is always available.</p>
+            <p>Wayland uses `ydotoold` for direct text insertion into the focused app. Clipboard copy is still kept as a fallback.</p>
             <pre><code>sudo ydotoold &
 pgrep ydotoold</code></pre>
             <div class="install-meta">
-              <span>If text does not appear, start the daemon or paste manually.</span>
+              <span>If text does not appear, start the daemon or use the copied transcript from the clipboard.</span>
             </div>
           </div>
         </div>
@@ -412,9 +433,9 @@ cp /path/to/your/model.bin ~/.local/share/oswispa/models/</code></pre>
             <p>The systemd service is recommended for production use.</p>
           </article>
           <article class="faq-item reveal" style="--delay: 0.25s">
-            <h3>Text doesn't paste automatically</h3>
+            <h3>Text doesn't appear automatically</h3>
             <p>
-              On Wayland, auto-paste requires <code>ydotoold</code> running as root:
+              On Wayland, automatic insertion depends on <code>ydotoold</code>:
             </p>
             <pre><code>sudo systemctl enable ydotool
 sudo systemctl start ydotool</code></pre>
