@@ -320,14 +320,14 @@ oswispa</code></pre>
           </div>
           <div class="install-card reveal" style="--delay: 0.2s">
             <h3>Install (macOS)</h3>
-            <p>Apple Silicon Mac users: download the `.dmg`, drag <code>OSWispa.app</code> into Applications, and launch it.</p>
-            <pre><code>1. Download oswispa-macos-arm64.dmg
+            <p>Mac users get a drag-to-Applications app bundle. On first launch, OSWispa runs a short device test and downloads the model that best fits the machine.</p>
+            <pre><code>1. Download the matching macOS .dmg
 2. Drag OSWispa.app to Applications
 3. Open OSWispa from Applications
 4. If macOS blocks the first launch:
    Control-click the app and choose Open</code></pre>
             <div class="install-meta">
-              <span>The packaged app is Apple Silicon-only for now, launches OSWispa in Terminal, and will ask for Microphone + Accessibility permissions.</span>
+              <span>Apple Silicon can use Metal. Intel Macs stay on the lighter CPU path. The app launches in Terminal and will ask for Microphone + Accessibility permissions.</span>
             </div>
           </div>
           <div class="install-card reveal" style="--delay: 0.25s">
@@ -346,44 +346,50 @@ pgrep ydotoold</code></pre>
         <div class="section-heading reveal" style="--delay: 0.05s">
           <p class="eyebrow">Models</p>
           <h2>Pick the model that fits your day.</h2>
-          <p class="section-lead">Drop model files into <code>~/.local/share/oswispa/models/</code>. Click a model to download.</p>
+          <p class="section-lead">OSWispa now auto-picks a model on first launch. Drop-in downloads still work if you want to override it.</p>
         </div>
         <div class="model-table reveal" style="--delay: 0.1s" role="table" aria-label="Model recommendations">
           <div class="model-row model-head" role="row">
             <span>Model</span>
             <span>Size</span>
-            <span>Speed</span>
-            <span>Best for</span>
+            <span>Feels like</span>
+            <span>Best fit</span>
           </div>
           <div class="model-row" role="row">
             <span><a class="model-link" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin" target="_blank" rel="noopener">base.en</a></span>
             <span>142 MB</span>
-            <span>Fast</span>
-            <span>Quick dictation</span>
+            <span>Fastest safe default</span>
+            <span>Intel Macs, older CPUs, quick dictation</span>
+          </div>
+          <div class="model-row" role="row">
+            <span><a class="model-link" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en.bin" target="_blank" rel="noopener">small.en</a></span>
+            <span>466 MB</span>
+            <span>Smoother but heavier</span>
+            <span>Faster CPUs and lighter Apple Silicon setups</span>
           </div>
           <div class="model-row" role="row">
             <span><a class="model-link" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.en.bin" target="_blank" rel="noopener">medium.en</a></span>
             <span>1.5 GB</span>
-            <span>Balanced</span>
-            <span>Everyday writing</span>
+            <span>Accuracy-first balance</span>
+            <span>Apple Silicon with headroom, mid-range GPUs</span>
           </div>
           <div class="model-row" role="row">
             <span><a class="model-link" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-distil-large-v3.bin" target="_blank" rel="noopener">distil-large-v3</a></span>
             <span>1.5 GB</span>
-            <span>Fast</span>
-            <span>Best all-around</span>
+            <span>Best speed/accuracy</span>
+            <span>High-headroom English dictation on GPUs or big Apple Silicon Macs</span>
           </div>
           <div class="model-row" role="row">
             <span><a class="model-link" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin" target="_blank" rel="noopener">large-v3</a></span>
             <span>2.9 GB</span>
-            <span>Slow</span>
-            <span>Highest accuracy</span>
+            <span>Slowest</span>
+            <span>Manual accuracy-first choice, not the default</span>
           </div>
         </div>
         <div class="model-guide-card reveal" style="--delay: 0.15s">
           <div>
             <p class="meta-title">Need help choosing?</p>
-            <p class="meta-copy">See the model guide for hardware limits and download tips.</p>
+            <p class="meta-copy">See the model guide for realistic hardware expectations and what the auto-picker will usually choose.</p>
           </div>
           <a class="btn btn-secondary" href="models.html">Open model guide</a>
         </div>

@@ -97,7 +97,8 @@ fn run_cpal_session(recording: &Arc<AtomicBool>) -> Result<PathBuf> {
 
     // Verify the device supports our desired config. CoreAudio can often
     // resample transparently, but we check to give a clear error if not.
-    let supported = device.supported_input_configs()
+    let supported = device
+        .supported_input_configs()
         .context("Failed to query supported input configs")?;
     let supports_16k = supported.into_iter().any(|range| {
         range.channels() >= CHANNELS
@@ -130,34 +131,36 @@ fn run_cpal_session(recording: &Arc<AtomicBool>) -> Result<PathBuf> {
         sample_format: hound::SampleFormat::Int,
     };
 
-    let writer = hound::WavWriter::create(&audio_path, spec)
-        .context("Failed to create WAV file")?;
+    let writer =
+        hound::WavWriter::create(&audio_path, spec).context("Failed to create WAV file")?;
     let writer = Arc::new(Mutex::new(Some(writer)));
     let writer_clone = Arc::clone(&writer);
 
     let err_flag = Arc::new(AtomicBool::new(false));
     let err_flag_clone = Arc::clone(&err_flag);
 
-    let stream = device.build_input_stream(
-        &config,
-        move |data: &[f32], _: &cpal::InputCallbackInfo| {
-            if let Ok(mut guard) = writer_clone.lock() {
-                if let Some(ref mut w) = *guard {
-                    for &sample in data {
-                        let s16 = (sample * 32767.0).clamp(-32768.0, 32767.0) as i16;
-                        if w.write_sample(s16).is_err() {
-                            break;
+    let stream = device
+        .build_input_stream(
+            &config,
+            move |data: &[f32], _: &cpal::InputCallbackInfo| {
+                if let Ok(mut guard) = writer_clone.lock() {
+                    if let Some(ref mut w) = *guard {
+                        for &sample in data {
+                            let s16 = (sample * 32767.0).clamp(-32768.0, 32767.0) as i16;
+                            if w.write_sample(s16).is_err() {
+                                break;
+                            }
                         }
                     }
                 }
-            }
-        },
-        move |err| {
-            error!("cpal stream error: {}", err);
-            err_flag_clone.store(true, Ordering::SeqCst);
-        },
-        None,
-    ).context("Failed to build input stream")?;
+            },
+            move |err| {
+                error!("cpal stream error: {}", err);
+                err_flag_clone.store(true, Ordering::SeqCst);
+            },
+            None,
+        )
+        .context("Failed to build input stream")?;
 
     stream.play().context("Failed to start audio stream")?;
     info!("Recording started via cpal");

@@ -465,10 +465,7 @@ fn main() -> Result<()> {
                     // Persist to disk so the wizard doesn't run again
                     let config_path = get_config_dir().join("config.json");
                     let _ = fs::create_dir_all(get_config_dir());
-                    let _ = fs::write(
-                        &config_path,
-                        serde_json::to_string_pretty(&*cfg).unwrap(),
-                    );
+                    let _ = fs::write(&config_path, serde_json::to_string_pretty(&*cfg).unwrap());
                     info!("Config updated with new model path: {:?}", cfg.model_path);
                 }
                 Err(e) => {
@@ -538,7 +535,13 @@ fn main() -> Result<()> {
     // Start audio recording thread
     #[cfg(target_os = "linux")]
     std::thread::spawn(move || {
-        audio::audio_worker(record_rx, audio_tx, stream_tx, event_tx_audio, config_for_audio);
+        audio::audio_worker(
+            record_rx,
+            audio_tx,
+            stream_tx,
+            event_tx_audio,
+            config_for_audio,
+        );
     });
 
     #[cfg(target_os = "macos")]

@@ -12,6 +12,7 @@ What to expect
 --------------
 - OSWispa currently launches in Terminal on macOS.
 - Keep the Terminal window open while dictating.
+- On first launch, OSWispa runs a short device test and downloads the best model automatically.
 - On first use, macOS will ask for Microphone access.
 - Global hotkeys require Accessibility permission:
   System Settings > Privacy & Security > Accessibility

@@ -271,9 +271,7 @@ where
 
     info!("Downloading {} to {:?}", model.name, dest_path);
 
-    let client = reqwest::blocking::Client::builder()
-        .timeout(None)
-        .build()?;
+    let client = reqwest::blocking::Client::builder().timeout(None).build()?;
 
     let response = client.get(model.url).send()?;
 

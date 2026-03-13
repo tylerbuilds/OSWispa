@@ -141,11 +141,7 @@ fn find_keyboards() -> Result<Vec<Device>> {
                     if device.supported_keys().map_or(false, |keys| {
                         keys.contains(Key::KEY_LEFTCTRL) || keys.contains(Key::KEY_LEFTALT)
                     }) {
-                        info!(
-                            "Found keyboard: {} at {:?}",
-                            device_name,
-                            path
-                        );
+                        info!("Found keyboard: {} at {:?}", device_name, path);
                         keyboards.push(device);
                     }
                 }

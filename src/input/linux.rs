@@ -150,7 +150,10 @@ pub fn paste_text(text: &str) -> Result<()> {
             }
         }
         if command_exists("ydotool") {
-            info!("Falling back to direct ydotool typing for {} chars", text.len());
+            info!(
+                "Falling back to direct ydotool typing for {} chars",
+                text.len()
+            );
             return type_with_ydotool(text);
         }
 

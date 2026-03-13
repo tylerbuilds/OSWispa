@@ -140,7 +140,8 @@ fn run_arecord_session(
     let child_pid = child.id();
     debug!("arecord started with PID {}", child_pid);
 
-    let streaming_active = config.backend == TranscriptionBackend::Local && config.streaming.enabled;
+    let streaming_active =
+        config.backend == TranscriptionBackend::Local && config.streaming.enabled;
     let chunk_duration_ms = config.streaming.chunk_duration_ms.clamp(250, 1000);
     let chunk_bytes = chunk_duration_ms as usize * 16000 * 2 / 1000;
     let mut stream_offset = 44_u64;

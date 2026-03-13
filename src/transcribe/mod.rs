@@ -442,8 +442,8 @@ fn transcribe_with_fallback(
     );
 
     // Strategy based on VRAM availability
-    let primary_gpu_safe =
-        context_cache.contains(primary_model, true) || can_run_model_on_gpu(primary_model, available_vram);
+    let primary_gpu_safe = context_cache.contains(primary_model, true)
+        || can_run_model_on_gpu(primary_model, available_vram);
     if primary_gpu_safe {
         // Enough VRAM - try primary model on GPU
         info!("Sufficient VRAM available, attempting GPU transcription with primary model");

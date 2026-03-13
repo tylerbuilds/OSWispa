@@ -5,17 +5,17 @@
 //! - Fallback: `pbcopy`/`pbpaste` commands + `osascript` keystroke injection
 
 use anyhow::{Context, Result};
-use std::process::{Command, Stdio};
 use std::io::Write as IoWrite;
+use std::process::{Command, Stdio};
 use tracing::{debug, info, warn};
 
 /// Copy text to the macOS clipboard via arboard.
 pub fn copy_to_clipboard(text: &str) -> Result<()> {
     info!("Copying {} chars to clipboard", text.len());
 
-    let mut clipboard = arboard::Clipboard::new()
-        .context("Failed to access macOS clipboard")?;
-    clipboard.set_text(text)
+    let mut clipboard = arboard::Clipboard::new().context("Failed to access macOS clipboard")?;
+    clipboard
+        .set_text(text)
         .context("Failed to set clipboard text")?;
 
     debug!("Text copied to clipboard via arboard");
@@ -72,7 +72,8 @@ fn type_with_enigo(text: &str) -> Result<()> {
     let mut enigo = Enigo::new(&Settings::default())
         .map_err(|e| anyhow::anyhow!("Failed to create enigo instance: {:?}", e))?;
 
-    enigo.text(text)
+    enigo
+        .text(text)
         .map_err(|e| anyhow::anyhow!("Failed to type text via enigo: {:?}", e))?;
 
     debug!("Text typed via enigo");
@@ -118,8 +119,6 @@ fn copy_via_pbcopy(text: &str) -> Result<()> {
 /// Get text from clipboard.
 #[allow(dead_code)]
 pub fn get_from_clipboard() -> Result<String> {
-    let mut clipboard = arboard::Clipboard::new()
-        .context("Failed to access macOS clipboard")?;
-    clipboard.get_text()
-        .context("Failed to get clipboard text")
+    let mut clipboard = arboard::Clipboard::new().context("Failed to access macOS clipboard")?;
+    clipboard.get_text().context("Failed to get clipboard text")
 }

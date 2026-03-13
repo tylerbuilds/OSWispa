@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Docs
+- Added realistic model guidance for Intel Macs, Apple Silicon Macs, and discrete GPU systems.
+- Documented that OSWispa now auto-tests the machine on first launch and picks a model that aims to stay responsive.
+- Clarified that `large-v3` is an accuracy-first manual choice, not the normal speed-first default.
+
 ## v0.4.1 - 2026-03-12
 
 ### Added

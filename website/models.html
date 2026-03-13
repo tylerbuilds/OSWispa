@@ -12,7 +12,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>OSWispa Models - Downloads and Guidance</title>
-  <meta name="description" content="Download OSWispa Whisper.cpp models and see guidance for modest systems.">
+  <meta name="description" content="Download OSWispa Whisper.cpp models and see realistic hardware guidance for Intel Macs, Apple Silicon, and GPU systems.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;600;700&display=swap" rel="stylesheet">
@@ -54,8 +54,8 @@
           <p class="eyebrow">Model guide</p>
           <h1>Download the right model for your hardware.</h1>
           <p class="lead">
-            These models power OSWispa. Bigger models sound better but demand more RAM and compute.
-            Use the guidance below to avoid overload on modest systems.
+            Bigger Whisper models sound better, but they also slow down faster and can make a modest machine feel heavy.
+            Use this guide to understand what OSWispa will usually auto-pick and what that means in practice.
           </p>
           <div class="hero-actions">
             <a class="btn btn-primary" href="#downloads">Download models</a>
@@ -67,29 +67,29 @@
             <div class="card-header">
               <span class="signal"></span>
               <span>Resource snapshot</span>
-              <span class="pill">CPU-only note</span>
+              <span class="pill">Auto-pick guide</span>
             </div>
             <div class="transcript">
               <p class="stamp">Rule of thumb</p>
-              <p>Base and medium models run on modest CPUs. Distil-large-v3 and large-v3 feel best with a GPU.</p>
-              <p class="muted">Actual usage depends on audio length, backend, and system load.</p>
+              <p>CPU-only machines should expect `base.en` or `small.en`. Apple Silicon and discrete GPUs can step up to `medium.en` or `distil-large-v3` when there is real headroom.</p>
+              <p class="muted">OSWispa tries to protect responsiveness first. `large-v3` is manual, not the normal default.</p>
             </div>
           </div>
           <div class="hero-stack">
             <div class="stack-card">
-              <p class="stack-title">Disk space</p>
-              <p class="stack-value">142 MB - 2.9 GB</p>
-              <p class="stack-copy">Model size on disk.</p>
+              <p class="stack-title">CPU-only defaults</p>
+              <p class="stack-value">base.en / small.en</p>
+              <p class="stack-copy">Intel Macs and older laptops.</p>
             </div>
             <div class="stack-card">
-              <p class="stack-title">Suggested RAM</p>
-              <p class="stack-value">4 GB - 16 GB+</p>
-              <p class="stack-copy">CPU-only baseline.</p>
+              <p class="stack-title">Apple Silicon defaults</p>
+              <p class="stack-value">small / medium / distil</p>
+              <p class="stack-copy">Depends on unified memory.</p>
             </div>
             <div class="stack-card">
-              <p class="stack-title">Speed range</p>
-              <p class="stack-value">Fast to Slow</p>
-              <p class="stack-copy">Depends on hardware.</p>
+              <p class="stack-title">Big GPU defaults</p>
+              <p class="stack-value">medium / distil</p>
+              <p class="stack-copy">Chosen with safe headroom.</p>
             </div>
           </div>
         </div>
@@ -105,32 +105,38 @@
           <div class="model-row model-head" role="row">
             <span>Model</span>
             <span>Size</span>
-            <span>Speed</span>
-            <span>Best for</span>
+            <span>Feels like</span>
+            <span>Best fit</span>
           </div>
           <div class="model-row" role="row">
             <span><a class="model-link" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin" target="_blank" rel="noopener">base.en</a></span>
             <span>142 MB</span>
-            <span>Fast</span>
-            <span>Quick dictation</span>
+            <span>Fastest safe default</span>
+            <span>Intel Macs, older CPUs, short dictation</span>
+          </div>
+          <div class="model-row" role="row">
+            <span><a class="model-link" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en.bin" target="_blank" rel="noopener">small.en</a></span>
+            <span>466 MB</span>
+            <span>Smoother but heavier</span>
+            <span>Faster CPUs and lighter Apple Silicon setups</span>
           </div>
           <div class="model-row" role="row">
             <span><a class="model-link" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.en.bin" target="_blank" rel="noopener">medium.en</a></span>
             <span>1.5 GB</span>
-            <span>Balanced</span>
-            <span>Everyday writing</span>
+            <span>Accuracy-first balance</span>
+            <span>Apple Silicon with room to spare, mid-range GPUs</span>
           </div>
           <div class="model-row" role="row">
             <span><a class="model-link" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-distil-large-v3.bin" target="_blank" rel="noopener">distil-large-v3</a></span>
             <span>1.5 GB</span>
-            <span>Fast</span>
-            <span>Best all-around</span>
+            <span>Best speed/accuracy</span>
+            <span>High-headroom English dictation on GPUs or big Apple Silicon Macs</span>
           </div>
           <div class="model-row" role="row">
             <span><a class="model-link" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin" target="_blank" rel="noopener">large-v3</a></span>
             <span>2.9 GB</span>
-            <span>Slow</span>
-            <span>Highest accuracy</span>
+            <span>Slowest</span>
+            <span>Manual accuracy-first choice</span>
           </div>
         </div>
       </section>
@@ -138,58 +144,62 @@
       <section id="guidance" class="section">
         <div class="section-heading reveal" style="--delay: 0.05s">
           <p class="eyebrow">Guidance</p>
-          <h2>Model resource guidance for modest systems.</h2>
-          <p class="section-lead">Suggested RAM is for CPU-only systems. GPUs can reduce latency significantly.</p>
+          <h2>What to expect on real hardware.</h2>
+          <p class="section-lead">These are practical starting points, not benchmark theater. OSWispa biases toward staying responsive.</p>
         </div>
         <div class="card-grid">
           <article class="info-card model-card reveal" style="--delay: 0.1s">
             <h3>base.en</h3>
-            <p class="model-meta">Smallest English model. Fast and light.</p>
+            <p class="model-meta">The usual default for CPU-only machines.</p>
             <ul>
               <li>Download size: 142 MB</li>
-              <li>Suggested RAM (CPU-only): 4 GB+</li>
-              <li>CPU-only speed: good</li>
+              <li>Typical pick: Intel Macs and older laptops</li>
+              <li>What to expect: quick output, lighter system impact, more misses on names and noisy audio</li>
             </ul>
             <a class="btn btn-secondary btn-small" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin" target="_blank" rel="noopener">Download base.en</a>
           </article>
           <article class="info-card model-card reveal" style="--delay: 0.2s">
+            <h3>small.en</h3>
+            <p class="model-meta">A step up when the machine can take it.</p>
+            <ul>
+              <li>Download size: 466 MB</li>
+              <li>Typical pick: stronger CPU-only desktops, lighter Apple Silicon Macs</li>
+              <li>What to expect: better wording than base.en, but still not “instant” on long recordings</li>
+            </ul>
+            <a class="btn btn-secondary btn-small" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en.bin" target="_blank" rel="noopener">Download small.en</a>
+          </article>
+          <article class="info-card model-card reveal" style="--delay: 0.3s">
             <h3>medium.en</h3>
-            <p class="model-meta">Balanced accuracy with heavier compute.</p>
+            <p class="model-meta">A realistic step up when memory and acceleration are available.</p>
             <ul>
               <li>Download size: 1.5 GB</li>
-              <li>Suggested RAM (CPU-only): 8 GB+</li>
-              <li>CPU-only speed: moderate</li>
+              <li>Typical pick: Apple Silicon with headroom, mid-range GPUs</li>
+              <li>What to expect: better recovery of phrasing and punctuation, but more delay on CPU-only systems</li>
             </ul>
             <a class="btn btn-secondary btn-small" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.en.bin" target="_blank" rel="noopener">Download medium.en</a>
           </article>
-          <article class="info-card model-card reveal" style="--delay: 0.3s">
-            <h3>distil-large-v3</h3>
-            <p class="model-meta">Fast for its accuracy. GPU recommended.</p>
-            <ul>
-              <li>Download size: 1.5 GB</li>
-              <li>Suggested RAM (CPU-only): 8-12 GB</li>
-              <li>CPU-only speed: moderate</li>
-            </ul>
-            <a class="btn btn-secondary btn-small" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-distil-large-v3.bin" target="_blank" rel="noopener">Download distil-large-v3</a>
-          </article>
           <article class="info-card model-card reveal" style="--delay: 0.4s">
-            <h3>large-v3</h3>
-            <p class="model-meta">Highest accuracy with heavy compute.</p>
+            <h3>distil-large-v3 / large-v3</h3>
+            <p class="model-meta">Only for machines with real headroom or people who care more about accuracy than latency.</p>
             <ul>
-              <li>Download size: 2.9 GB</li>
-              <li>Suggested RAM (CPU-only): 16 GB+</li>
-              <li>CPU-only speed: slow</li>
+              <li>`distil-large-v3`: best English speed/accuracy on capable hardware</li>
+              <li>`large-v3`: highest accuracy, but the heaviest and slowest option</li>
+              <li>What to expect: great results when the machine is strong, frustrating lag when it is not</li>
             </ul>
-            <a class="btn btn-secondary btn-small" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin" target="_blank" rel="noopener">Download large-v3</a>
+            <div class="hero-actions">
+              <a class="btn btn-secondary btn-small" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-distil-large-v3.bin" target="_blank" rel="noopener">Download distil-large-v3</a>
+              <a class="btn btn-secondary btn-small" href="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin" target="_blank" rel="noopener">Download large-v3</a>
+            </div>
           </article>
         </div>
         <div class="model-note reveal" style="--delay: 0.15s">
-          <h3>Modest system tips</h3>
+          <h3>Automatic model picks</h3>
           <ul class="note-list">
-            <li>Start with base.en if you have 4-8 GB RAM or an older CPU.</li>
-            <li>Keep recordings short to reduce peak memory and latency.</li>
-            <li>Close heavy apps when testing medium or larger models on CPU-only machines.</li>
-            <li>Use distil-large-v3 or large-v3 only if your system stays responsive.</li>
+            <li>Older Intel Macs and other CPU-only machines usually land on `base.en`.</li>
+            <li>Faster CPU-only desktops can move up to `small.en`.</li>
+            <li>Apple Silicon 8-16 GB systems usually land on `small.en` or `medium.en`.</li>
+            <li>Apple Silicon with large unified memory or discrete GPUs with healthy VRAM can reach `distil-large-v3`.</li>
+            <li>`large-v3` is not the normal default because OSWispa treats responsiveness as the safer first choice.</li>
           </ul>
         </div>
       </section>

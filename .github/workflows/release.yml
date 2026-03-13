@@ -82,19 +82,33 @@ jobs:
             oswispa_x86_64.rpm
 
   build-macos:
-    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            arch: arm64
+            build_args: --release --locked --no-default-features --features gpu-metal --target aarch64-apple-darwin
+          - os: macos-13
+            target: x86_64-apple-darwin
+            arch: x86_64
+            build_args: --release --locked --no-default-features --target x86_64-apple-darwin
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
 
-      - name: Build release binary (CPU-only, no GUI)
-        run: cargo build --release --locked --no-default-features
+      - name: Build release binary
+        run: cargo build ${{ matrix.build_args }}
 
       - name: Package macOS app bundle
         run: |
@@ -108,7 +122,7 @@ jobs:
           rm -rf "$stage_root"
           mkdir -p "$contents_dir/MacOS" "$contents_dir/Resources/bin"
 
-          cp target/release/oswispa "$contents_dir/Resources/bin/oswispa"
+          cp "target/${{ matrix.target }}/release/oswispa" "$contents_dir/Resources/bin/oswispa"
           chmod +x "$contents_dir/Resources/bin/oswispa"
 
           cp packaging/macos/launcher.sh "$contents_dir/MacOS/OSWispa"
@@ -124,21 +138,21 @@ jobs:
 
           ln -s /Applications "$dmg_root/Applications"
 
-          ditto -c -k --sequesterRsrc --keepParent "$app_dir" oswispa-macos-arm64.zip
-          hdiutil create -volname "OSWispa Installer" -srcfolder "$dmg_root" -ov -format UDZO oswispa-macos-arm64.dmg
+          ditto -c -k --sequesterRsrc --keepParent "$app_dir" "oswispa-macos-${{ matrix.arch }}.zip"
+          hdiutil create -volname "OSWispa Installer" -srcfolder "$dmg_root" -ov -format UDZO "oswispa-macos-${{ matrix.arch }}.dmg"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: oswispa-macos-arm64
+          name: oswispa-macos-${{ matrix.arch }}
           path: |
-            oswispa-macos-arm64.zip
-            oswispa-macos-arm64.dmg
+            oswispa-macos-${{ matrix.arch }}.zip
+            oswispa-macos-${{ matrix.arch }}.dmg
 
       - name: Publish GitHub Release Asset
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            oswispa-macos-arm64.zip
-            oswispa-macos-arm64.dmg
+            oswispa-macos-${{ matrix.arch }}.zip
+            oswispa-macos-${{ matrix.arch }}.dmg

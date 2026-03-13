@@ -294,7 +294,10 @@ pub fn listen_for_hotkey(
                 info!("Quick tap detected - cancelling recording");
                 let _ = event_tx.send(AppEvent::CancelRecording);
             } else {
-                info!("Recording stopped ({} released)", format_hotkey(&hotkey_cfg));
+                info!(
+                    "Recording stopped ({} released)",
+                    format_hotkey(&hotkey_cfg)
+                );
                 let _ = event_tx.send(AppEvent::StopRecording);
             }
         }

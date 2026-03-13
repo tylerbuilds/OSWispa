@@ -94,13 +94,13 @@ The installer will:
 
 ### Option A (Recommended): Download the App Package
 
-1. Download `oswispa-macos-arm64.dmg` from GitHub Releases.
+1. Download the matching macOS DMG from GitHub Releases: `oswispa-macos-arm64.dmg` for Apple Silicon or `oswispa-macos-x86_64.dmg` for Intel.
 2. Open the `.dmg`.
 3. Drag `OSWispa.app` into `Applications`.
 4. Open `OSWispa` from `Applications`.
 5. If macOS blocks the first launch, Control-click `OSWispa.app` and choose `Open`.
 
-> **Note:** The packaged macOS app is currently **Apple Silicon (`arm64`)** only, uses the CPU build today, and launches OSWispa in Terminal so you can see setup prompts and status output.
+> **Note:** The packaged macOS app launches OSWispa in Terminal so you can see setup prompts and status output. Apple Silicon builds use Metal; Intel builds stay on the CPU path.
 
 ### Option B: Install Script
 
@@ -113,7 +113,7 @@ cd OSWispa
 The installer will:
 - Install Xcode CLT and Homebrew (if needed) + cmake
 - Auto-detect Apple Silicon and build with Metal GPU acceleration
-- Download the Whisper model
+- Run a short device test and download the best Whisper model automatically
 - Create a LaunchAgent for auto-start on login
 
 ### Option C: Manual Build
@@ -137,8 +137,8 @@ OSWispa needs two permissions on macOS:
 
 - No native menu bar/tray UI yet; the packaged app launches OSWispa in Terminal
 - No signed/notarized installer yet, so first launch may require Control-click > Open
-- The packaged app is CPU-only today; the install script can build a Metal-enabled version on Apple Silicon
-- CPU transcription is the default on Intel Macs
+- Apple Silicon packages use Metal; Intel packages use CPU transcription
+- First launch auto-selects a model, but power users can still override it with `OSWISPA_SETUP_MANUAL=1`
 
 ---
 
