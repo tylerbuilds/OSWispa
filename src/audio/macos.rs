@@ -10,7 +10,7 @@ use crossbeam_channel::{Receiver, Sender};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 const SAMPLE_RATE: u32 = 16000;
 const CHANNELS: u16 = 1;

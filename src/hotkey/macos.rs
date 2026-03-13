@@ -46,7 +46,7 @@ fn parse_trigger_key(trigger_key: Option<&str>) -> Option<Key> {
         "space" => Some(Key::Space),
         "tab" => Some(Key::Tab),
         "enter" => Some(Key::Return),
-        "backspace" => Some(Key::BackSpace),
+        "backspace" => Some(Key::Backspace),
         "capslock" => Some(Key::CapsLock),
         "grave" => Some(Key::BackQuote),
         "f1" => Some(Key::F1),
