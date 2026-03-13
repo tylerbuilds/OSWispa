@@ -96,40 +96,49 @@ jobs:
       - name: Build release binary (CPU-only, no GUI)
         run: cargo build --release --locked --no-default-features
 
-      - name: Package macOS zip
+      - name: Package macOS app bundle
         run: |
-          mkdir -p OSWispa
-          cp target/release/oswispa OSWispa/oswispa
-          cp README.md LICENSE OSWispa/
-          cat > OSWispa/INSTALL.txt << 'EOF'
-          OSWispa — Quick Start
-          =====================
+          set -euo pipefail
+          version="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)"
+          stage_root="$PWD/dist/macos"
+          dmg_root="$stage_root/dmg"
+          app_dir="$dmg_root/OSWispa.app"
+          contents_dir="$app_dir/Contents"
 
-          1. Move the binary to your PATH:
-             sudo cp oswispa /usr/local/bin/
+          rm -rf "$stage_root"
+          mkdir -p "$contents_dir/MacOS" "$contents_dir/Resources/bin"
 
-          2. Run it:
-             oswispa
+          cp target/release/oswispa "$contents_dir/Resources/bin/oswispa"
+          chmod +x "$contents_dir/Resources/bin/oswispa"
 
-          3. On first launch, OSWispa will detect your hardware
-             and guide you through downloading a Whisper model.
+          cp packaging/macos/launcher.sh "$contents_dir/MacOS/OSWispa"
+          chmod +x "$contents_dir/MacOS/OSWispa"
 
-          4. Grant Accessibility permission when prompted:
-             System Settings > Privacy & Security > Accessibility
+          sed "s/@VERSION@/$version/g" packaging/macos/Info.plist.template > "$contents_dir/Info.plist"
 
-          5. Hold your configured hotkey (default: Ctrl+Super),
-             speak, and release to transcribe.
-          EOF
-          zip -r oswispa-macos-arm64.zip OSWispa/
+          cp packaging/macos/README.txt "$dmg_root/README.txt"
+          cp README.md "$dmg_root/README.md"
+          cp LICENSE "$dmg_root/LICENSE"
+          cp packaging/macos/README.txt "$contents_dir/Resources/README.txt"
+          cp LICENSE "$contents_dir/Resources/LICENSE"
+
+          ln -s /Applications "$dmg_root/Applications"
+
+          ditto -c -k --sequesterRsrc --keepParent "$app_dir" oswispa-macos-arm64.zip
+          hdiutil create -volname "OSWispa Installer" -srcfolder "$dmg_root" -ov -format UDZO oswispa-macos-arm64.dmg
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: oswispa-macos-arm64
-          path: oswispa-macos-arm64.zip
+          path: |
+            oswispa-macos-arm64.zip
+            oswispa-macos-arm64.dmg
 
       - name: Publish GitHub Release Asset
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: oswispa-macos-arm64.zip
+          files: |
+            oswispa-macos-arm64.zip
+            oswispa-macos-arm64.dmg

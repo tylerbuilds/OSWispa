@@ -92,7 +92,17 @@ The installer will:
 
 ## 🍎 Installation (macOS)
 
-### Option A (Recommended): Install Script
+### Option A (Recommended): Download the App Package
+
+1. Download `oswispa-macos-arm64.dmg` from GitHub Releases.
+2. Open the `.dmg`.
+3. Drag `OSWispa.app` into `Applications`.
+4. Open `OSWispa` from `Applications`.
+5. If macOS blocks the first launch, Control-click `OSWispa.app` and choose `Open`.
+
+> **Note:** The packaged macOS app is currently **Apple Silicon (`arm64`)** only, uses the CPU build today, and launches OSWispa in Terminal so you can see setup prompts and status output.
+
+### Option B: Install Script
 
 ```bash
 git clone https://github.com/tylerbuilds/OSWispa.git
@@ -106,7 +116,7 @@ The installer will:
 - Download the Whisper model
 - Create a LaunchAgent for auto-start on login
 
-### Option B: Manual Build
+### Option C: Manual Build
 
 ```bash
 brew install cmake
@@ -125,9 +135,9 @@ OSWispa needs two permissions on macOS:
 
 ### macOS Limitations (v0.4.1)
 
-- No system tray icon (runs in terminal only)
-- No `.pkg` installer
-- Metal GPU auto-enabled on Apple Silicon, untested on Intel Macs
+- No native menu bar/tray UI yet; the packaged app launches OSWispa in Terminal
+- No signed/notarized installer yet, so first launch may require Control-click > Open
+- The packaged app is CPU-only today; the install script can build a Metal-enabled version on Apple Silicon
 - CPU transcription is the default on Intel Macs
 
 ---

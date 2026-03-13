@@ -141,7 +141,8 @@
             <h2><span data-latest-release>latest</span> is published.</h2>
             <p class="section-lead">
               OSWispa v0.4.1 ships the stabilized Linux dictation path: warm local Whisper contexts,
-              direct Wayland text insertion, and a safer ROCm GPU path that keeps desktop headroom intact.
+              direct Wayland text insertion, a safer ROCm GPU path that keeps desktop headroom intact,
+              and a packaged macOS app download for Apple Silicon users.
             </p>
             <div class="release-actions">
               <a class="btn btn-primary" href="https://github.com/tylerbuilds/OSWispa/releases/latest">Release notes</a>
@@ -173,7 +174,7 @@
         <div class="section-heading reveal" style="--delay: 0.05s">
           <p class="eyebrow">Changelog</p>
           <h2>What changed in v0.4.1.</h2>
-          <p class="section-lead">This release is about one thing: making Linux dictation feel dependable enough to keep on all day.</p>
+          <p class="section-lead">This release focuses on dependable Linux dictation and a friendlier packaged download for Apple Silicon Macs.</p>
         </div>
         <div class="release-card reveal" style="--delay: 0.1s">
           <ul class="release-notes">
@@ -182,6 +183,7 @@
             <li>The hotkey listener ignores the `ydotoold` virtual keyboard, so text insertion no longer retriggers recording.</li>
             <li>ROCm runs with a more conservative free-VRAM reserve to avoid pushing the desktop into unstable territory.</li>
             <li>`distil-large-v3` is now included in the curated model list for faster local dictation on capable GPUs.</li>
+            <li>macOS now ships as a packaged `OSWispa.app` download inside a drag-and-drop `.dmg`, with a bundled readme for first-time setup.</li>
           </ul>
           <p class="release-changelog-link">
             Full changelog: <a href="https://github.com/tylerbuilds/OSWispa/blob/master/CHANGELOG.md">CHANGELOG.md</a>
@@ -303,7 +305,7 @@
         <div class="section-heading reveal" style="--delay: 0.05s">
           <p class="eyebrow">Install</p>
           <h2>Get running in minutes.</h2>
-          <p class="section-lead">Ubuntu and Debian are first class. Other platforms need manual dependencies.</p>
+          <p class="section-lead">Ubuntu/Debian and Apple Silicon macOS have downloadable packages. Other platforms still need manual dependencies.</p>
         </div>
         <div class="install-grid">
           <div class="install-card reveal" style="--delay: 0.1s">
@@ -317,6 +319,18 @@ oswispa</code></pre>
             </div>
           </div>
           <div class="install-card reveal" style="--delay: 0.2s">
+            <h3>Install (macOS)</h3>
+            <p>Apple Silicon Mac users: download the `.dmg`, drag <code>OSWispa.app</code> into Applications, and launch it.</p>
+            <pre><code>1. Download oswispa-macos-arm64.dmg
+2. Drag OSWispa.app to Applications
+3. Open OSWispa from Applications
+4. If macOS blocks the first launch:
+   Control-click the app and choose Open</code></pre>
+            <div class="install-meta">
+              <span>The packaged app is Apple Silicon-only for now, launches OSWispa in Terminal, and will ask for Microphone + Accessibility permissions.</span>
+            </div>
+          </div>
+          <div class="install-card reveal" style="--delay: 0.25s">
             <h3>Auto paste tips</h3>
             <p>Wayland uses `ydotoold` for direct text insertion into the focused app. Clipboard copy is still kept as a fallback.</p>
             <pre><code>sudo ydotoold &

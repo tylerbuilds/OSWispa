@@ -5,6 +5,7 @@
 ### Added
 - Added `distil-large-v3` to the curated local model list.
 - Added a stable Linux checkpoint tag for this release cycle: `checkpoint-2026-03-12-stable-dictation`.
+- Added a packaged macOS app download: `OSWispa.app` inside a drag-to-Applications `.dmg`, with a bundled plain-English readme.
 
 ### Changed
 - Linux dictation now prewarms and reuses local Whisper contexts instead of rebuilding them for every utterance.
