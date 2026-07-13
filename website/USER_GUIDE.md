@@ -47,7 +47,26 @@ Then it picks a model that tries to stay responsive instead of chasing the bigge
 
 Right-click the OSWispa icon in the tray to:
 - change the hotkey
+- choose a Linux PipeWire/PulseAudio microphone source, or leave it blank to follow the system default
 - choose or import a different model
 - enable or disable audio feedback
 - enable or disable automatic text insertion
 - configure the optional remote backend
+
+## Linux microphone troubleshooting
+
+If OSWispa inserts `[BLANK_AUDIO]` or reports no speech, confirm which input PipeWire/PulseAudio is using:
+
+```bash
+pactl get-default-source
+pactl list short sources
+```
+
+Set the working microphone system-wide with `pactl set-default-source SOURCE_NAME`, or copy the source name into **Settings → General → Linux microphone source** to override it only for OSWispa.
+
+For reliable login startup, use the installed user service:
+
+```bash
+systemctl --user enable --now oswispa
+systemctl --user status oswispa
+```

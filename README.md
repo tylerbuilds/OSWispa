@@ -81,7 +81,7 @@ cd OSWispa
 The installer will:
 - Detect AMD ROCm or NVIDIA CUDA and build with GPU acceleration
 - Fall back to CPU-only if no GPU toolkit is found
-- Create a systemd service with the correct GPU environment variables
+- Create, enable, and start a systemd user service with the correct GPU environment variables
 
 **After install:**
 1.  Log out and back in (for `input` group permissions).
@@ -229,6 +229,15 @@ OSWispa is local-first by default, but you can optionally route transcription to
 **"It says recording but nothing happens."**
 *   Check if `ydotoold` is running: `pgrep ydotoold`.
 *   Try manual paste: The text is also copied to your clipboard. Press `Ctrl+V`.
+
+**"It inserts `[BLANK_AUDIO]` or reports no speech."**
+*   OSWispa follows the system default PipeWire/PulseAudio input unless a source is set in Settings.
+*   Check the current source with `pactl get-default-source` and list alternatives with `pactl list short sources`.
+*   Select the working microphone with `pactl set-default-source SOURCE_NAME`, or paste its source name into **Settings → General → Linux microphone source** to override the system default for OSWispa only.
+
+**"The hotkey stops working after I close the terminal."**
+*   Run OSWispa through its user service: `systemctl --user enable --now oswispa`.
+*   Check startup and hotkey logs with `journalctl --user -u oswispa -n 100`.
 
 **"Permission denied accessing /dev/input/..."**
 *   You need to be in the `input` group.
