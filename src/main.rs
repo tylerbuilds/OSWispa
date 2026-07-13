@@ -221,6 +221,10 @@ pub struct Config {
     /// Audio feedback enabled
     #[serde(default = "default_true")]
     pub audio_feedback: bool,
+    /// Optional PulseAudio/PipeWire source name on Linux.
+    /// When unset, OSWispa follows the system default input source.
+    #[serde(default)]
+    pub audio_source: Option<String>,
     /// Language for transcription (e.g., "en", "es", "de", "fr", "auto")
     #[serde(default = "default_language")]
     pub language: String,
@@ -265,6 +269,7 @@ impl Default for Config {
             auto_paste: true,
             notification_enabled: true,
             audio_feedback: true,
+            audio_source: None,
             language: "en".to_string(),
             translate_to_english: false,
             hotkey: HotkeyConfig::default(),

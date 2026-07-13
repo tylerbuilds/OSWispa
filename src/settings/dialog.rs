@@ -103,6 +103,24 @@ fn create_general_tab(
     audio_check.set_active(config.audio_feedback);
     vbox.append(&audio_check);
 
+    let source_box = GtkBox::new(Orientation::Horizontal, 8);
+    source_box.append(&Label::new(Some("Linux microphone source:")));
+    let source_entry = Entry::new();
+    source_entry.set_hexpand(true);
+    source_entry.set_placeholder_text(Some("System default"));
+    if let Some(source) = config.audio_source.as_deref() {
+        source_entry.set_text(source);
+    }
+    source_box.append(&source_entry);
+    vbox.append(&source_box);
+
+    let source_help = Label::new(Some(
+        "Optional PipeWire/PulseAudio source name; leave blank to follow the system default.",
+    ));
+    source_help.set_wrap(true);
+    source_help.add_css_class("dim-label");
+    vbox.append(&source_help);
+
     let paste_check = CheckButton::with_label("Auto-paste transcribed text");
     paste_check.set_active(config.auto_paste);
     vbox.append(&paste_check);
@@ -157,6 +175,10 @@ fn create_general_tab(
     save_btn.connect_clicked(move |_| {
         let mut new_config = config_state_clone.read().unwrap().clone();
         new_config.audio_feedback = audio_check.is_active();
+        new_config.audio_source = match source_entry.text().trim() {
+            "" => None,
+            source => Some(source.to_string()),
+        };
         new_config.auto_paste = paste_check.is_active();
         new_config.notification_enabled = notify_check.is_active();
         new_config.punctuation_commands = punct_check.is_active();
