@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Added
+- Added a Linux microphone-source override in General Settings while retaining the system default as the normal path.
+
+### Changed
+- The Linux source installer now enables and starts the systemd user service, and removes its legacy duplicate desktop autostart entry.
+
+### Fixed
+- Fixed Whisper's `[BLANK_AUDIO]` and no-speech sentinel output being inserted as dictated text.
+- Documented and surfaced the recovery path when PipeWire/PulseAudio selects a silent input source.
+
 ### Docs
 - Added realistic model guidance for Intel Macs, Apple Silicon Macs, and discrete GPU systems.
 - Documented that OSWispa now auto-tests the machine on first launch and picks a model that aims to stay responsive.

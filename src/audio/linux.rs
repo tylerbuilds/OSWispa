@@ -122,7 +122,8 @@ fn run_arecord_session(
     // arecord parameters for Whisper: 16kHz, Mono, S16_LE
     // Use "pulse" device by default to route through PipeWire/PulseAudio,
     // which respects the user's configured default input source.
-    let mut child = Command::new("arecord")
+    let mut arecord = Command::new("arecord");
+    arecord
         .arg("-D")
         .arg(DEFAULT_AUDIO_DEVICE)
         .arg("-r")
@@ -133,7 +134,16 @@ fn run_arecord_session(
         .arg("S16_LE")
         .arg(&audio_path)
         .stdout(Stdio::null())
-        .stderr(Stdio::null())
+        .stderr(Stdio::null());
+
+    if let Some(source) = configured_audio_source(config) {
+        info!("Using configured PulseAudio/PipeWire source: {}", source);
+        arecord.env("PULSE_SOURCE", source);
+    } else {
+        info!("Using the system default PulseAudio/PipeWire input source");
+    }
+
+    let mut child = arecord
         .spawn()
         .context("Failed to spawn 'arecord'. Is alsa-utils installed?")?;
 
@@ -233,6 +243,14 @@ fn run_arecord_session(
 
     info!("Audio file ready: {} bytes", metadata.len());
     Ok(audio_path)
+}
+
+fn configured_audio_source(config: &Config) -> Option<&str> {
+    config
+        .audio_source
+        .as_deref()
+        .map(str::trim)
+        .filter(|source| !source.is_empty())
 }
 
 fn stream_new_pcm_data(
@@ -336,4 +354,24 @@ fn fix_wav_header(path: &std::path::Path) -> Result<()> {
     );
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn configured_audio_source_uses_non_empty_override() {
+        let mut config = Config::default();
+        assert_eq!(configured_audio_source(&config), None);
+
+        config.audio_source = Some("  alsa_input.usb-test.mono  ".to_string());
+        assert_eq!(
+            configured_audio_source(&config),
+            Some("alsa_input.usb-test.mono")
+        );
+
+        config.audio_source = Some("   ".to_string());
+        assert_eq!(configured_audio_source(&config), None);
+    }
 }

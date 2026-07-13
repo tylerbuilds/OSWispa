@@ -444,8 +444,7 @@ EOF
 
 # Enable and start
 systemctl --user daemon-reload
-systemctl --user enable oswispa
-systemctl --user start oswispa</code></pre>
+systemctl --user enable --now oswispa</code></pre>
           </article>
           <article class="faq-item reveal" style="--delay: 0.15s">
             <h3>Model not found error</h3>
@@ -468,6 +467,17 @@ cp /path/to/your/model.bin ~/.local/share/oswispa/models/</code></pre>
             <p>The systemd service is recommended for production use.</p>
           </article>
           <article class="faq-item reveal" style="--delay: 0.25s">
+            <h3>OSWispa inserts [BLANK_AUDIO] or reports no speech</h3>
+            <p>
+              On Linux, OSWispa follows the default PipeWire/PulseAudio input unless you choose a source in
+              <strong>Settings → General → Linux microphone source</strong>.
+            </p>
+            <pre><code>pactl get-default-source
+pactl list short sources
+pactl set-default-source SOURCE_NAME</code></pre>
+            <p>Use the working source name in Settings if you want to override the default only for OSWispa.</p>
+          </article>
+          <article class="faq-item reveal" style="--delay: 0.3s">
             <h3>Text doesn't appear automatically</h3>
             <p>
               On Wayland, automatic insertion depends on <code>ydotoold</code>:
@@ -476,7 +486,7 @@ cp /path/to/your/model.bin ~/.local/share/oswispa/models/</code></pre>
 sudo systemctl start ydotool</code></pre>
             <p>If paste still fails, text is always copied to the clipboard. Use <span class="kbd">Ctrl</span> + <span class="kbd">V</span> manually.</p>
           </article>
-          <article class="faq-item reveal" style="--delay: 0.3s">
+          <article class="faq-item reveal" style="--delay: 0.35s">
             <h3>How do I change the hotkey?</h3>
             <p>
               Open Settings from the tray icon, then configure modifiers and an optional trigger key.
@@ -491,7 +501,7 @@ sudo systemctl start ydotool</code></pre>
 }</code></pre>
             <p>Changes apply immediately.</p>
           </article>
-          <article class="faq-item reveal" style="--delay: 0.35s">
+          <article class="faq-item reveal" style="--delay: 0.4s">
             <h3>How do I check if OSWispa is running?</h3>
             <p>Check the systemd service status or look for the process:</p>
             <pre><code>systemctl --user status oswispa
@@ -499,7 +509,7 @@ sudo systemctl start ydotool</code></pre>
 pgrep -f oswispa</code></pre>
             <p>The system tray icon also indicates active status.</p>
           </article>
-          <article class="faq-item reveal" style="--delay: 0.4s">
+          <article class="faq-item reveal" style="--delay: 0.45s">
             <h3>Can I use a VPS instead of local models?</h3>
             <p>
               Yes. In Settings, switch Backend mode to <code>Remote VPS</code>, set your endpoint,

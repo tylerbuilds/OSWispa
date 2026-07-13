@@ -340,10 +340,9 @@ StartupNotify=false
 X-GNOME-Autostart-enabled=true
 EOF
 
-    # 11. Create autostart entry
-    print_status "Creating autostart entry..."
-    mkdir -p "$HOME/.config/autostart"
-    cp "$HOME/.local/share/applications/oswispa.desktop" "$HOME/.config/autostart/"
+    # 11. Remove the legacy desktop autostart entry. The user service below
+    # owns the process lifecycle so OSWispa cannot start twice at login.
+    rm -f "$HOME/.config/autostart/oswispa.desktop"
 
     # 12. Create systemd user service for OSWispa
     print_status "Creating systemd user service..."
@@ -388,7 +387,6 @@ $GPU_ENV
 WantedBy=default.target
 EOF
 
-    print_status "Enable with: systemctl --user enable --now oswispa"
 fi
 
 # 13. Create config file
@@ -402,6 +400,13 @@ if [ ! -f "$CONFIG_DIR/config.json" ]; then
     "notification_enabled": true
 }
 EOF
+fi
+
+if [ "$PLATFORM" != "Darwin" ]; then
+    print_status "Enabling and starting OSWispa user service..."
+    systemctl --user daemon-reload
+    systemctl --user enable oswispa.service
+    systemctl --user restart oswispa.service
 fi
 
 echo ""
@@ -445,8 +450,8 @@ else
     echo "   - Search for 'AppIndicator' or 'KStatusNotifierItem'"
     echo "   - Enable the extension"
     echo ""
-    echo "4. Run OSWispa:"
-    echo "   oswispa"
+    echo "4. OSWispa is running as a user service:"
+    echo "   systemctl --user status oswispa"
     echo ""
     echo "USAGE:"
     echo "  - Hold Ctrl+Super to start recording"
@@ -457,6 +462,7 @@ else
     echo "  - No tray icon? Install AppIndicator GNOME extension"
     echo "  - Text not typing? Run: sudo ydotoold &"
     echo "  - Permission denied? Log out/in for input group"
+    echo "  - [BLANK_AUDIO]? Check: pactl get-default-source"
 fi
 
 echo ""

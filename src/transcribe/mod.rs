@@ -656,9 +656,17 @@ fn is_garbage_output(text: &str) -> bool {
         return false;
     }
 
+    let trimmed = text.trim();
+    if trimmed.eq_ignore_ascii_case("[BLANK_AUDIO]")
+        || trimmed.eq_ignore_ascii_case("[BLANK AUDIO]")
+        || trimmed.eq_ignore_ascii_case("<|nospeech|>")
+    {
+        return true;
+    }
+
     // Count punctuation vs letters
-    let punct_count = text.chars().filter(|c| c.is_ascii_punctuation()).count();
-    let letter_count = text.chars().filter(|c| c.is_alphabetic()).count();
+    let punct_count = trimmed.chars().filter(|c| c.is_ascii_punctuation()).count();
+    let letter_count = trimmed.chars().filter(|c| c.is_alphabetic()).count();
 
     // If more than 80% punctuation, it's garbage
     if letter_count == 0 {
@@ -886,6 +894,9 @@ mod tests {
     fn test_garbage_detection() {
         assert!(is_garbage_output("...."));
         assert!(is_garbage_output("!!!???..."));
+        assert!(is_garbage_output("[BLANK_AUDIO]"));
+        assert!(is_garbage_output(" [blank audio] "));
+        assert!(is_garbage_output("<|nospeech|>"));
         assert!(!is_garbage_output("Hello world"));
         assert!(!is_garbage_output("Hello, world!"));
     }
