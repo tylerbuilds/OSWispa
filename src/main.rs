@@ -8,6 +8,7 @@ mod persistence;
 mod punctuation;
 mod settings;
 mod setup;
+mod state;
 mod transcribe;
 mod tray;
 
@@ -20,6 +21,8 @@ use std::sync::{Arc, Mutex, RwLock};
 use tracing::{error, info, warn};
 use tracing_subscriber::EnvFilter;
 
+use state::{reduce_phase, AppPhase, DeliveryOutcome, LifecycleEvent};
+
 /// Application state shared across components
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClipboardEntry {
@@ -27,16 +30,29 @@ pub struct ClipboardEntry {
     pub timestamp: chrono::DateTime<chrono::Local>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct AppState {
-    pub is_recording: bool,
+    pub phase: AppPhase,
     pub clipboard_history: Vec<ClipboardEntry>,
+}
+
+impl AppState {
+    fn apply_lifecycle(&mut self, event: LifecycleEvent) -> bool {
+        let next = reduce_phase(&self.phase, event);
+        let changed = next != self.phase;
+        self.phase = next;
+        changed
+    }
 }
 
 /// Events flowing through the application
 #[derive(Debug, Clone)]
 pub enum AppEvent {
     StartRecording,
+    /// The platform audio backend has confirmed that capture is live.
+    CaptureStarted {
+        device_name: String,
+    },
     StopRecording,
     CancelRecording,
     /// VAD detected silence - auto-stop
@@ -490,7 +506,7 @@ fn main() -> Result<()> {
         Vec::new()
     });
     let state = Arc::new(Mutex::new(AppState {
-        is_recording: false,
+        phase: AppPhase::Booting,
         clipboard_history: history,
     }));
 
@@ -583,10 +599,13 @@ fn main() -> Result<()> {
     let (hotkey_config_tx, hotkey_config_rx) = bounded(1);
     let config_for_initial_hotkey = Arc::new(config.read().unwrap().clone());
     std::thread::spawn(move || {
+        let hotkey_error_tx = event_tx_hotkey.clone();
         if let Err(e) =
             hotkey::listen_for_hotkey(event_tx_hotkey, hotkey_config_rx, config_for_initial_hotkey)
         {
             error!("Hotkey listener error: {}", e);
+            let _ =
+                hotkey_error_tx.send(AppEvent::Error(format!("Global hotkey unavailable: {}", e)));
             #[cfg(target_os = "linux")]
             eprintln!(
                 "\n[ERROR] Hotkey listener failed: {}\n\
@@ -686,7 +705,7 @@ fn main() -> Result<()> {
                                     match cmd.as_str() {
                                         "toggle" => {
                                             let state = state_for_socket.lock().unwrap();
-                                            let is_recording = state.is_recording;
+                                            let is_recording = state.phase.is_capturing();
                                             drop(state);
 
                                             if is_recording {
@@ -733,6 +752,10 @@ fn main() -> Result<()> {
 
     info!("All workers started.");
     info!("Hotkey: {}", format_hotkey(&initial_config.hotkey));
+    state
+        .lock()
+        .unwrap()
+        .apply_lifecycle(LifecycleEvent::WorkersReady);
 
     // Main event loop
     for event in event_rx {
@@ -740,18 +763,37 @@ fn main() -> Result<()> {
             AppEvent::StartRecording => {
                 info!("Starting recording...");
 
+                let accepted = state_for_main
+                    .lock()
+                    .unwrap()
+                    .apply_lifecycle(LifecycleEvent::StartRequested);
+                if !accepted {
+                    info!("Ignoring start request while another dictation is active");
+                    continue;
+                }
+
                 // Note: Audio feedback disabled - cpal may hang on some systems
                 // if config_for_main.audio_feedback {
                 //     feedback::play_start_sequence();
                 // }
 
                 match record_tx.send(RecordCommand::Start) {
-                    Ok(()) => state_for_main.lock().unwrap().is_recording = true,
+                    Ok(()) => {}
                     Err(e) => {
-                        state_for_main.lock().unwrap().is_recording = false;
+                        state_for_main
+                            .lock()
+                            .unwrap()
+                            .apply_lifecycle(LifecycleEvent::Failed);
                         error!("Failed to send start command: {}", e);
                     }
                 }
+            }
+            AppEvent::CaptureStarted { device_name } => {
+                info!("Audio capture started");
+                state_for_main
+                    .lock()
+                    .unwrap()
+                    .apply_lifecycle(LifecycleEvent::CaptureStarted { device_name });
             }
             AppEvent::StopRecording | AppEvent::VadSilenceDetected => {
                 let is_vad = matches!(event, AppEvent::VadSilenceDetected);
@@ -761,26 +803,50 @@ fn main() -> Result<()> {
                     info!("Stopping recording...");
                 }
 
+                let accepted = state_for_main
+                    .lock()
+                    .unwrap()
+                    .apply_lifecycle(LifecycleEvent::StopRequested);
+                if !accepted {
+                    info!("Ignoring stop request because capture is not active");
+                    continue;
+                }
+
                 if config_for_main.read().unwrap().audio_feedback {
                     feedback::play_stop_sequence();
                 }
 
-                let mut state = state_for_main.lock().unwrap();
-                state.is_recording = false;
-                drop(state);
-                let _ = record_tx.send(RecordCommand::Stop);
+                if let Err(e) = record_tx.send(RecordCommand::Stop) {
+                    state_for_main
+                        .lock()
+                        .unwrap()
+                        .apply_lifecycle(LifecycleEvent::Failed);
+                    error!("Failed to send stop command: {}", e);
+                }
             }
             AppEvent::CancelRecording => {
                 info!("Cancelling recording...");
+
+                let accepted = state_for_main
+                    .lock()
+                    .unwrap()
+                    .apply_lifecycle(LifecycleEvent::CancelRequested);
+                if !accepted {
+                    info!("Ignoring cancel request because capture is not active");
+                    continue;
+                }
 
                 if config_for_main.read().unwrap().audio_feedback {
                     feedback::play_cancel_sound();
                 }
 
-                let mut state = state_for_main.lock().unwrap();
-                state.is_recording = false;
-                drop(state);
-                let _ = record_tx.send(RecordCommand::Cancel);
+                if let Err(e) = record_tx.send(RecordCommand::Cancel) {
+                    state_for_main
+                        .lock()
+                        .unwrap()
+                        .apply_lifecycle(LifecycleEvent::Failed);
+                    error!("Failed to send cancel command: {}", e);
+                }
             }
             AppEvent::StreamingPartial(text) => {
                 // For streaming mode - show partial results
@@ -791,16 +857,17 @@ fn main() -> Result<()> {
                 info!("Transcription complete: {} chars", text.len());
                 let current_config = config_for_main.read().unwrap().clone();
 
+                state_for_main
+                    .lock()
+                    .unwrap()
+                    .apply_lifecycle(LifecycleEvent::TranscriptionReady);
+
                 // Apply punctuation commands if enabled
                 let text = if current_config.punctuation_commands {
                     punctuation::apply_punctuation_commands(&text)
                 } else {
                     text
                 };
-
-                if current_config.audio_feedback {
-                    feedback::play_complete_sound();
-                }
 
                 let copied = match input::copy_to_clipboard_verified(&text) {
                     Ok(_) => true,
@@ -812,12 +879,35 @@ fn main() -> Result<()> {
 
                 // Only auto-paste if we successfully updated the clipboard; otherwise we'd risk
                 // pasting stale clipboard contents.
-                if current_config.auto_paste && copied {
-                    if let Err(e) = input::paste_text(&text) {
-                        warn!("Failed to paste text: {}", e);
+                let delivery_outcome = if current_config.auto_paste && copied {
+                    match input::paste_text(&text) {
+                        Ok(()) => DeliveryOutcome::Inserted,
+                        Err(e) => {
+                            warn!("Failed to paste text: {}", e);
+                            DeliveryOutcome::CopiedOnly
+                        }
                     }
                 } else if current_config.auto_paste && !copied {
                     warn!("Auto-paste skipped because clipboard copy failed. Paste manually from the app output or retry.");
+                    DeliveryOutcome::Failed
+                } else if copied {
+                    DeliveryOutcome::CopiedOnly
+                } else {
+                    DeliveryOutcome::Failed
+                };
+
+                state_for_main
+                    .lock()
+                    .unwrap()
+                    .apply_lifecycle(LifecycleEvent::DeliveryFinished(delivery_outcome));
+
+                if current_config.audio_feedback {
+                    match delivery_outcome {
+                        DeliveryOutcome::Inserted | DeliveryOutcome::CopiedOnly => {
+                            feedback::play_complete_sound()
+                        }
+                        DeliveryOutcome::Failed => feedback::play_error_sound(),
+                    }
                 }
 
                 // Add to history
@@ -839,27 +929,30 @@ fn main() -> Result<()> {
                 }
 
                 if current_config.notification_enabled {
-                    let preview = if text.chars().count() > 50 {
-                        format!("{}...", text.chars().take(50).collect::<String>())
-                    } else {
-                        text.clone()
+                    let delivery_status = match delivery_outcome {
+                        DeliveryOutcome::Inserted => "Text inserted",
+                        DeliveryOutcome::CopiedOnly => "Text copied to clipboard",
+                        DeliveryOutcome::Failed => "Text delivery failed",
                     };
                     #[cfg(target_os = "linux")]
                     {
                         let _ = notify_rust::Notification::new()
                             .summary("OSWispa")
-                            .body(&format!("Transcribed: {}", preview))
+                            .body(delivery_status)
                             .timeout(3000)
                             .show();
                     }
                     #[cfg(not(target_os = "linux"))]
                     {
-                        info!("Transcription notification: {} chars", preview.len());
+                        info!("Transcription delivery notification: {}", delivery_status);
                     }
                 }
             }
             AppEvent::Error(msg) => {
-                state_for_main.lock().unwrap().is_recording = false;
+                state_for_main
+                    .lock()
+                    .unwrap()
+                    .apply_lifecycle(LifecycleEvent::Failed);
                 error!("Error: {}", msg);
 
                 if config_for_main.read().unwrap().audio_feedback {
