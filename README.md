@@ -23,7 +23,7 @@ A privacy-focused, local-first voice transcription tool powered by [Whisper.cpp]
 
 ### 🛑 Known Limitations
 1.  **Installer**: Supports Ubuntu/Debian, Fedora/RHEL, Arch/Manjaro, and macOS. Other distros: install deps manually.
-2.  **Auto-Paste (Linux)**: Uses `ydotool` to simulate typing. Requires `ydotoold` daemon running.
+2.  **Auto-Paste (Linux)**: Uses `ydotool` to simulate typing. The source installer enables its user service.
 3.  **Global Hotkeys (Linux)**: Reads `/dev/input` directly, requires `input` group membership.
 4.  **Global Hotkeys (macOS)**: Requires Accessibility permission in System Settings.
 
@@ -79,13 +79,15 @@ cd OSWispa
 ```
 
 The installer will:
-- Detect AMD ROCm or NVIDIA CUDA and build with GPU acceleration
+- Detect every AMD ROCm architecture or NVIDIA CUDA and build with GPU acceleration
+- Select the ROCm device with the most VRAM instead of assuming GPU 0
+- Validate model downloads before atomically installing them
 - Fall back to CPU-only if no GPU toolkit is found
 - Create, enable, and start a systemd user service with the correct GPU environment variables
 
 **After install:**
-1.  Log out and back in (for `input` group permissions).
-2.  Ensure `ydotoold` is running for auto-paste (`sudo ydotoold &`).
+1.  If the installer added you to the `input` group, log out and back in.
+2.  Confirm auto-paste is ready with `systemctl --user status ydotoold`.
 3.  Press your configured hotkey (default **Ctrl+Super**), speak, and release!
 
 ---
@@ -113,7 +115,7 @@ cd OSWispa
 The installer will:
 - Install Xcode CLT and Homebrew (if needed) + cmake
 - Auto-detect Apple Silicon and build with Metal GPU acceleration
-- Run a short device test and download the best Whisper model automatically
+- Download and validate the base English Whisper model
 - Create a LaunchAgent for auto-start on login
 
 ### Option C: Manual Build
@@ -157,16 +159,16 @@ OSWispa needs two permissions on macOS:
 # Ensure ROCm is installed (6.0+) and hipcc is in PATH
 export PATH="/opt/rocm/bin:$PATH"
 
-# Auto-detect GPU architecture
-GFX_ARCH=$(rocminfo | grep -oP 'gfx\d+' | head -1)
+# Compile for every architecture visible to ROCm (including names such as gfx90a)
+GFX_ARCHES=$(rocminfo | grep -oE 'gfx[0-9a-f]+' | sort -u | paste -sd ';' -)
 
 # Build with HIPBlas
-AMDGPU_TARGETS="$GFX_ARCH" cargo build --release --features gpu-hipblas
+AMDGPU_TARGETS="$GFX_ARCHES" cargo build --release --features gpu-hipblas
 ```
 
 **Common GPU architectures:** `gfx1100` (RX 7900), `gfx1030` (RX 6800), `gfx900` (Vega), `gfx906` (MI50).
 
-**Multi-GPU systems:** Set `HIP_VISIBLE_DEVICES=0` to select a specific GPU. Add `HSA_OVERRIDE_GFX_VERSION=11.0.0` if you get architecture mismatch errors.
+**Multi-GPU systems:** Set `ROCR_VISIBLE_DEVICES` to the intended ROCm index if needed. Do not set `HSA_OVERRIDE_GFX_VERSION` automatically; it can disguise an incompatible build and should only be used when your ROCm/driver guidance explicitly requires it.
 
 #### NVIDIA GPU (CUDA)
 
@@ -193,7 +195,7 @@ cargo build --release
 
 ## 📥 Models
 
-OSWispa needs a model file to work. Save models to `~/.local/share/oswispa/models/`.
+OSWispa needs a model file to work. Managed models live in `~/.local/share/oswispa/models/` on Linux and `~/Library/Application Support/com.oswispa.OSWispa/models/` on macOS.
 
 | Model | Size | Speed | GPU VRAM | Recommendation |
 |-------|------|-------|----------|----------------|
@@ -227,7 +229,7 @@ OSWispa is local-first by default, but you can optionally route transcription to
 ## 🔧 Troubleshooting
 
 **"It says recording but nothing happens."**
-*   Check if `ydotoold` is running: `pgrep ydotoold`.
+*   Check the managed daemon: `systemctl --user status ydotoold`.
 *   Try manual paste: The text is also copied to your clipboard. Press `Ctrl+V`.
 
 **"It inserts `[BLANK_AUDIO]` or reports no speech."**

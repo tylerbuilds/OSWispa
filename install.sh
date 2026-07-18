@@ -7,10 +7,18 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLATFORM="$(uname -s)"
+HELPERS="$SCRIPT_DIR/scripts/install_helpers.sh"
+
+if [ ! -r "$HELPERS" ]; then
+    echo "Missing installer helpers: $HELPERS" >&2
+    exit 1
+fi
+source "$HELPERS"
 
 # Platform-appropriate directories
 if [ "$PLATFORM" = "Darwin" ]; then
-    DATA_DIR="$HOME/Library/Application Support/oswispa"
+    # Matches directories::ProjectDirs::from("com", "oswispa", "OSWispa").
+    DATA_DIR="$HOME/Library/Application Support/com.oswispa.OSWispa"
     CONFIG_DIR="$DATA_DIR"
 else
     DATA_DIR="$HOME/.local/share/oswispa"
@@ -89,6 +97,7 @@ detect_platform() {
 }
 
 detect_platform
+NEEDS_RELOGIN=0
 
 # 1. Install system dependencies
 print_status "Installing system dependencies..."
@@ -153,10 +162,14 @@ fi
 print_status "Creating data directories..."
 mkdir -p "$MODEL_DIR"
 mkdir -p "$CONFIG_DIR"
+chmod 700 "$DATA_DIR" "$CONFIG_DIR"
 
 # 4. Download Whisper model
 MODEL_FILE="$MODEL_DIR/ggml-base.en.bin"
-if [ ! -f "$MODEL_FILE" ]; then
+if ! oswispa_validate_model_file "$MODEL_FILE" "$OSWISPA_BASE_MODEL_MIN_BYTES"; then
+    if [ -e "$MODEL_FILE" ]; then
+        print_warning "Existing model is incomplete or invalid; replacing it safely."
+    fi
     print_status "Downloading Whisper model (base.en, ~142MB)..."
     echo "This model provides a good balance of speed and accuracy for English."
     echo ""
@@ -167,8 +180,23 @@ if [ ! -f "$MODEL_FILE" ]; then
     echo "  medium.en (~1.5GB) - High accuracy, slower"
     echo ""
 
-    curl -L -o "$MODEL_FILE" \
-        "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin"
+    MODEL_TEMP="$MODEL_FILE.downloading"
+    rm -f "$MODEL_TEMP"
+    if ! curl --fail --location --retry 3 --retry-delay 2 --connect-timeout 20 \
+        --output "$MODEL_TEMP" \
+        "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin"; then
+        rm -f "$MODEL_TEMP"
+        print_error "Model download failed; the existing model was left untouched."
+        exit 1
+    fi
+
+    if ! oswispa_validate_model_file "$MODEL_TEMP" "$OSWISPA_BASE_MODEL_MIN_BYTES"; then
+        rm -f "$MODEL_TEMP"
+        print_error "Downloaded payload is not a complete Whisper model."
+        exit 1
+    fi
+
+    mv -f "$MODEL_TEMP" "$MODEL_FILE"
 
     print_status "Model downloaded successfully!"
 else
@@ -179,9 +207,10 @@ fi
 if [ "$PLATFORM" != "Darwin" ]; then
     # 5. Setup input group permissions for evdev
     print_status "Setting up input permissions..."
-    if ! groups | grep -q '\binput\b'; then
+    if ! id -nG | tr ' ' '\n' | grep -qx input; then
         print_warning "Adding user to 'input' group for keyboard access..."
         sudo usermod -aG input "$USER"
+        NEEDS_RELOGIN=1
         echo ""
         print_warning "IMPORTANT: You need to log out and back in for group changes to take effect!"
         echo ""
@@ -199,20 +228,12 @@ Documentation=man:ydotool(1)
 
 [Service]
 ExecStart=/usr/bin/ydotoold
-Restart=always
+Restart=on-failure
 RestartSec=5
 
 [Install]
 WantedBy=default.target
 EOF
-
-    # Note: ydotoold typically needs root, but we'll try user mode first
-    # If it fails, user needs to run: sudo ydotoold &
-
-    print_warning "ydotoold may require root permissions."
-    echo "If typing doesn't work, run: sudo ydotoold &"
-    echo "Or set up a udev rule for /dev/uinput access."
-    echo ""
 
     # 7. Create udev rule for uinput (for ydotool without sudo)
     print_status "Creating udev rule for uinput access..."
@@ -251,12 +272,23 @@ else
             GPU_TYPE="amd"
             export PATH="$ROCM_PATH/bin:$PATH"
             export HIP_PATH="$ROCM_PATH"
-            # Auto-detect GPU architecture
+            # Compile for every detected ROCm architecture. Multi-GPU systems
+            # often expose an integrated GPU before the discrete card.
             if command -v rocminfo &>/dev/null; then
-                GFX_ARCH=$(rocminfo 2>/dev/null | grep -oP 'gfx\d+' | head -1)
-                if [ -n "$GFX_ARCH" ]; then
-                    export AMDGPU_TARGETS="$GFX_ARCH"
-                    print_status "Detected AMD GPU architecture: $GFX_ARCH"
+                GFX_ARCHES=$(rocminfo 2>/dev/null | oswispa_rocm_targets_from_stream)
+                if [ -n "$GFX_ARCHES" ]; then
+                    export AMDGPU_TARGETS="$GFX_ARCHES"
+                    print_status "Detected AMD GPU architectures: $GFX_ARCHES"
+                fi
+            fi
+
+            # Prefer the GPU with the most VRAM at runtime instead of assuming
+            # that ROCm device zero is the discrete card.
+            if command -v rocm-smi &>/dev/null; then
+                ROCM_DEVICE_INDEX=$(rocm-smi --showmeminfo vram 2>/dev/null \
+                    | oswispa_largest_rocm_gpu_from_stream)
+                if [ -n "$ROCM_DEVICE_INDEX" ]; then
+                    print_status "Selected ROCm GPU $ROCM_DEVICE_INDEX (largest VRAM)"
                 fi
             fi
         fi
@@ -334,7 +366,7 @@ Comment=Voice to text with Whisper - hold Ctrl+Super to record
 Exec=/usr/local/bin/oswispa
 Icon=audio-input-microphone
 Terminal=false
-Categories=Utility;Audio;
+Categories=Utility;AudioVideo;Audio;
 Keywords=voice;speech;transcription;whisper;
 StartupNotify=false
 X-GNOME-Autostart-enabled=true
@@ -351,22 +383,16 @@ EOF
     # Build environment block for GPU
     GPU_ENV=""
     if [ "$GPU_TYPE" = "amd" ]; then
-        GPU_ENV="Environment=HIP_VISIBLE_DEVICES=0
-Environment=ROCR_VISIBLE_DEVICES=0"
-        # Derive HSA_OVERRIDE_GFX_VERSION from detected architecture (e.g. gfx1100 -> 11.0.0)
-        if [ -n "$GFX_ARCH" ]; then
-            HSA_DIGITS="${GFX_ARCH#gfx}"
-            HSA_MAJOR="${HSA_DIGITS:0:2}"
-            HSA_MINOR="${HSA_DIGITS:2:1}"
-            HSA_PATCH="${HSA_DIGITS:3:1}"
-            HSA_VERSION="${HSA_MAJOR}.${HSA_MINOR}.${HSA_PATCH}"
-            GPU_ENV="$GPU_ENV
-Environment=HSA_OVERRIDE_GFX_VERSION=$HSA_VERSION"
-            print_status "HSA_OVERRIDE_GFX_VERSION set to $HSA_VERSION"
+        if [ -n "${ROCM_DEVICE_INDEX:-}" ]; then
+            GPU_ENV="Environment=ROCR_VISIBLE_DEVICES=$ROCM_DEVICE_INDEX"
         fi
         if [ -n "$ROCM_PATH" ]; then
-            GPU_ENV="$GPU_ENV
+            if [ -n "$GPU_ENV" ]; then
+                GPU_ENV="$GPU_ENV
 Environment=LD_LIBRARY_PATH=$ROCM_PATH/lib:$ROCM_PATH/hip/lib"
+            else
+                GPU_ENV="Environment=LD_LIBRARY_PATH=$ROCM_PATH/lib:$ROCM_PATH/hip/lib"
+            fi
         fi
     fi
 
@@ -401,12 +427,19 @@ if [ ! -f "$CONFIG_DIR/config.json" ]; then
 }
 EOF
 fi
+chmod 600 "$CONFIG_DIR/config.json"
 
 if [ "$PLATFORM" != "Darwin" ]; then
-    print_status "Enabling and starting OSWispa user service..."
+    print_status "Enabling OSWispa and ydotool user services..."
     systemctl --user daemon-reload
+    systemctl --user enable ydotoold.service
     systemctl --user enable oswispa.service
-    systemctl --user restart oswispa.service
+    if [ "$NEEDS_RELOGIN" -eq 1 ]; then
+        print_warning "Services are enabled and will start after you log out and back in."
+    else
+        systemctl --user restart ydotoold.service
+        systemctl --user restart oswispa.service
+    fi
 fi
 
 echo ""
@@ -439,11 +472,10 @@ if [ "$PLATFORM" = "Darwin" ]; then
 else
     echo "IMPORTANT STEPS:"
     echo ""
-    echo "1. Log out and back in (for 'input' group permissions)"
+    echo "1. If the installer added you to the 'input' group, log out and back in."
     echo ""
-    echo "2. Start the ydotool daemon (for text injection):"
-    echo "   sudo ydotoold &"
-    echo "   (Or use systemd: systemctl --user enable --now ydotoold)"
+    echo "2. Check the ydotool user service (for text injection):"
+    echo "   systemctl --user status ydotoold"
     echo ""
     echo "3. Install GNOME AppIndicator extension (for system tray):"
     echo "   - Open 'Extensions' app or visit extensions.gnome.org"
@@ -460,7 +492,7 @@ else
     echo ""
     echo "Troubleshooting:"
     echo "  - No tray icon? Install AppIndicator GNOME extension"
-    echo "  - Text not typing? Run: sudo ydotoold &"
+    echo "  - Text not typing? Check: journalctl --user -u ydotoold -n 50"
     echo "  - Permission denied? Log out/in for input group"
     echo "  - [BLANK_AUDIO]? Check: pactl get-default-source"
 fi

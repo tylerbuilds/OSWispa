@@ -634,11 +634,12 @@ fn create_model_row(
     row.append(&info_box);
 
     let is_installed = models::is_model_installed(model);
-    let is_active = config
-        .model_path
-        .file_name()
-        .map(|n| n.to_string_lossy() == model.filename)
-        .unwrap_or(false);
+    let is_active = is_installed
+        && config
+            .model_path
+            .file_name()
+            .map(|n| n.to_string_lossy() == model.filename)
+            .unwrap_or(false);
 
     if is_active {
         let label = Label::new(Some("✓ Active"));
