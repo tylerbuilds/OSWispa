@@ -56,6 +56,9 @@ jobs:
           bash tests/install_helpers.bash
           desktop-file-validate packaging/linux/oswispa.desktop
 
+      - name: Validate website claims and links
+        run: python3 scripts/check_website.py
+
       - name: Build (no GUI feature)
         run: cargo check --locked --no-default-features --all-targets
 

@@ -20,6 +20,6 @@ Remote mode is opt-in. When enabled, OSWispa sends the recorded audio, selected 
 
 ## Project website
 
-The project website loads Google Analytics and Google Fonts. The contact form is processed by FormSubmit and delivered by email. Do not submit secrets, API keys, or private transcripts through the contact form.
+The project website does not load analytics or remote font services. The contact form is processed by FormSubmit and delivered by email. Do not submit secrets, API keys, private transcripts, or recorded audio through the contact form.
 
 Questions can be sent to [tc@tylerbuilds.com](mailto:tc@tylerbuilds.com).
