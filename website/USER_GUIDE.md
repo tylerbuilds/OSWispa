@@ -53,9 +53,41 @@ The current graphical settings and tray are Linux-only. Right-click the OSWispa 
 - choose or import a different model
 - enable or disable audio feedback
 - enable or disable automatic text insertion
+- manage local personal dictionary entries on Linux
 - configure the optional remote backend
 
 The macOS and Windows alpha packages do not have a tray or graphical settings yet. They use configuration files in each operating system's application configuration directory; do not assume the Linux `~/.config/oswispa/` path applies to them.
+
+## Personal dictionary
+
+Use the personal dictionary for names, product terms, and phrases that Whisper repeatedly spells the
+wrong way. Linux users can open **Settings → Dictionary** to add, edit, enable, disable, delete,
+import, or export entries. Changes made in Settings apply immediately.
+
+OSWispa applies enabled entries literally before spoken punctuation. Replacements run once, so the
+written result of one entry cannot trigger another entry. Longer phrases win when entries overlap,
+and matching does not replace text inside a larger word.
+
+macOS and Windows do not yet have a native dictionary editor. Edit `personalisation.json` in the
+OSWispa data directory, then restart OSWispa. The document format is:
+
+```json
+{
+  "schema_version": 1,
+  "dictionary": [
+    {
+      "spoken": "os whisper",
+      "written": "OSWispa",
+      "enabled": true,
+      "case_sensitive": false
+    }
+  ]
+}
+```
+
+The dictionary stays local, does not observe other applications, and is not sent to a configured
+remote transcription backend. If the document is invalid, OSWispa preserves it, disables the
+dictionary for that run, and continues normal dictation.
 
 ## Linux microphone troubleshooting
 

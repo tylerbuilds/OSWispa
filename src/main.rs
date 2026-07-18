@@ -5,6 +5,7 @@ mod hotkey;
 mod input;
 mod models;
 mod persistence;
+mod personalisation;
 mod punctuation;
 mod settings;
 mod setup;
@@ -428,6 +429,19 @@ fn save_history(history: &[ClipboardEntry]) -> Result<()> {
     persistence::write_json_private(&history_path, history)
 }
 
+fn post_process_transcript(
+    text: &str,
+    config: &Config,
+    personalisation: &personalisation::Personalisation,
+) -> String {
+    let text = personalisation.apply_dictionary(text);
+    if config.punctuation_commands {
+        punctuation::apply_punctuation_commands(&text)
+    } else {
+        text
+    }
+}
+
 fn run_platform_smoke_test() -> Result<()> {
     for (component, backend) in [
         ("audio", audio::backend_name()),
@@ -496,8 +510,17 @@ fn main() -> Result<()> {
         return run_platform_smoke_test();
     }
 
-    // Load configuration and history
+    // Load configuration, local personalisation, and history.
     let config = Arc::new(RwLock::new(load_config()?));
+    let personalisation = Arc::new(RwLock::new(
+        personalisation::load_personalisation().unwrap_or_else(|err| {
+            warn!(
+                "Could not load personalisation; dictionary is disabled and the existing file is preserved: {}",
+                err
+            );
+            personalisation::Personalisation::default()
+        }),
+    ));
     let history = load_history().unwrap_or_else(|err| {
         warn!(
             "Could not load clipboard history; starting with an empty history: {}",
@@ -586,6 +609,8 @@ fn main() -> Result<()> {
     let config_for_audio = Arc::clone(&config);
     let config_for_transcribe = Arc::clone(&config);
     let config_for_tray = Arc::clone(&config);
+    let personalisation_for_main = Arc::clone(&personalisation);
+    let personalisation_for_transcribe = Arc::clone(&personalisation);
     let state_for_main = Arc::clone(&state);
     let state_for_tray = Arc::clone(&state);
 
@@ -643,6 +668,7 @@ fn main() -> Result<()> {
             stream_rx,
             event_tx_transcribe,
             config_for_transcribe,
+            personalisation_for_transcribe,
         );
     });
 
@@ -862,12 +888,17 @@ fn main() -> Result<()> {
                     .unwrap()
                     .apply_lifecycle(LifecycleEvent::TranscriptionReady);
 
-                // Apply punctuation commands if enabled
-                let text = if current_config.punctuation_commands {
-                    punctuation::apply_punctuation_commands(&text)
-                } else {
-                    text
-                };
+                // Apply explicit local phrase replacements before spoken punctuation commands.
+                let text = personalisation_for_main
+                    .read()
+                    .map(|dictionary| post_process_transcript(&text, &current_config, &dictionary))
+                    .unwrap_or_else(|_| {
+                        if current_config.punctuation_commands {
+                            punctuation::apply_punctuation_commands(&text)
+                        } else {
+                            text
+                        }
+                    });
 
                 let copied = match input::copy_to_clipboard_verified(&text) {
                     Ok(_) => true,
@@ -971,7 +1002,11 @@ fn main() -> Result<()> {
             AppEvent::OpenSettings => {
                 info!("Opening settings dialog...");
                 #[cfg(feature = "gui")]
-                settings::show_settings_dialog(&config_for_main, event_tx.clone());
+                settings::show_settings_dialog(
+                    &config_for_main,
+                    &personalisation,
+                    event_tx.clone(),
+                );
                 #[cfg(not(feature = "gui"))]
                 warn!("Settings dialog requires the 'gui' feature");
             }
@@ -1009,4 +1044,62 @@ pub enum RecordCommand {
     Start,
     Stop,
     Cancel,
+}
+
+#[cfg(test)]
+mod compatibility_tests {
+    use super::*;
+
+    #[test]
+    fn empty_dictionary_preserves_existing_output() {
+        let config = Config {
+            punctuation_commands: false,
+            ..Config::default()
+        };
+        assert_eq!(
+            post_process_transcript(
+                "Testing, testing, one, two, three.",
+                &config,
+                &personalisation::Personalisation::default(),
+            ),
+            "Testing, testing, one, two, three."
+        );
+    }
+
+    #[test]
+    fn dictionary_runs_before_spoken_punctuation() {
+        let dictionary = personalisation::Personalisation::from_dictionary(vec![
+            personalisation::DictionaryEntry {
+                spoken: "finish sentence".to_string(),
+                written: "period".to_string(),
+                enabled: true,
+                case_sensitive: false,
+            },
+        ])
+        .unwrap();
+        assert_eq!(
+            post_process_transcript("hello finish sentence", &Config::default(), &dictionary),
+            "hello."
+        );
+    }
+
+    #[test]
+    fn legacy_config_and_history_json_remain_compatible() {
+        let config: Config = serde_json::from_str(
+            r#"{
+                "model_path": "/tmp/model.bin",
+                "max_history": 50,
+                "auto_paste": true,
+                "notification_enabled": true
+            }"#,
+        )
+        .unwrap();
+        assert!(config.punctuation_commands);
+
+        let history: Vec<ClipboardEntry> = serde_json::from_str(
+            r#"[{"text":"existing transcript","timestamp":"2026-07-18T12:00:00+01:00"}]"#,
+        )
+        .unwrap();
+        assert_eq!(history[0].text, "existing transcript");
+    }
 }

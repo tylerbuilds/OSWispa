@@ -44,6 +44,7 @@ The [v0.4.2 release](https://github.com/tylerbuilds/OSWispa/releases/tag/v0.4.2)
 - **🌍 Multilingual**: Supports 99 languages with the right model
 - **🧩 Model Flexibility**: Import custom `.bin` / `.gguf` models and switch quickly
 - **✍️ Spoken Formatting**: Say commands like `quotation mark` and `new line`
+- **📖 Personal Dictionary**: Keep explicit names and phrases spelt correctly, entirely locally
 
 ---
 
@@ -263,6 +264,37 @@ OSWispa is local-first by default, but you can optionally route transcription to
 - Store API tokens via Settings (saved to a local `0600` secret file) or set an env var (e.g. `OSWISPA_REMOTE_API_KEY`).
 - If remote transcription fails and local models exist, OSWispa falls back to local automatically.
 - Remote mode sends recorded audio to the configured service; review its privacy and retention policy first.
+
+---
+
+## 📖 Personal Dictionary
+
+OSWispa can replace phrases that Whisper commonly mishears, such as `os whisper` → `OSWispa`.
+Replacements are literal, run locally before spoken punctuation commands, and never learn from or
+monitor other applications. Enabled preferred spellings also form a small, bounded prompt for the
+local Whisper model; dictionary contents are not sent to the optional remote transcription backend.
+
+On Linux, open **Settings → Dictionary** to add, edit, enable, disable, delete, import, or export
+entries. Other platforms can edit `personalisation.json` in the OSWispa data directory and restart
+OSWispa. On Linux the path is normally `~/.local/share/oswispa/personalisation.json`:
+
+```json
+{
+  "schema_version": 1,
+  "dictionary": [
+    {
+      "spoken": "os whisper",
+      "written": "OSWispa",
+      "enabled": true,
+      "case_sensitive": false
+    }
+  ]
+}
+```
+
+OSWispa validates the version, entry count, lengths, control characters, and duplicate spoken
+phrases before using the file. If validation fails, it preserves the file, disables the dictionary
+for that run, and continues normal dictation.
 
 ---
 
