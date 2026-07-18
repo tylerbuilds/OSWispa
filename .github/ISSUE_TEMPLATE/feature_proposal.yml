@@ -1,0 +1,98 @@
+name: Feature proposal
+description: Propose a defined product improvement with a clear user outcome.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for a concrete, bounded proposal. Please take open-ended ideas, questions, and early design discussion to [GitHub Discussions](https://github.com/tylerbuilds/OSWispa/discussions) first.
+
+        Describe the problem and desired outcome in your own words. Do not copy another product's code, assets, text, or distinctive interface. **Do not include transcript text, audio or video recordings, API keys, configuration files, environment dumps, clipboard contents, secrets, or other private data.**
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: What is difficult today, and who experiences it?
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the result for the user rather than prescribing another product's implementation.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platforms
+    attributes:
+      label: Affected platforms
+      multiple: true
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - Website or documentation
+        - All platforms
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_behaviour
+    attributes:
+      label: Proposed behaviour
+      description: Explain the smallest useful behaviour and its important failure or fallback states.
+    validations:
+      required: true
+
+  - type: textarea
+    id: success
+    attributes:
+      label: How should success be measured?
+      description: Give observable acceptance criteria where possible.
+      placeholder: A user can complete the task in two actions, and failure leaves the transcript safely available in the clipboard.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Current workaround or alternatives considered
+      description: Explain what you use today and why it is insufficient.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: privacy_impact
+    attributes:
+      label: Privacy or network impact
+      options:
+        - Fully local with no new retained data
+        - Fully local with new retained data
+        - Optional network access
+        - Requires network access
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: privacy_notes
+    attributes:
+      label: Privacy and failure considerations
+      description: Explain what data would be processed or retained, and what should happen when the feature fails.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Proposal checks
+      options:
+        - label: I searched Issues and Discussions for an existing proposal.
+          required: true
+        - label: This describes a product problem and outcome without copying another product's code, assets, text, or distinctive interface.
+          required: true
+        - label: I removed transcript text, recordings, API keys, configuration files, environment dumps, clipboard contents, secrets, and other private data.
+          required: true

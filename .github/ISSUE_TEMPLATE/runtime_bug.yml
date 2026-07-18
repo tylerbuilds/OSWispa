@@ -1,0 +1,132 @@
+name: Runtime bug
+description: Report a problem while recording, transcribing, or inserting text.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve OSWispa. Please provide only the minimum diagnostic detail needed to reproduce the problem.
+
+        **Do not include transcript text, audio or video recordings, API keys, configuration files, environment dumps, clipboard contents, secrets, or unreviewed crash/core dumps.** Redact usernames, hostnames, device serials, private paths, and remote endpoint details from any excerpt.
+
+        For installation failures, use the separate **Installation problem** form. Report security vulnerabilities through the [private security policy](https://github.com/tylerbuilds/OSWispa/security/policy).
+
+  - type: input
+    id: oswispa_version
+    attributes:
+      label: OSWispa version
+      description: Use the released version or commit, for example v0.4.2. Do not paste a full command transcript.
+      placeholder: v0.4.2
+    validations:
+      required: true
+
+  - type: input
+    id: operating_system
+    attributes:
+      label: Operating system and version
+      description: Include the edition or desktop session where relevant.
+      placeholder: Fedora 42 with GNOME Wayland, macOS 15.5, or Windows 11 24H2
+    validations:
+      required: true
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Installation package
+      description: Select the package or installation route used.
+      options:
+        - Debian package (.deb)
+        - RPM package (.rpm)
+        - Linux tarball
+        - macOS Apple Silicon DMG or ZIP
+        - macOS Intel DMG or ZIP
+        - Windows x86-64 ZIP
+        - Source installer (install.sh)
+        - Manual source build
+        - Other or not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: transcription_mode
+    attributes:
+      label: Transcription mode
+      description: Do not provide a remote endpoint, credential, or configuration file.
+      options:
+        - Local CPU
+        - Local CUDA
+        - Local ROCm
+        - Local Metal
+        - Remote OpenAI-compatible backend
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: audio_backend
+    attributes:
+      label: Audio backend and microphone type
+      description: Name the backend and general device type only; omit serial numbers and do not upload a recording.
+      placeholder: PipeWire with USB microphone, CoreAudio with built-in microphone, or WASAPI with Bluetooth headset
+    validations:
+      required: true
+
+  - type: input
+    id: hotkey
+    attributes:
+      label: Configured hotkey
+      description: State the modifiers and trigger key, plus whether hold/release was detected.
+      placeholder: Ctrl+Super; press detected, release not detected
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Give the shortest repeatable sequence. Describe spoken content generically rather than quoting it.
+      placeholder: |
+        1. Launch OSWispa.
+        2. Hold the configured hotkey and speak a short test phrase.
+        3. Release the hotkey.
+        4. Observe the result.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      placeholder: Recording stops and the completed transcription is inserted into the focused application.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Describe the visible behaviour without including transcript or clipboard contents.
+      placeholder: The recording indicator remains active and no insertion occurs.
+    validations:
+      required: true
+
+  - type: textarea
+    id: safe_error_excerpt
+    attributes:
+      label: Minimal, reviewed error excerpt
+      description: Optional. Paste only the few relevant error lines after reviewing and redacting them. Never paste a complete log, environment dump, configuration file, transcript, endpoint, token, or secret.
+      placeholder: A short, manually reviewed and redacted error excerpt
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety checks
+      options:
+        - label: I searched existing issues for this problem.
+          required: true
+        - label: I removed transcript text, recordings, API keys, configuration files, environment dumps, clipboard contents, secrets, and other private data.
+          required: true
+        - label: I understand that VM package checks do not prove physical microphone, global-hotkey, focused-app insertion, or GPU behaviour.
+          required: true
