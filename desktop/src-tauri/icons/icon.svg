@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="OSWispa Signal">
+  <rect width="128" height="128" rx="28" fill="#09101a"/>
+  <circle cx="64" cy="64" r="39" fill="none" stroke="#77e3b5" stroke-width="5" opacity="0.92"/>
+  <circle cx="64" cy="64" r="23" fill="none" stroke="#aed3e0" stroke-width="4" opacity="0.78"/>
+  <path d="M64 43 70 58 85 64 70 70 64 85 58 70 43 64 58 58Z" fill="#77e3b5"/>
+  <circle cx="64" cy="64" r="4" fill="#f4ead7"/>
+</svg>

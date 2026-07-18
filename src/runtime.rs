@@ -573,12 +573,9 @@ pub(crate) fn run_engine(
     let model_validation = models::validate_model_path(&initial_config.model_path);
     if let Err(model_error) = model_validation {
         if initial_config.backend == TranscriptionBackend::Local {
-            info!(
-                "No usable local model found ({}) — launching first-time setup wizard",
-                model_error
-            );
+            info!("No usable local model found: {}", model_error);
 
-            match setup::run_first_time_setup() {
+            match run_model_setup(options.interactive_setup, setup::run_first_time_setup) {
                 Ok(model_path) => {
                     // Update the in-memory config with the downloaded model path
                     let mut cfg = config.write().unwrap();
@@ -589,6 +586,11 @@ pub(crate) fn run_engine(
                     info!("Config updated with new model path: {:?}", cfg.model_path);
                 }
                 Err(e) => {
+                    if !options.interactive_setup {
+                        error!("Desktop model onboarding is required before the engine can start");
+                        return Err(e).context("Desktop model onboarding required");
+                    }
+
                     error!("Setup wizard failed: {}", e);
                     eprintln!(
                         "\n[ERROR] Setup wizard failed: {}\n\
@@ -1085,6 +1087,19 @@ pub(crate) fn run_engine(
     Ok(())
 }
 
+fn run_model_setup<F>(interactive_setup: bool, setup: F) -> Result<PathBuf>
+where
+    F: FnOnce() -> Result<PathBuf>,
+{
+    if !interactive_setup {
+        anyhow::bail!(
+            "A valid local model is required; finish desktop onboarding and restart OSWispa"
+        );
+    }
+
+    setup()
+}
+
 /// Commands sent to the audio recording worker
 #[derive(Debug, Clone, Copy)]
 pub enum RecordCommand {
@@ -1096,6 +1111,7 @@ pub enum RecordCommand {
 #[cfg(test)]
 mod compatibility_tests {
     use super::*;
+    use std::sync::atomic::{AtomicBool, Ordering};
 
     #[test]
     fn empty_dictionary_preserves_existing_output() {
@@ -1148,5 +1164,22 @@ mod compatibility_tests {
         )
         .unwrap();
         assert_eq!(history[0].text, "existing transcript");
+    }
+
+    #[test]
+    fn embedded_model_setup_never_invokes_terminal_wizard() {
+        let invoked = AtomicBool::new(false);
+
+        let result = run_model_setup(false, || {
+            invoked.store(true, Ordering::SeqCst);
+            Ok(PathBuf::from("must-not-be-returned.bin"))
+        });
+
+        assert!(result.is_err());
+        assert!(!invoked.load(Ordering::SeqCst));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("desktop onboarding"));
     }
 }

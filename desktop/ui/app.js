@@ -9,12 +9,15 @@
   }
 
   const SIGNAL_STATES = Object.freeze({
+    booting: Object.freeze({ label: "Starting", detail: "Checking local setup", receipt: "Local" }),
     ready: Object.freeze({ label: "Ready", detail: "Hold Ctrl + Super to speak", receipt: "Local" }),
     arming: Object.freeze({ label: "Arming", detail: "Preparing the microphone", receipt: "Input" }),
     listening: Object.freeze({ label: "Listening", detail: "Release the shortcut to transcribe", receipt: "Local" }),
     processing: Object.freeze({ label: "Processing", detail: "Transcribing on this computer", receipt: "Local" }),
+    delivering: Object.freeze({ label: "Delivering", detail: "Verifying text reached the focused app", receipt: "Check" }),
     inserted: Object.freeze({ label: "Inserted", detail: "Text reached the focused app", receipt: "Verified" }),
     copied: Object.freeze({ label: "Copied", detail: "Paste manually when ready", receipt: "Fallback" }),
+    cancelled: Object.freeze({ label: "Cancelled", detail: "No text was delivered", receipt: "Local" }),
     needs_attention: Object.freeze({ label: "Needs attention", detail: "Open OSWispa for the recovery step", receipt: "Check" }),
   });
 

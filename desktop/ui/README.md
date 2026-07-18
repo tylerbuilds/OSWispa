@@ -10,13 +10,15 @@ The three surfaces are:
 
 ## Development boundary
 
-Every page uses `data-bridge="development"`. `bridge.js` installs a narrow in-memory adapter with three methods: `invoke`, `listen` and `dispose`. The interface is deliberately small so a future desktop host can install a production adapter without changing surface code.
+Every page uses `data-bridge="development"`. `bridge.js` installs a narrow in-memory adapter with three methods: `invoke`, `listen` and `dispose`. The interface is deliberately small so a desktop host can install a native adapter without changing surface code.
+
+When loaded by the additive Tauri shell, `tauri-adapter.js` replaces only the lifecycle listener with the native transcript-free event stream. Ready Check, settings and History commands continue to use the clearly labelled in-memory preview until their native storage boundaries are implemented.
 
 The development adapter cannot open a microphone, register a shortcut, read or write the clipboard, download a model, persist settings, touch files or perform insertion. Preview actions are labelled and return synthetic receipts. They must not be treated as host proof.
 
 The Signal document has no interactive controls and does not display transcript content. Making its native window non-activating, always appropriately positioned and excluded from task switching remains the responsibility of the future host; HTML alone cannot guarantee those behaviours.
 
-No desktop-host dependency, configuration, installer, signing flow or update mechanism is introduced here.
+The additive desktop host lives in `../src-tauri`. It does not replace the existing installer, signing flow or release mechanism.
 
 ## Bridge contract
 

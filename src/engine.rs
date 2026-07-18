@@ -66,6 +66,11 @@ pub struct EngineOptions {
     pub launch_tray: bool,
     /// Start the existing Unix-socket shortcut bridge where supported.
     pub launch_ipc: bool,
+    /// Permit the terminal first-run model wizard to read from stdin.
+    ///
+    /// Embedding GUI shells must disable this and provide their own onboarding
+    /// before restarting the engine with a valid local model.
+    pub interactive_setup: bool,
 }
 
 impl Default for EngineOptions {
@@ -73,6 +78,7 @@ impl Default for EngineOptions {
         Self {
             launch_tray: true,
             launch_ipc: true,
+            interactive_setup: true,
         }
     }
 }
@@ -83,6 +89,7 @@ impl EngineOptions {
         Self {
             launch_tray: false,
             launch_ipc: false,
+            interactive_setup: false,
         }
     }
 }
@@ -257,5 +264,14 @@ mod tests {
 
         assert_eq!(event, EngineEvent::PhaseChanged(EnginePhase::Listening));
         assert!(!json.contains("Private microphone label"));
+    }
+
+    #[test]
+    fn embedded_mode_disables_terminal_setup_and_compatibility_services() {
+        let options = EngineOptions::embedded();
+
+        assert!(!options.launch_tray);
+        assert!(!options.launch_ipc);
+        assert!(!options.interactive_setup);
     }
 }

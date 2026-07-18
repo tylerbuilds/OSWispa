@@ -12,12 +12,15 @@ HTML_DOCUMENTS = tuple(UI_ROOT / name for name in ("index.html", "signal.html", 
 TEXT_ASSETS = tuple(UI_ROOT.glob("*.html")) + tuple(UI_ROOT.glob("*.css")) + tuple(UI_ROOT.glob("*.js")) + (UI_ROOT / "README.md",)
 
 EXPECTED_SIGNAL_STATES = {
+    "booting",
     "ready",
     "arming",
     "listening",
     "processing",
+    "delivering",
     "inserted",
     "copied",
+    "cancelled",
     "needs_attention",
 }
 EXPECTED_SETTINGS = {

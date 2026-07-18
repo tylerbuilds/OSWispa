@@ -16,7 +16,7 @@ concurrency:
 jobs:
   lint-and-test:
     runs-on: ubuntu-22.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -30,6 +30,9 @@ jobs:
             libasound2-dev \
             libdbus-1-dev \
             libgtk-4-dev \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
             desktop-file-utils \
             rpm
 
@@ -59,6 +62,13 @@ jobs:
       - name: Validate website claims and links
         run: python3 scripts/check_website.py
 
+      - name: Validate desktop UI and native adapter contracts
+        run: |
+          python3 -m unittest discover -s desktop/ui/tests -p 'test_*.py'
+          node --check desktop/ui/bridge.js
+          node --check desktop/ui/tauri-adapter.js
+          node --check desktop/ui/app.js
+
       - name: Build (no GUI feature)
         run: cargo check --locked --no-default-features --all-targets
 
@@ -67,6 +77,11 @@ jobs:
 
       - name: Build (default features)
         run: cargo check --locked
+
+      - name: Check Tauri desktop shell
+        run: |
+          cargo check --locked -p oswispa-desktop
+          cargo clippy --locked -p oswispa-desktop --all-targets --no-deps -- -D warnings
 
       - name: Build .deb package (smoke test)
         run: |
@@ -89,7 +104,7 @@ jobs:
 
   check-macos:
     runs-on: macos-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -111,6 +126,9 @@ jobs:
       - name: Test (no GUI feature)
         run: cargo test --locked --no-default-features
 
+      - name: Check Tauri desktop shell
+        run: cargo check --locked -p oswispa-desktop
+
       - name: Build and run desktop smoke test
         shell: bash
         run: |
@@ -124,7 +142,7 @@ jobs:
 
   check-windows:
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -142,6 +160,9 @@ jobs:
 
       - name: Test (no GUI feature)
         run: cargo test --locked --no-default-features
+
+      - name: Check Tauri desktop shell
+        run: cargo check --locked -p oswispa-desktop
 
       - name: Build and run desktop smoke test
         shell: pwsh
