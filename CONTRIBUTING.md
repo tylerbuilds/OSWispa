@@ -5,12 +5,13 @@ First off, thank you for considering contributing to OSWispa! It's people like y
 ## How Can I Contribute?
 
 ### Reporting Bugs
-- Use GitHub Issues to report bugs.
-- Include OS version, hardware details (especially GPU/ROCm version), and steps to reproduce.
+- Read [SUPPORT.md](SUPPORT.md), then use the runtime bug or installation problem form in GitHub Issues.
+- Include the OSWispa version, operating system, package, relevant backend and the shortest safe reproduction steps.
+- Never attach transcript text, recordings, API keys, configuration files, environment dumps, clipboard contents, secrets, or unreviewed crash/core dumps.
 
 ### Suggesting Enhancements
-- Enhancement suggestions are tracked as GitHub issues.
-- Provide a clear description and use case for the feature.
+- Take open-ended ideas and questions to GitHub Discussions.
+- Use the feature proposal form for a bounded improvement with a clear user outcome and measurable success criteria.
 
 ### Pull Requests
 - We love pull requests! 

@@ -8,7 +8,7 @@
 
 A privacy-focused, local-first voice transcription tool powered by [Whisper.cpp](https://github.com/ggerganov/whisper.cpp). Hold a hotkey, speak, release - your words appear instantly.
 
-[Privacy](PRIVACY.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md) · [July 2026 audit](docs/AUDIT-2026-07-18.md)
+[Support](SUPPORT.md) · [Privacy](PRIVACY.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md) · [July 2026 audit](docs/AUDIT-2026-07-18.md)
 
 ---
 
