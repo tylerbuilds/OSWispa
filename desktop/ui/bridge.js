@@ -25,11 +25,11 @@
 
   function assertAdapter(adapter) {
     if (!adapter || typeof adapter !== "object") {
-      throw new TypeError("OSWispa UI adapter must be an object");
+      throw new TypeError("MorpheOS Voice UI adapter must be an object");
     }
     for (const method of REQUIRED_ADAPTER_METHODS) {
       if (typeof adapter[method] !== "function") {
-        throw new TypeError(`OSWispa UI adapter is missing ${method}()`);
+        throw new TypeError(`MorpheOS Voice UI adapter is missing ${method}()`);
       }
     }
   }
@@ -43,7 +43,7 @@
 
   function getAdapter() {
     if (!activeAdapter) {
-      throw new Error("OSWispa UI bridge has no installed adapter");
+      throw new Error("MorpheOS Voice UI bridge has no installed adapter");
     }
     return activeAdapter;
   }
@@ -109,7 +109,7 @@
           emit(EVENTS.HISTORY_CHANGED, { count: 0, simulated: true });
           return { cleared: true, persisted: false, mode: "development" };
         default:
-          throw new Error(`Unsupported OSWispa UI command: ${command}`);
+          throw new Error(`Unsupported MorpheOS Voice UI command: ${command}`);
       }
     }
 
@@ -135,7 +135,7 @@
     });
   }
 
-  global.OSWispaDesktopBridge = Object.freeze({
+  global.MorpheOSVoiceDesktopBridge = Object.freeze({
     COMMANDS,
     EVENTS,
     REQUIRED_ADAPTER_METHODS,

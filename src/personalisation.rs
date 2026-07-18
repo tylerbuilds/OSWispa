@@ -1,6 +1,6 @@
 //! Local-only, user-curated transcript personalisation.
 //!
-//! The persisted document deliberately contains only explicit phrase replacements. OSWispa does
+//! The persisted document deliberately contains only explicit phrase replacements. MorpheOS Voice does
 //! not observe edits in other applications and does not learn entries automatically.
 
 use crate::{get_data_dir, persistence};
@@ -374,7 +374,8 @@ mod tests {
     #[test]
     fn document_round_trip_is_versioned_and_validated() {
         let original =
-            Personalisation::from_dictionary(vec![entry("os whisper", "OSWispa")]).unwrap();
+            Personalisation::from_dictionary(vec![entry("morph os voice", "MorpheOS Voice")])
+                .unwrap();
         let json = serde_json::to_string(&original).unwrap();
         assert!(json.contains("\"schema_version\":1"));
         let loaded: Personalisation = serde_json::from_str(&json).unwrap();
@@ -399,8 +400,8 @@ mod tests {
         )])
         .is_err());
         assert!(Personalisation::from_dictionary(vec![
-            entry("OS Wisper", "OSWispa"),
-            entry("os wisper", "OSWispa")
+            entry("Morph OS Voice", "MorpheOS Voice"),
+            entry("morph os voice", "MorpheOS Voice")
         ])
         .is_err());
         assert!(Personalisation::from_dictionary(
@@ -415,14 +416,14 @@ mod tests {
     fn longest_literal_phrase_wins_at_word_boundaries() {
         let dictionary = Personalisation::from_dictionary(vec![
             entry("whisper", "Whisper"),
-            entry("os whisper", "OSWispa"),
+            entry("morph os voice", "MorpheOS Voice"),
             entry("cat", "dog"),
         ])
         .unwrap();
 
         assert_eq!(
-            dictionary.apply_dictionary("try os whisper and concatenate cat"),
-            "try OSWispa and concatenate dog"
+            dictionary.apply_dictionary("try morph os voice and concatenate cat"),
+            "try MorpheOS Voice and concatenate dog"
         );
     }
 
@@ -439,15 +440,15 @@ mod tests {
         exact.case_sensitive = true;
         let dictionary = Personalisation::from_dictionary(vec![
             exact,
-            entry("voice app", "os whisper"),
-            entry("os whisper", "OSWispa"),
+            entry("voice app", "morph os voice"),
+            entry("morph os voice", "MorpheOS Voice"),
         ])
         .unwrap();
 
         assert_eq!(dictionary.apply_dictionary("Api api"), "Api API");
         assert_eq!(
             dictionary.apply_dictionary("the voice app works"),
-            "the os whisper works"
+            "the morph os voice works"
         );
     }
 

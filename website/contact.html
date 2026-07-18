@@ -1,125 +1,54 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-GB">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Contact OSWispa</title>
-  <meta name="description" content="Contact OSWispa for support, collaboration, and feedback.">
+  <meta name="theme-color" content="#10110f">
+  <title>Contact — MorpheOS Voice</title>
+  <meta name="description" content="Get support, report a security issue or discuss MorpheOS Voice with MorpheOS.">
+  <link rel="canonical" href="https://morpheos.net/voice/contact.html">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="page">
-    <header class="site-header">
-      <div class="header-brand">
-        <div class="logo">OSWispa</div>
-        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" data-nav-toggle>
-          <span class="nav-toggle-label">Menu</span>
-          <span class="nav-toggle-bars" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span></span>
-          </span>
-        </button>
-      </div>
-      <nav class="site-nav" id="primary-nav" aria-label="Primary" data-site-nav>
-        <a href="index.html#platforms">Downloads</a>
-        <a href="index.html#why">Why OSWispa</a>
-        <a href="index.html#workflow">Workflow</a>
-        <a href="index.html#privacy">Privacy</a>
-        <a href="models.html">Model guide</a>
-        <a href="contact.html">Contact</a>
-      </nav>
-      <div class="header-actions">
-        <a class="btn btn-ghost" href="https://github.com/tylerbuilds/OSWispa">GitHub</a>
-        <a class="btn btn-primary" href="https://github.com/tylerbuilds/OSWispa/releases/latest">Download</a>
-      </div>
-    </header>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand-lockup" href="index.html" aria-label="MorpheOS Voice home"><img src="morpheos-voice-mark.svg" alt="" width="40" height="40"><span><b>MorpheOS</b> Voice</span></a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" data-nav-toggle><span>Menu</span><span class="nav-lines" aria-hidden="true"><i></i><i></i></span></button>
+      <nav class="site-nav" id="primary-nav" aria-label="Primary navigation" data-site-nav><a href="index.html#how-it-works">How it works</a><a href="index.html#processing">Privacy</a><a href="index.html#downloads">Downloads</a><a href="models.html">Models</a></nav>
+      <div class="header-actions"><a class="button button-quiet" href="https://github.com/tylerbuilds/OSWispa">GitHub</a><a class="button button-primary" href="index.html#downloads">Download</a></div>
+    </div>
+  </header>
 
-    <main>
-      <section class="hero hero-compact">
-        <div class="hero-copy reveal" style="--delay: 0.05s">
-          <p class="eyebrow">Contact</p>
-          <h1>Send a note to the builder.</h1>
-          <p class="lead">
-            Have feedback, want to collaborate, or need help with OSWispa? Drop a message and
-            it will reach the inbox at <strong>tc@tylerbuilds.com</strong>.
-          </p>
-          <div class="hero-actions">
-            <a class="btn btn-secondary" href="mailto:tc@tylerbuilds.com">Email directly</a>
-          </div>
-          <div class="hero-meta">
-            <div>
-              <p class="meta-title">Response window</p>
-              <p class="meta-copy">Usually within 1-2 business days.</p>
-            </div>
-            <div>
-              <p class="meta-title">Best topics</p>
-              <p class="meta-copy">Bugs, feature ideas, and partnerships.</p>
-            </div>
-          </div>
-        </div>
-        <div class="hero-visual reveal" style="--delay: 0.15s">
-          <div class="contact-card">
-            <div class="card-header">
-              <span class="signal"></span>
-              <span>Contact form</span>
-              <span class="pill">Protected</span>
-            </div>
-            <div class="form-success" data-form-success>
-              Message sent. Thanks for reaching out.
-            </div>
-            <form class="contact-form" action="https://formsubmit.co/tc@tylerbuilds.com" method="POST">
-              <input type="hidden" name="_subject" value="OSWispa contact">
-              <input type="hidden" name="_captcha" value="true">
-              <input type="hidden" name="_template" value="table">
-              <input type="hidden" name="_next" value="https://oswispa.tylerbuilds.com/contact.html?sent=1">
-              <input type="text" name="_honey" class="hidden-field" tabindex="-1" autocomplete="off" aria-hidden="true">
+  <main id="main-content" class="shell">
+    <section class="content-hero">
+      <div><p class="eyebrow">Contact / support</p><h1>Choose the route that keeps your data safe.</h1></div>
+      <p class="large-copy">Questions, bug reports and security disclosures need different levels of privacy. Please do not send recordings, transcripts, clipboard contents, credentials or unreviewed diagnostic archives.</p>
+    </section>
 
-              <label class="form-field">
-                <span class="form-label">Name</span>
-                <input class="form-input" type="text" name="name" placeholder="Your name" required>
-              </label>
-              <label class="form-field">
-                <span class="form-label">Email</span>
-                <input class="form-input" type="email" name="email" placeholder="you@example.com" required>
-              </label>
-              <label class="form-field">
-                <span class="form-label">Message</span>
-                <textarea class="form-textarea" name="message" rows="5" placeholder="Tell me what you are building." required></textarea>
-              </label>
-
-              <button class="btn btn-primary" type="submit">Send message</button>
-              <p class="form-footnote">Processed by FormSubmit and delivered by email. Do not include secrets, API keys, private transcripts, or recorded audio.</p>
-            </form>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <footer class="site-footer">
+    <section class="content-section">
+      <div><p class="section-index">01 / Public</p></div>
       <div>
-        <p class="logo">OSWispa</p>
-        <p>Open Source Whisper Assistant for fast, private transcription.</p>
+        <div class="contact-route"><div><h3>Questions and troubleshooting</h3><p>Search or ask in GitHub Discussions. Keep private speech and system details out of the post.</p></div><a class="button button-outline" href="https://github.com/tylerbuilds/OSWispa/discussions">Open Discussions</a></div>
+        <div class="contact-route"><div><h3>Runtime or installation bug</h3><p>Use the structured issue forms so the report includes only the evidence needed to reproduce the problem.</p></div><a class="button button-outline" href="https://github.com/tylerbuilds/OSWispa/issues/new/choose">Choose an issue form</a></div>
+        <div class="contact-route"><div><h3>Product or business enquiry</h3><p>Email MorpheOS directly. Do not use this route for vulnerability details.</p></div><a class="button button-outline" href="mailto:hello@morpheos.net">hello@morpheos.net</a></div>
       </div>
-      <div class="footer-links">
-        <div class="footer-link-group">
-          <a href="index.html#platforms">Downloads</a>
-          <a href="models.html">Model guide</a>
-          <a href="https://github.com/tylerbuilds/OSWispa">GitHub</a>
-          <a href="https://github.com/tylerbuilds/OSWispa/blob/master/PRIVACY.md">Privacy</a>
-          <a href="https://github.com/tylerbuilds/OSWispa/blob/master/SECURITY.md">Security</a>
-          <a href="contact.html">Contact</a>
-        </div>
-        <a class="btn btn-secondary btn-small footer-follow" href="https://x.com/TylerIsBuilding" target="_blank" rel="noopener">Follow on X</a>
-      </div>
-      <div class="footer-meta-group">
-        <p class="footer-meta">Copyright (c) 2026 Tyler Casey.</p>
-        <p class="footer-meta">Built with <a class="footer-link" href="https://github.com/openai/codex" target="_blank" rel="noopener">CODEX CLI</a>.</p>
-      </div>
-    </footer>
-  </div>
+    </section>
 
+    <section class="content-section">
+      <div><p class="section-index">02 / Private</p></div>
+      <div>
+        <h2>Security vulnerabilities</h2>
+        <p>Use <a href="https://github.com/tylerbuilds/OSWispa/security/advisories/new">GitHub private vulnerability reporting</a>. Include the affected version, platform, minimal reproduction and impact, without credentials or private transcript/audio data.</p>
+        <p>Read the <a href="https://github.com/tylerbuilds/OSWispa/blob/master/SECURITY.md">security policy</a> before sending a report.</p>
+      </div>
+    </section>
+
+    <section class="final-cta-inner"><div><p class="eyebrow">Before reporting</p><h2>Small, redacted evidence is better than a full log.</h2></div><div class="final-actions"><a class="button button-primary button-large" href="https://github.com/tylerbuilds/OSWispa/blob/master/SUPPORT.md">Read support guidance</a></div></section>
+  </main>
+
+  <footer class="site-footer"><div class="shell footer-inner"><p>A free, open-source MorpheOS product.</p><nav aria-label="Footer navigation"><a href="index.html">Product</a><a href="https://github.com/tylerbuilds/OSWispa">GitHub</a><a href="https://morpheos.net">MorpheOS</a></nav></div></footer>
   <script src="app.js"></script>
 </body>
 </html>

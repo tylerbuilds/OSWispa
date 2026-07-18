@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>OSWispa desktop UI foundation</title>
+  <title>MorpheOS Voice desktop foundation</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body data-surface="desktop">
@@ -15,14 +15,14 @@
 
   <div class="desktop-shell">
     <header class="desktop-header">
-      <a class="brand" href="index.html" aria-label="OSWispa desktop home">
-        <span class="whisper-mark" aria-hidden="true">
-          <span class="whisper-orbit whisper-orbit--outer"></span>
-          <span class="whisper-orbit whisper-orbit--inner"></span>
-          <span class="star-compass"></span>
+      <a class="brand" href="index.html" aria-label="MorpheOS Voice desktop home">
+        <span class="voice-mark" aria-hidden="true">
+          <span class="voice-orbit voice-orbit--outer"></span>
+          <span class="voice-orbit voice-orbit--inner"></span>
+          <span class="voice-cursor"></span>
         </span>
         <span>
-          <strong>OSWispa</strong>
+          <strong>MorpheOS Voice</strong>
           <small>Desktop foundation</small>
         </span>
       </a>
@@ -41,20 +41,20 @@
     </header>
 
     <main id="desktop-main" class="desktop-main">
-      <h1 class="sr-only">OSWispa desktop preview</h1>
+      <h1 class="sr-only">MorpheOS Voice desktop preview</h1>
 
       <section class="view" id="ready-check" data-view="ready-check" aria-labelledby="ready-title">
         <div class="view-heading ready-heading">
           <div>
             <p class="eyebrow">Ready Check</p>
-            <h2 id="ready-title">Speak. Release. Keep writing.</h2>
+            <h2 id="ready-title">Talk instead of type.</h2>
             <p class="view-lead">Four checks make the local dictation path visible before the first real sentence. This development surface uses synthetic responses only.</p>
           </div>
           <div class="readiness-score" data-readiness-score aria-label="Preview readiness: 2 of 4 checks ready">
-            <span class="whisper-mark whisper-mark--large" aria-hidden="true">
-              <span class="whisper-orbit whisper-orbit--outer"></span>
-              <span class="whisper-orbit whisper-orbit--inner"></span>
-              <span class="star-compass"></span>
+            <span class="voice-mark voice-mark--large" aria-hidden="true">
+              <span class="voice-orbit voice-orbit--outer"></span>
+              <span class="voice-orbit voice-orbit--inner"></span>
+              <span class="voice-cursor"></span>
             </span>
             <div>
               <strong data-ready-count>2 / 4</strong>
@@ -132,7 +132,7 @@
               </div>
               <p>A production check will record a short sentence, transcribe it and report the delivery outcome. The receipt hides transcript content by default.</p>
               <div class="sample-receipt" data-sample-receipt hidden>
-                <div class="receipt-seal" aria-hidden="true"><span class="star-compass"></span></div>
+                <div class="receipt-seal" aria-hidden="true"><span class="voice-cursor"></span></div>
                 <dl class="receipt-grid receipt-grid--sample">
                   <div><dt>Receipt</dt><dd>sample-0042</dd></div>
                   <div><dt>Backend</dt><dd>Local preview</dd></div>
@@ -238,7 +238,7 @@
                 </select>
               </label>
               <div class="device-receipt">
-                <div class="device-icon" aria-hidden="true"><span class="star-compass"></span></div>
+                <div class="device-icon" aria-hidden="true"><span class="voice-cursor"></span></div>
                 <div><strong>Bridge not connected</strong><p>Permission, device presence and audio level will appear here. No live input is opened by this preview.</p></div>
                 <span class="status-pill">Unavailable</span>
               </div>
@@ -257,7 +257,7 @@
             </section>
 
             <section class="settings-panel" role="tabpanel" id="panel-language" aria-labelledby="tab-language" data-settings-panel="language" hidden>
-              <div class="panel-heading"><p class="step-kicker">Language</p><h3>Tell Whisper what to expect</h3></div>
+              <div class="panel-heading"><p class="step-kicker">Language</p><h3>Help the speech model understand you</h3></div>
               <div class="field-grid">
                 <label class="field">Speech language
                   <select name="language">
@@ -282,12 +282,12 @@
             <section class="settings-panel" role="tabpanel" id="panel-dictionary" aria-labelledby="tab-dictionary" data-settings-panel="dictionary" hidden>
               <div class="panel-heading"><p class="step-kicker">Dictionary</p><h3>Keep names and project terms consistent</h3></div>
               <div class="dictionary-list" data-dictionary-list>
-                <div class="dictionary-entry"><div><strong>OSWispa</strong><small>Replace: os whisper</small></div><button type="button" class="text-button" data-remove-term="OSWispa">Remove preview term</button></div>
+                <div class="dictionary-entry"><div><strong>MorpheOS Voice</strong><small>Replace: morph os voice</small></div><button type="button" class="text-button" data-remove-term="MorpheOS Voice">Remove preview term</button></div>
                 <div class="dictionary-entry"><div><strong>Wayland</strong><small>Replace: way land</small></div><button type="button" class="text-button" data-remove-term="Wayland">Remove preview term</button></div>
               </div>
               <div class="field-grid dictionary-fields">
                 <label class="field">Preferred term<input type="text" name="dictionary_term" autocomplete="off" placeholder="Project name"></label>
-                <label class="field">Replace spoken form<input type="text" name="dictionary_spoken" autocomplete="off" placeholder="How Whisper may hear it"></label>
+                <label class="field">Replace spoken form<input type="text" name="dictionary_spoken" autocomplete="off" placeholder="How the model may hear it"></label>
               </div>
               <button class="button button--secondary" type="button" data-add-term>Add preview term</button>
               <p class="privacy-note">Preview terms stay in this page only. Production dictionary changes must use the bridge and local persistence rules.</p>
@@ -295,15 +295,15 @@
 
             <section class="settings-panel" role="tabpanel" id="panel-privacy" aria-labelledby="tab-privacy" data-settings-panel="privacy" hidden>
               <div class="panel-heading"><p class="step-kicker">Privacy</p><h3>Make the boundary visible</h3></div>
-              <div class="privacy-boundary"><span class="whisper-mark" aria-hidden="true"><span class="whisper-orbit whisper-orbit--outer"></span><span class="whisper-orbit whisper-orbit--inner"></span><span class="star-compass"></span></span><div><strong>Local backend</strong><p>Audio and transcripts stay on this computer. A model download is required before offline use.</p></div><span class="status-pill status-pill--ready">Default</span></div>
+              <div class="privacy-boundary"><span class="voice-mark" aria-hidden="true"><span class="voice-orbit voice-orbit--outer"></span><span class="voice-orbit voice-orbit--inner"></span><span class="voice-cursor"></span></span><div><strong>Local — processed on this computer</strong><p>Audio and transcripts stay on this computer. A model download is required before offline use.</p></div><span class="status-pill status-pill--ready">Default</span></div>
               <div class="setting-row"><div><label for="history-enabled">Save text-only history</label><p>Keep at most 50 transcripts locally for recovery. Audio is not retained.</p></div><input class="switch" id="history-enabled" name="history_enabled" type="checkbox" checked></div>
               <div class="setting-row"><div><label for="transcript-preview">Show transcript in Signal</label><p>Off by default so lifecycle feedback does not expose dictated words.</p></div><input class="switch" id="transcript-preview" name="transcript_preview" type="checkbox"></div>
               <div class="setting-row"><div><label for="remote-enabled">Use a remote endpoint</label><p>Opt-in only. Endpoint privacy and retention rules apply when enabled.</p></div><input class="switch" id="remote-enabled" name="remote_enabled" type="checkbox"></div>
             </section>
 
             <section class="settings-panel" role="tabpanel" id="panel-about" aria-labelledby="tab-about" data-settings-panel="about" hidden>
-              <div class="panel-heading"><p class="step-kicker">About</p><h3>OSWispa desktop foundation</h3></div>
-              <div class="about-mark"><span class="whisper-mark whisper-mark--large" aria-hidden="true"><span class="whisper-orbit whisper-orbit--outer"></span><span class="whisper-orbit whisper-orbit--inner"></span><span class="star-compass"></span></span><div><strong>Development UI contract</strong><p>Open-source, local-first dictation for short writing bursts.</p></div></div>
+              <div class="panel-heading"><p class="step-kicker">About</p><h3>MorpheOS Voice desktop foundation</h3></div>
+              <div class="about-mark"><span class="voice-mark voice-mark--large" aria-hidden="true"><span class="voice-orbit voice-orbit--outer"></span><span class="voice-orbit voice-orbit--inner"></span><span class="voice-cursor"></span></span><div><strong>Development UI contract</strong><p>Free, open-source voice typing for short writing bursts.</p></div></div>
               <dl class="about-list"><div><dt>Licence</dt><dd>MIT</dd></div><div><dt>UI stack</dt><dd>Bundled HTML, CSS and JavaScript</dd></div><div><dt>Bridge</dt><dd>Development adapter only</dd></div><div><dt>Analytics</dt><dd>None</dd></div></dl>
               <p class="privacy-note">This foundation does not include a desktop host, global shortcut registration, device access, signing, installers or automatic updates.</p>
             </section>

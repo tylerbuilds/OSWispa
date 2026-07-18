@@ -3,6 +3,6 @@
 <plist version="1.0">
 <dict>
   <key>NSMicrophoneUsageDescription</key>
-  <string>OSWispa uses the microphone only while you hold the configured dictation shortcut.</string>
+  <string>MorpheOS Voice uses the microphone only while you hold the configured dictation shortcut.</string>
 </dict>
 </plist>

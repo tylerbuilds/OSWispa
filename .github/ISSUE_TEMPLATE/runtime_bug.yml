@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping improve OSWispa. Please provide only the minimum diagnostic detail needed to reproduce the problem.
+        Thanks for helping improve MorpheOS Voice. Please provide only the minimum diagnostic detail needed to reproduce the problem.
 
         **Do not include transcript text, audio or video recordings, API keys, configuration files, environment dumps, clipboard contents, secrets, or unreviewed crash/core dumps.** Redact usernames, hostnames, device serials, private paths, and remote endpoint details from any excerpt.
 
@@ -16,7 +16,7 @@ body:
   - type: input
     id: oswispa_version
     attributes:
-      label: OSWispa version
+      label: MorpheOS Voice version
       description: Use the released version or commit, for example v0.4.2. Do not paste a full command transcript.
       placeholder: v0.4.2
     validations:
@@ -88,7 +88,7 @@ body:
       label: Reproduction steps
       description: Give the shortest repeatable sequence. Describe spoken content generically rather than quoting it.
       placeholder: |
-        1. Launch OSWispa.
+        1. Launch MorpheOS Voice.
         2. Hold the configured hotkey and speak a short test phrase.
         3. Release the hotkey.
         4. Observe the result.

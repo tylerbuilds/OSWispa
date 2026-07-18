@@ -10,7 +10,7 @@ else
 fi
 
 if [[ ! -S "${SOCKET_PATH}" ]]; then
-  echo "OSWispa socket not found at ${SOCKET_PATH}. Is OSWispa running?" >&2
+  echo "MorpheOS Voice socket not found at ${SOCKET_PATH}. Is MorpheOS Voice running?" >&2
   exit 1
 fi
 
@@ -24,5 +24,5 @@ if command -v socat >/dev/null 2>&1; then
   exit 0
 fi
 
-echo "Neither nc nor socat is installed; cannot send OSWispa toggle command." >&2
+echo "Neither nc nor socat is installed; cannot send the MorpheOS Voice toggle command." >&2
 exit 1

@@ -1,6 +1,6 @@
-# OSWispa desktop UI foundation
+# MorpheOS Voice desktop UI foundation
 
-This directory is an original, framework-free desktop UI contract for the next OSWispa host. It is bundled HTML, CSS and JavaScript with no remote assets, telemetry or network calls.
+This directory is an original, framework-free desktop UI contract for the MorpheOS Voice host. It is bundled HTML, CSS and JavaScript with no remote assets, telemetry or network calls.
 
 The three surfaces are:
 
@@ -22,7 +22,7 @@ The additive desktop host lives in `../src-tauri`. It does not replace the exist
 
 ## Bridge contract
 
-Commands are exposed as `OSWispaDesktopBridge.COMMANDS`:
+Commands are exposed as `MorpheOSVoiceDesktopBridge.COMMANDS`:
 
 - `read_bootstrap`
 - `save_settings`
@@ -30,7 +30,7 @@ Commands are exposed as `OSWispaDesktopBridge.COMMANDS`:
 - `copy_history_entry`
 - `clear_history`
 
-Events are exposed as `OSWispaDesktopBridge.EVENTS`:
+Events are exposed as `MorpheOSVoiceDesktopBridge.EVENTS`:
 
 - `lifecycle`
 - `ready_check_changed`

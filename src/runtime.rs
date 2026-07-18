@@ -261,7 +261,7 @@ pub struct Config {
     #[serde(default = "default_true")]
     pub audio_feedback: bool,
     /// Optional PulseAudio/PipeWire source name on Linux.
-    /// When unset, OSWispa follows the system default input source.
+    /// When unset, MorpheOS Voice follows the system default input source.
     #[serde(default)]
     pub audio_source: Option<String>,
     /// Language for transcription (e.g., "en", "es", "de", "fr", "auto")
@@ -352,12 +352,16 @@ pub(crate) fn format_hotkey(hotkey: &HotkeyConfig) -> String {
 }
 
 pub fn get_data_dir() -> PathBuf {
+    // Compatibility contract: MorpheOS Voice v0.4.x keeps the OS Whisper/OSWispa
+    // identity so existing models, history and personalisation remain available.
     ProjectDirs::from("com", "oswispa", "OSWispa")
         .map(|p| p.data_dir().to_path_buf())
         .unwrap_or_else(|| PathBuf::from(".oswispa"))
 }
 
 pub fn get_config_dir() -> PathBuf {
+    // Keep this aligned with get_data_dir until a signed, rollback-tested
+    // cross-platform identity migration exists.
     ProjectDirs::from("com", "oswispa", "OSWispa")
         .map(|p| p.config_dir().to_path_buf())
         .unwrap_or_else(|| PathBuf::from(".oswispa"))
@@ -384,7 +388,7 @@ fn load_config() -> Result<Config> {
     if config_path.exists() {
         persistence::read_json_private(&config_path).with_context(|| {
             format!(
-                "Configuration is invalid; fix or move {:?} before restarting OSWispa",
+                "Configuration is invalid; fix or move {:?} before restarting MorpheOS Voice",
                 config_path
             )
         })
@@ -499,7 +503,7 @@ pub(crate) fn run_platform_smoke_test() -> Result<()> {
     }
 
     let marker = format!(
-        "OSWispa {} {} VM clipboard smoke",
+        "MorpheOS Voice {} {} VM clipboard smoke",
         env!("CARGO_PKG_VERSION"),
         std::env::consts::OS
     );
@@ -1004,7 +1008,7 @@ pub(crate) fn run_engine(
                     #[cfg(target_os = "linux")]
                     {
                         let _ = notify_rust::Notification::new()
-                            .summary("OSWispa")
+                            .summary("MorpheOS Voice")
                             .body(delivery_status)
                             .timeout(3000)
                             .show();
@@ -1026,7 +1030,7 @@ pub(crate) fn run_engine(
                 #[cfg(target_os = "linux")]
                 {
                     let _ = notify_rust::Notification::new()
-                        .summary("OSWispa Error")
+                        .summary("MorpheOS Voice error")
                         .body(&msg)
                         .timeout(5000)
                         .show();
@@ -1079,10 +1083,10 @@ pub(crate) fn run_engine(
     drop(record_tx);
     audio_worker
         .join()
-        .map_err(|_| anyhow::anyhow!("OSWispa audio worker panicked"))?;
+        .map_err(|_| anyhow::anyhow!("MorpheOS Voice audio worker panicked"))?;
     transcription_worker
         .join()
-        .map_err(|_| anyhow::anyhow!("OSWispa transcription worker panicked"))?;
+        .map_err(|_| anyhow::anyhow!("MorpheOS Voice transcription worker panicked"))?;
 
     Ok(())
 }
@@ -1093,7 +1097,7 @@ where
 {
     if !interactive_setup {
         anyhow::bail!(
-            "A valid local model is required; finish desktop onboarding and restart OSWispa"
+            "A valid local model is required; finish desktop onboarding and restart MorpheOS Voice"
         );
     }
 
@@ -1164,6 +1168,54 @@ mod compatibility_tests {
         )
         .unwrap();
         assert_eq!(history[0].text, "existing transcript");
+    }
+
+    #[test]
+    fn rebrand_keeps_one_legacy_storage_identity() {
+        let expected = ProjectDirs::from("com", "oswispa", "OSWispa").unwrap();
+        assert_eq!(get_config_dir(), expected.config_dir());
+        assert_eq!(get_data_dir(), expected.data_dir());
+    }
+
+    #[test]
+    fn existing_settings_shortcut_and_model_path_round_trip_without_deletion() {
+        let directory = tempfile::tempdir().unwrap();
+        let model = directory.path().join("models").join("existing-model.bin");
+        std::fs::create_dir_all(model.parent().unwrap()).unwrap();
+        std::fs::write(&model, b"existing model fixture").unwrap();
+
+        let existing = Config {
+            model_path: model.clone(),
+            max_history: 17,
+            auto_paste: false,
+            notification_enabled: false,
+            audio_feedback: false,
+            language: "en".to_string(),
+            hotkey: HotkeyConfig {
+                ctrl: false,
+                alt: true,
+                shift: true,
+                super_key: false,
+                trigger_key: Some("f8".to_string()),
+            },
+            ..Config::default()
+        };
+        let config_path = directory.path().join("config.json");
+        persistence::write_json_private(&config_path, &existing).unwrap();
+
+        let loaded: Config = persistence::read_json_private(&config_path).unwrap();
+        assert_eq!(loaded.model_path, model);
+        assert_eq!(loaded.max_history, 17);
+        assert!(!loaded.auto_paste);
+        assert!(!loaded.notification_enabled);
+        assert!(!loaded.audio_feedback);
+        assert!(!loaded.hotkey.ctrl);
+        assert!(loaded.hotkey.alt);
+        assert!(loaded.hotkey.shift);
+        assert!(!loaded.hotkey.super_key);
+        assert_eq!(loaded.hotkey.trigger_key.as_deref(), Some("f8"));
+        assert!(loaded.model_path.exists());
+        assert!(config_path.exists());
     }
 
     #[test]

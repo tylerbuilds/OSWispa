@@ -23,7 +23,7 @@ use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextPar
 
 /// Minimum available VRAM in bytes to attempt GPU transcription (2GB)
 const MIN_VRAM_BYTES: u64 = 2 * 1024 * 1024 * 1024;
-/// Keep a conservative reserve so OSWispa does not consume the last chunk of free VRAM.
+/// Keep a conservative reserve so MorpheOS Voice does not consume the last chunk of free VRAM.
 const GPU_RESERVED_HEADROOM_BYTES: u64 = 6 * 1024 * 1024 * 1024;
 const MAX_REMOTE_RESPONSE_BYTES: u64 = 2 * 1024 * 1024;
 

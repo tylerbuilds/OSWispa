@@ -1,28 +1,28 @@
 :root {
   color-scheme: dark;
-  --ink-950: #070b11;
-  --ink-900: #0b111a;
-  --ink-850: #101824;
-  --ink-800: #162231;
-  --ink-700: #243548;
-  --line: rgba(174, 211, 224, 0.16);
-  --line-strong: rgba(174, 211, 224, 0.28);
-  --paper: #f5f8f6;
-  --muted: #9aabb4;
-  --quiet: #71828c;
-  --signal: #78dce8;
-  --signal-strong: #b6f4f0;
-  --mint: #77e3b5;
-  --amber: #f6c16b;
-  --danger: #ff8a84;
-  --danger-soft: rgba(255, 138, 132, 0.12);
+  --ink-950: #10110f;
+  --ink-900: #171812;
+  --ink-850: #202116;
+  --ink-800: #292a20;
+  --ink-700: #373829;
+  --line: rgba(210, 203, 184, 0.18);
+  --line-strong: rgba(210, 203, 184, 0.34);
+  --paper: #f2efe4;
+  --muted: #d2cbb8;
+  --quiet: #b8b09d;
+  --signal: #b9f27c;
+  --signal-strong: #d7ffad;
+  --mint: #b9f27c;
+  --amber: #d3a94f;
+  --danger: #d66f3f;
+  --danger-soft: rgba(214, 111, 63, 0.14);
   --shadow: 0 28px 80px rgba(0, 0, 0, 0.34);
-  --radius-large: 24px;
-  --radius-medium: 16px;
-  --radius-small: 10px;
-  --font-sans: "Avenir Next", Avenir, "Segoe UI", system-ui, sans-serif;
-  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --radius-large: 12px;
+  --radius-medium: 8px;
+  --radius-small: 6px;
+  --font-sans: "IBM Plex Sans", Aptos, "Segoe UI", system-ui, sans-serif;
+  --font-display: "IBM Plex Sans", Aptos, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
 * {
@@ -38,10 +38,7 @@ body {
   min-height: 100vh;
   margin: 0;
   color: var(--paper);
-  background:
-    radial-gradient(circle at 12% 2%, rgba(120, 220, 232, 0.1), transparent 30rem),
-    radial-gradient(circle at 92% 28%, rgba(119, 227, 181, 0.06), transparent 32rem),
-    var(--ink-950);
+  background: var(--ink-950);
   font: 400 16px/1.6 var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
@@ -308,7 +305,7 @@ kbd {
   font-size: 1.03rem;
 }
 
-.whisper-mark {
+.voice-mark {
   position: relative;
   display: inline-grid;
   width: 38px;
@@ -317,47 +314,46 @@ kbd {
   place-items: center;
 }
 
-.whisper-mark--large {
+.voice-mark--large {
   width: 74px;
   height: 74px;
 }
 
-.whisper-orbit,
+.voice-orbit,
 .signal-ring {
   position: absolute;
   inset: 4px;
-  border: 1px solid rgba(120, 220, 232, 0.56);
+  border: 1px solid rgba(210, 203, 184, 0.56);
   border-radius: 46% 54% 52% 48%;
   transform: rotate(12deg);
 }
 
-.whisper-orbit--inner,
+.voice-orbit--inner,
 .signal-ring--inner {
   inset: 9px;
-  border-color: rgba(119, 227, 181, 0.52);
+  border-color: rgba(185, 242, 124, 0.58);
   border-radius: 54% 46% 44% 56%;
   transform: rotate(-24deg);
 }
 
-.whisper-mark--large .whisper-orbit--outer {
+.voice-mark--large .voice-orbit--outer {
   inset: 5px;
 }
 
-.whisper-mark--large .whisper-orbit--inner {
+.voice-mark--large .voice-orbit--inner {
   inset: 16px;
 }
 
-.star-compass {
+.voice-cursor {
   position: relative;
   display: block;
-  width: 12px;
+  width: 14px;
   height: 12px;
-  background: var(--signal-strong);
-  clip-path: polygon(50% 0, 61% 38%, 100% 50%, 61% 62%, 50% 100%, 39% 62%, 0 50%, 39% 38%);
-  filter: drop-shadow(0 0 8px rgba(120, 220, 232, 0.52));
+  border-right: 3px solid var(--signal);
+  border-bottom: 3px solid var(--signal);
 }
 
-.whisper-mark--large .star-compass {
+.voice-mark--large .voice-cursor {
   width: 18px;
   height: 18px;
 }
@@ -1120,7 +1116,7 @@ kbd {
 
 .signal-shell[data-state="arming"] .signal-ring,
 .signal-shell[data-state="listening"] .signal-ring {
-  animation: whisper-breathe 1.15s ease-in-out infinite alternate;
+  animation: voice-breathe 1.15s ease-in-out infinite alternate;
 }
 
 .signal-shell[data-state="listening"] {
@@ -1132,8 +1128,8 @@ kbd {
   background: linear-gradient(90deg, transparent, var(--mint), transparent);
 }
 
-.signal-shell[data-state="processing"] .star-compass {
-  animation: compass-turn 1.4s linear infinite;
+.signal-shell[data-state="processing"] .voice-cursor {
+  animation: voice-processing 1.1s ease-in-out infinite alternate;
 }
 
 .signal-shell[data-state="inserted"] .signal-receipt {
@@ -1160,13 +1156,13 @@ kbd {
   color: var(--danger);
 }
 
-@keyframes whisper-breathe {
+@keyframes voice-breathe {
   from { transform: rotate(8deg) scale(0.92); opacity: 0.55; }
   to { transform: rotate(28deg) scale(1.08); opacity: 1; }
 }
 
-@keyframes compass-turn {
-  to { transform: rotate(1turn); }
+@keyframes voice-processing {
+  to { opacity: 0.35; transform: translateX(3px); }
 }
 
 /* History */

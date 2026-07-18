@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate OSWispa's static site links and release-facing product claims."""
+"""Validate the MorpheOS Voice static site and release-facing claims."""
 
 from __future__ import annotations
 
@@ -149,6 +149,8 @@ def main() -> int:
         "google-analytics.com": "third-party analytics loader",
         "fonts.googleapis.com": "remote font loader",
         "fonts.gstatic.com": "remote font loader",
+        "formsubmit.co": "third-party form handler",
+        "oswispa.tylerbuilds.com": "retired product domain",
     }
     folded_claims = claim_text.casefold()
     for phrase, reason in forbidden_claims.items():
@@ -160,15 +162,20 @@ def main() -> int:
             errors.append(f"website: remove {reason}: {phrase!r}")
 
     required = [
-        "Speak. Release. Keep writing.",
-        "Built for the sentence, not the meeting.",
-        "Illustrated product flow — not a live app overlay",
+        "MorpheOS Voice",
+        "Talk instead of type — in any app.",
+        "Free, open-source voice typing for your computer.",
+        "Illustrated flow — not a live screenshot",
+        "https://morpheos.net/voice",
+        "Linux primary",
+        "Processed on this computer",
+        "Sent to the selected provider",
         "CPU-only",
-        "Unsigned and unnotarised",
-        "no tray",
+        "not signed or notarised",
+        "no installer or tray",
         "console window",
         "first model download",
-        "systemctl --user status ydotoold",
+        "Release proof boundary",
     ]
     for phrase in required:
         if phrase.casefold() not in index.casefold():

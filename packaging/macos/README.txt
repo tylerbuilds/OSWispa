@@ -1,18 +1,18 @@
-OSWispa for macOS
-=================
+MorpheOS Voice for macOS
+========================
 
 Quick start
 -----------
 1. Open the .dmg file.
-2. Drag OSWispa.app into Applications.
-3. Open Applications and launch OSWispa.
-4. If macOS blocks the first launch, Control-click OSWispa.app and choose Open.
+2. Drag MorpheOS Voice.app into Applications.
+3. Open Applications and launch MorpheOS Voice.
+4. If macOS blocks the first launch, Control-click MorpheOS Voice.app and choose Open.
 
 What to expect
 --------------
-- OSWispa currently launches in Terminal on macOS.
+- MorpheOS Voice currently launches in Terminal on macOS.
 - Keep the Terminal window open while dictating.
-- On first launch, OSWispa runs a short device test and downloads the best model automatically.
+- On first launch, MorpheOS Voice runs a short device test and downloads a suitable model automatically.
 - On first use, macOS will ask for Microphone access.
 - Global hotkeys require Accessibility permission:
   System Settings > Privacy & Security > Accessibility

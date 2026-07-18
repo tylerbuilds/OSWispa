@@ -1,13 +1,13 @@
-# OSWispa Tauri shell foundation
+# MorpheOS Voice Tauri shell foundation
 
-This package is an additive Tauri 2 shell around the existing `oswispa` library. It is excluded
+This package is an additive Tauri 2 shell around the existing compatibility `oswispa` library. It is excluded
 from the workspace's default members, so existing CLI builds, Linux packages and release jobs keep
 their current behaviour until native parity is proved.
 
 ## Implemented boundary
 
 - One process owns one embedded engine, guarded by Tauri's official single-instance plugin.
-- The native tray owns Open OSWispa, History, Show Signal, Start, Stop, Cancel and Quit.
+- The native tray owns Open MorpheOS Voice, History, Show Signal, Start, Stop, Cancel and Quit.
 - The engine runs on its own worker and exposes only `{ "state": "..." }` lifecycle payloads.
 - Signal is non-focusable and transcript-free. Settings and History are local development previews;
   they do not read or mutate configuration, history, files or the clipboard.

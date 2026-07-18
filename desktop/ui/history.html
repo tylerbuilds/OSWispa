@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>OSWispa history and recovery preview</title>
+  <title>MorpheOS Voice history and recovery preview</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body data-surface="history">
@@ -15,13 +15,13 @@
 
   <div class="desktop-shell history-shell">
     <header class="desktop-header">
-      <a class="brand" href="index.html" aria-label="Back to OSWispa desktop preview">
-        <span class="whisper-mark" aria-hidden="true">
-          <span class="whisper-orbit whisper-orbit--outer"></span>
-          <span class="whisper-orbit whisper-orbit--inner"></span>
-          <span class="star-compass"></span>
+      <a class="brand" href="index.html" aria-label="Back to MorpheOS Voice desktop preview">
+        <span class="voice-mark" aria-hidden="true">
+          <span class="voice-orbit voice-orbit--outer"></span>
+          <span class="voice-orbit voice-orbit--inner"></span>
+          <span class="voice-cursor"></span>
         </span>
-        <span><strong>OSWispa</strong><small>History &amp; recovery</small></span>
+        <span><strong>MorpheOS Voice</strong><small>History &amp; recovery</small></span>
       </a>
       <nav class="surface-nav" aria-label="Desktop surfaces">
         <a class="surface-nav-item" href="index.html#ready-check">Ready Check</a>
@@ -75,7 +75,7 @@
           <li class="history-item" data-history-entry data-outcome="inserted" data-search-text="draft the release note windows now works">
             <details>
               <summary>
-                <span class="history-compass" aria-hidden="true"><span class="star-compass"></span></span>
+                <span class="history-compass" aria-hidden="true"><span class="voice-cursor"></span></span>
                 <span class="history-summary-copy"><strong>20:14 · 46 characters</strong><small>Local · base.en · transcript hidden</small></span>
                 <span class="status-pill status-pill--ready">Inserted</span>
               </summary>
@@ -90,7 +90,7 @@
           <li class="history-item" data-history-entry data-outcome="copied" data-search-text="send the package proof after the checks finish">
             <details>
               <summary>
-                <span class="history-compass" aria-hidden="true"><span class="star-compass"></span></span>
+                <span class="history-compass" aria-hidden="true"><span class="voice-cursor"></span></span>
                 <span class="history-summary-copy"><strong>18:42 · 47 characters</strong><small>Local · small.en · transcript hidden</small></span>
                 <span class="status-pill status-pill--copied">Copied only</span>
               </summary>
@@ -105,7 +105,7 @@
           <li class="history-item" data-history-entry data-outcome="attention" data-search-text="check the microphone source before recording again">
             <details>
               <summary>
-                <span class="history-compass" aria-hidden="true"><span class="star-compass"></span></span>
+                <span class="history-compass" aria-hidden="true"><span class="voice-cursor"></span></span>
                 <span class="history-summary-copy"><strong>16:09 · 50 characters</strong><small>Local · base.en · transcript hidden</small></span>
                 <span class="status-pill status-pill--attention">Needs attention</span>
               </summary>
@@ -119,7 +119,7 @@
         </ol>
 
         <div class="empty-state" data-history-empty hidden>
-          <span class="whisper-mark whisper-mark--large" aria-hidden="true"><span class="whisper-orbit whisper-orbit--outer"></span><span class="whisper-orbit whisper-orbit--inner"></span><span class="star-compass"></span></span>
+          <span class="voice-mark voice-mark--large" aria-hidden="true"><span class="voice-orbit voice-orbit--outer"></span><span class="voice-orbit voice-orbit--inner"></span><span class="voice-cursor"></span></span>
           <h2>No matching preview receipts</h2>
           <p>Adjust the search or outcome filter. Production history remains bounded and local.</p>
         </div>
@@ -128,15 +128,15 @@
       <aside class="recovery-note" aria-labelledby="recovery-note-title">
         <p class="eyebrow">Recovery rule</p>
         <h2 id="recovery-note-title">Copy is the safe fallback.</h2>
-        <p>If text insertion cannot be verified, OSWispa should leave the transcript on the clipboard and report “Copied” rather than pretending it reached the focused app.</p>
+        <p>If text insertion cannot be verified, MorpheOS Voice should leave the transcript on the clipboard and report “Copied” rather than pretending it reached the focused app.</p>
       </aside>
     </main>
   </div>
 
   <dialog class="confirm-dialog" data-clear-dialog aria-labelledby="clear-dialog-title">
-    <div class="dialog-mark" aria-hidden="true"><span class="star-compass"></span></div>
+    <div class="dialog-mark" aria-hidden="true"><span class="voice-cursor"></span></div>
     <h2 id="clear-dialog-title">Clear synthetic preview history?</h2>
-    <p>This removes the three in-memory fixture rows from this page. It cannot delete OSWispa files.</p>
+    <p>This removes the three in-memory fixture rows from this page. It cannot delete MorpheOS Voice files.</p>
     <div class="dialog-actions">
       <button class="button button--secondary" type="button" data-clear-cancel>Cancel</button>
       <button class="button button--danger" type="button" data-clear-confirm>Clear preview rows</button>

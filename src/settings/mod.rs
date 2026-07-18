@@ -1,6 +1,6 @@
 //! GTK4 Settings Dialog
 //!
-//! Provides a graphical settings window for configuring OSWispa.
+//! Provides a graphical settings window for configuring MorpheOS Voice.
 
 #[cfg(feature = "gui")]
 mod dialog;

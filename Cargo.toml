@@ -1,9 +1,9 @@
 [package]
 name = "oswispa"
-version = "0.4.2"
+version = "0.5.0"
 edition = "2021"
-description = "Voice-to-text with Whisper - local-first with configurable hotkeys and optional VPS backend"
-authors = ["OSWispa"]
+description = "Free, open-source voice typing for any app"
+authors = ["MorpheOS"]
 license = "MIT"
 
 [dependencies]
@@ -100,7 +100,7 @@ assets = [
   ["README.md", "usr/share/doc/oswispa/README.md", "644"],
   ["LICENSE", "usr/share/doc/oswispa/LICENSE", "644"],
 ]
-# Additional runtime tools used by OSWispa (beyond shared libs detected automatically).
+# Additional runtime tools used by MorpheOS Voice (beyond shared libs detected automatically).
 depends = "$auto, alsa-utils, ydotool, netcat-openbsd, wl-clipboard, xclip, xdotool"
 
 [package.metadata.generate-rpm]

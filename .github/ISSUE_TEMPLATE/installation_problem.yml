@@ -1,5 +1,5 @@
 name: Installation problem
-description: Report a failure installing, launching, or upgrading an OSWispa package.
+description: Report a failure installing, launching, or upgrading MorpheOS Voice.
 title: "[Install]: "
 labels:
   - bug
@@ -16,7 +16,7 @@ body:
   - type: input
     id: oswispa_version
     attributes:
-      label: OSWispa version or release attempted
+      label: MorpheOS Voice version or release attempted
       placeholder: v0.4.2
     validations:
       required: true
@@ -72,7 +72,7 @@ body:
       placeholder: |
         1. Download the named release asset.
         2. Install or extract it using the documented method.
-        3. Launch OSWispa.
+        3. Launch MorpheOS Voice.
         4. Observe the failure.
     validations:
       required: true
@@ -102,7 +102,7 @@ body:
   - type: dropdown
     id: prior_install
     attributes:
-      label: Previous OSWispa installation
+      label: Previous OS Whisper/OSWispa installation
       options:
         - Fresh installation
         - Upgrade from a release package

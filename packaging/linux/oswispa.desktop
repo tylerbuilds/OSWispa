@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
-Name=OSWispa
-Comment=Local-first voice dictation powered by Whisper
+Name=MorpheOS Voice
+Comment=Free, open-source voice typing for your computer
 Exec=oswispa
 Icon=oswispa
 Terminal=false

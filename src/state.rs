@@ -30,7 +30,7 @@ pub enum AppPhase {
     },
     /// Capture has stopped and audio is being prepared or transcribed.
     Processing,
-    /// A transcript exists and OSWispa is attempting clipboard/text delivery.
+    /// A transcript exists and MorpheOS Voice is attempting clipboard/text delivery.
     Delivering,
     Delivered(DeliveryOutcome),
     Cancelled,

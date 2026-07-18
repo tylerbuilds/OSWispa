@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-# OSWispa Installation Script
-# Voice-to-text with Whisper - hold a hotkey to record
+# MorpheOS Voice installation script
+# Free, open-source voice typing. Hold a hotkey to record.
 # Supports: Ubuntu/Debian, Fedora/RHEL, Arch/Manjaro, macOS
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -27,7 +27,7 @@ fi
 MODEL_DIR="$DATA_DIR/models"
 
 echo "================================"
-echo "  OSWispa Installation Script"
+echo "  MorpheOS Voice Installation Script"
 echo "================================"
 echo ""
 
@@ -304,7 +304,7 @@ else
 fi
 
 if [ -n "$GPU_FEATURES" ]; then
-    print_status "Building OSWispa with GPU acceleration ($GPU_TYPE)..."
+    print_status "Building MorpheOS Voice with GPU acceleration ($GPU_TYPE)..."
     cargo build --release $BUILD_FLAGS $GPU_FEATURES
 else
     print_status "No GPU toolkit found, building CPU-only..."
@@ -361,8 +361,8 @@ else
     cat > "$HOME/.local/share/applications/oswispa.desktop" << EOF
 [Desktop Entry]
 Type=Application
-Name=OSWispa
-Comment=Voice to text with Whisper - hold Ctrl+Super to record
+Name=MorpheOS Voice
+Comment=Free, open-source voice typing - hold Ctrl+Super to record
 Exec=/usr/local/bin/oswispa
 Icon=audio-input-microphone
 Terminal=false
@@ -373,10 +373,10 @@ X-GNOME-Autostart-enabled=true
 EOF
 
     # 11. Remove the legacy desktop autostart entry. The user service below
-    # owns the process lifecycle so OSWispa cannot start twice at login.
+    # owns the process lifecycle so MorpheOS Voice cannot start twice at login.
     rm -f "$HOME/.config/autostart/oswispa.desktop"
 
-    # 12. Create systemd user service for OSWispa
+    # 12. Create the compatibility systemd user service for MorpheOS Voice.
     print_status "Creating systemd user service..."
     mkdir -p "$HOME/.config/systemd/user"
 
@@ -398,7 +398,7 @@ Environment=LD_LIBRARY_PATH=$ROCM_PATH/lib:$ROCM_PATH/hip/lib"
 
     cat > "$HOME/.config/systemd/user/oswispa.service" << EOF
 [Unit]
-Description=OSWispa Voice-to-Text Service
+Description=MorpheOS Voice Typing Service
 Documentation=https://github.com/tylerbuilds/OSWispa
 After=graphical-session.target
 
@@ -430,7 +430,7 @@ fi
 chmod 600 "$CONFIG_DIR/config.json"
 
 if [ "$PLATFORM" != "Darwin" ]; then
-    print_status "Enabling OSWispa and ydotool user services..."
+    print_status "Enabling MorpheOS Voice and ydotool user services..."
     systemctl --user daemon-reload
     systemctl --user enable ydotoold.service
     systemctl --user enable oswispa.service
@@ -455,7 +455,7 @@ if [ "$PLATFORM" = "Darwin" ]; then
     echo "   System Settings > Privacy & Security > Accessibility"
     echo "   Add and enable 'oswispa'"
     echo ""
-    echo "2. Run OSWispa:"
+    echo "2. Run MorpheOS Voice (the transition command remains oswispa):"
     echo "   oswispa"
     echo ""
     echo "3. (Optional) Auto-start on login:"
@@ -482,7 +482,7 @@ else
     echo "   - Search for 'AppIndicator' or 'KStatusNotifierItem'"
     echo "   - Enable the extension"
     echo ""
-    echo "4. OSWispa is running as a user service:"
+    echo "4. MorpheOS Voice is running as the compatibility user service:"
     echo "   systemctl --user status oswispa"
     echo ""
     echo "USAGE:"
@@ -498,4 +498,4 @@ else
 fi
 
 echo ""
-print_status "Enjoy OSWispa!"
+print_status "MorpheOS Voice is installed."

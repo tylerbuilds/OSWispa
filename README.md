@@ -1,73 +1,52 @@
-# OSWispa 🎙️
+# MorpheOS Voice
 
-**Open Source Whisper Assistant** - Lightning-fast voice-to-text for your desktop.
+<p align="center">
+  <img src="website/morpheos-voice-lockup.svg" alt="MorpheOS Voice" width="520">
+</p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Platform: Linux, macOS & Windows](https://img.shields.io/badge/Platform-Linux%2C%20macOS%20%26%20Windows-green.svg)](#)
-[![Status: Alpha](https://img.shields.io/badge/Status-Alpha-orange.svg)](#)
+<p align="center"><strong>Talk instead of type — in any app.</strong></p>
 
-A privacy-focused, local-first voice transcription tool powered by [Whisper.cpp](https://github.com/ggerganov/whisper.cpp). Hold a hotkey, speak, release - your words appear instantly.
+<p align="center">Free, open-source voice typing for your computer.</p>
 
-[Support](SUPPORT.md) · [Privacy](PRIVACY.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md) · [July 2026 audit](docs/AUDIT-2026-07-18.md)
+<p align="center">
+  <a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/badge/source-MIT-b9f27c"></a>
+  <a href="https://github.com/tylerbuilds/OSWispa/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/tylerbuilds/OSWispa?label=release"></a>
+  <img alt="Project status: alpha" src="https://img.shields.io/badge/status-alpha-d3a94f">
+</p>
 
----
+MorpheOS Voice turns a short spoken thought into text in the application you are already using. Linux is the primary alpha platform; macOS and Windows packages are also available with the limitations set out below.
 
-## 🚧 Project Status & Transparency
+[Download MorpheOS Voice](https://github.com/tylerbuilds/OSWispa/releases/latest) · [Product page](https://morpheos.net/voice) · [Privacy](PRIVACY.md) · [Support](SUPPORT.md)
 
-**Current State:** v0.4.2 (Alpha)
+> **Transition note:** the public product is now MorpheOS Voice. The current repository URL, command name (`oswispa`), package filenames and application-data locations retain the legacy OS Whisper/OSWispa identifiers for upgrade and rollback safety.
 
-The [v0.4.2 release](https://github.com/tylerbuilds/OSWispa/releases/tag/v0.4.2) contains the July security and reliability audit fixes, lower-floor Linux packages, VM-tested macOS packages, and the first functional Windows package.
+## What it does
 
-| Platform | Status | Notes |
-|----------|--------|-------|
-| **Ubuntu/Debian** | ✅ **Supported** | Primary dev environment. Automated installer with GPU auto-detection. |
-| **macOS** | ✅ **Supported** | Audio, hotkeys, clipboard all working. Metal GPU untested. |
-| **Fedora/Arch** | ✅ **Supported** | Automated installer with `dnf`/`pacman` support. |
-| **Windows** | ✅ **Supported (Alpha)** | WASAPI audio, global hotkeys, clipboard and text insertion. VM-tested x86-64 ZIP. |
+```text
+Hold the shortcut → speak → release → transcribe → copy → insert
+```
 
-### 🛑 Known Limitations
-1.  **Installer**: The source installer supports Ubuntu/Debian, Fedora/RHEL, Arch/Manjaro, and macOS. Windows uses the release ZIP.
-2.  **Auto-Paste (Linux)**: Uses `ydotool` to simulate typing. The source installer enables its user service.
-3.  **Global Hotkeys (Linux)**: Reads `/dev/input` directly, requires `input` group membership.
-4.  **Global Hotkeys (macOS)**: Requires Accessibility permission in System Settings.
-5.  **macOS Packaging**: The current app bundle is not signed or notarised.
-6.  **Windows Packaging**: The ZIP is not code-signed and has no tray UI yet; keep its console window open.
+Focus an email, document, message, prompt or text field. Hold the configured shortcut while you speak, then release it. MorpheOS Voice processes the recording, copies the completed text to the clipboard and, when supported, inserts it at the cursor.
 
----
+This is push-to-talk dictation, not a meeting recorder, chatbot or desktop agent. Write mode produces text only; there is no Act mode in the current product.
 
-## ✨ Features
+## Why MorpheOS Voice
 
-- **🎤 Push-to-Talk**: Configurable modifiers + optional trigger key
-- **🔒 Local-First**: Runs fully local by default with optional VPS backend
-- **⚡ GPU Accelerated**: AMD ROCm, NVIDIA CUDA, or Apple Metal support
-- **📋 Auto-Paste**: Text is typed directly into your active window
-- **🌍 Multilingual**: Supports 99 languages with the right model
-- **🧩 Model Flexibility**: Import custom `.bin` / `.gguf` models and switch quickly
-- **✍️ Spoken Formatting**: Say commands like `quotation mark` and `new line`
-- **📖 Personal Dictionary**: Keep explicit names and phrases spelt correctly, entirely locally
+| Capability | Current behaviour |
+| --- | --- |
+| Free and open source | The original source is MIT-licensed; dependencies and optional models keep their own licences. |
+| Works where you write | Completed text is inserted into the focused application when the platform insertion path succeeds. |
+| Local processing | Local Whisper.cpp processing is the default after a model has been downloaded. |
+| Provider choice | An optional OpenAI-compatible remote endpoint can be configured explicitly. Audio then leaves the computer. |
+| Recoverable text | Completed transcripts are copied to the clipboard and kept in bounded local history. Failed insertion does not discard the clipboard copy. |
+| Your shortcut | The default is Ctrl+Super on Linux, Ctrl+Cmd on macOS and Ctrl+Windows on Windows. |
+| Personal vocabulary | A deterministic local dictionary can correct names and phrases without automatic learning or app monitoring. |
 
----
+## Quick start on Linux
 
-## 🤝 Call for Contributors
+The quickest tested route is a release package. The filenames remain legacy compatibility identifiers for this transition release.
 
-- [x] ~~Create installation scripts for **Fedora**, **Arch**, and **macOS**~~ (done).
-- [ ] Add a signed **Windows MSIX/MSI installer** and native tray UI.
-- [ ] Improve **Wayland** integration without requiring root/input group hacks.
-- [ ] Add a proper GUI settings menu (currently experimental).
-- [ ] Test **Metal GPU** acceleration on macOS Apple Silicon.
-
-If you can help, please fork the repo and submit a PR! See [CONTRIBUTING.md](CONTRIBUTING.md).
-
----
-
-## 🚀 Installation (Linux)
-
-### Option A: Install the `.deb`
-
-The v0.4.2 Linux artefacts are built on Ubuntu 22.04, lowering the compatibility floor to GLIBC 2.35.
-
-1. Download the latest `amd64` `.deb` from GitHub Releases.
-2. Install it with `apt` (preferred, pulls dependencies):
+Ubuntu or Debian:
 
 ```bash
 curl -LO https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa_amd64.deb
@@ -75,9 +54,7 @@ sudo apt install ./oswispa_amd64.deb
 oswispa
 ```
 
-> **Note:** The `.deb` ships a CPU-only binary. For GPU acceleration, build from source (see below).
-
-### Option B: Install the `.rpm`
+Fedora or RHEL-compatible systems:
 
 ```bash
 curl -LO https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa_x86_64.rpm
@@ -85,251 +62,144 @@ sudo dnf install ./oswispa_x86_64.rpm
 oswispa
 ```
 
-The release page includes `SHA256SUMS` covering every downloadable asset.
+On first launch, MorpheOS Voice checks the computer and downloads a suitable speech model. If the installer adds your account to the Linux `input` group, log out and back in before using the global shortcut.
 
-### Option C (Recommended for GPU builds): Build From Source
+Then:
 
-The install script automatically detects your GPU and builds with the right features.
+1. Focus a normal text field.
+2. Hold **Ctrl+Super** and speak a short phrase.
+3. Release the keys and wait for the delivery status.
+4. If insertion is blocked, paste the clipboard contents manually.
 
-```bash
-git clone https://github.com/tylerbuilds/OSWispa.git
-cd OSWispa
-./install.sh
-```
+## Installation
 
-The installer will:
-- Detect every AMD ROCm architecture or NVIDIA CUDA and build with GPU acceleration
-- Select the ROCm device with the most VRAM instead of assuming GPU 0
-- Validate model downloads before atomically installing them
-- Fall back to CPU-only if no GPU toolkit is found
-- Create, enable, and start a systemd user service with the correct GPU environment variables
+All current downloads are alpha software. Release packages are checksummed in `SHA256SUMS`.
 
-**After install:**
-1.  If the installer added you to the `input` group, log out and back in.
-2.  Confirm auto-paste is ready with `systemctl --user status ydotoold`.
-3.  Press your configured hotkey (default **Ctrl+Super**), speak, and release!
+| Platform | Package | Current proof and limitations |
+| --- | --- | --- |
+| Linux x86-64 | `.deb`, `.rpm`, tarball or source | Primary platform. Release packages are CPU-only. Global shortcuts require input-device access; Wayland insertion normally uses the `ydotoold` user service. |
+| macOS 12+ | Apple Silicon or Intel DMG/ZIP | Package install and launch are VM-tested. The app is unsigned and unnotarised, launches through Terminal and has no menu-bar UI. Microphone, Accessibility and physical insertion still need hardware permission proof for each release candidate. |
+| Windows x86-64 | Portable ZIP | Package extraction and launch are VM-tested. The app is unsigned, has no installer or tray and must keep its console window open. Physical microphone, hotkey and focused-app insertion need hardware proof for each release candidate. |
 
----
+### macOS
 
-## 🍎 Installation (macOS)
+1. Download the matching DMG from [GitHub Releases](https://github.com/tylerbuilds/OSWispa/releases/latest).
+2. Drag **MorpheOS Voice.app** to Applications. Older published DMGs may still show **OSWispa.app**.
+3. Control-click the app and choose **Open** if Gatekeeper blocks the unsigned build.
+4. Grant Microphone and Accessibility access when prompted.
+5. Keep the Terminal window open; hold **Ctrl+Cmd** to dictate.
 
-### Option A (Recommended): Download the App Package
-
-1. Download the matching macOS DMG from GitHub Releases: `oswispa-macos-arm64.dmg` for Apple Silicon or `oswispa-macos-x86_64.dmg` for Intel.
-2. Open the `.dmg`.
-3. Drag `OSWispa.app` into `Applications`.
-4. Open `OSWispa` from `Applications`.
-5. If macOS blocks the first launch, Control-click `OSWispa.app` and choose `Open`.
-
-> **Note:** The packaged macOS app launches OSWispa in Terminal so you can see setup prompts and status output. Apple Silicon builds use Metal; Intel builds stay on the CPU path.
-
-### Option B: Install Script
-
-```bash
-git clone https://github.com/tylerbuilds/OSWispa.git
-cd OSWispa
-./install.sh
-```
-
-The installer will:
-- Install Xcode CLT and Homebrew (if needed) + cmake
-- Auto-detect Apple Silicon and build with Metal GPU acceleration
-- Download and validate the base English Whisper model
-- Create a LaunchAgent for auto-start on login
-
-### Option C: Manual Build
-
-```bash
-brew install cmake
-cargo build --release --no-default-features
-./target/release/oswispa
-```
-
-> **Note:** `--no-default-features` disables the GTK4 GUI (Linux-only). All core features work without it.
-
-### macOS Permissions
-
-OSWispa needs two permissions on macOS:
-
-1. **Microphone**: Granted automatically on first recording attempt.
-2. **Accessibility**: Required for global hotkeys. Go to **System Settings > Privacy & Security > Accessibility** and add `oswispa`.
-
-### macOS Limitations (v0.4.2)
-
-- No native menu bar/tray UI yet; the packaged app launches OSWispa in Terminal
-- No signed/notarized installer yet, so first launch may require Control-click > Open
-- Apple Silicon packages use Metal; Intel packages use CPU transcription
-- First launch auto-selects a model, but power users can still override it with `OSWISPA_SETUP_MANUAL=1`
-
----
-
-## 🪟 Installation (Windows)
-
-1. Download [`oswispa-windows-x86_64.zip`](https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa-windows-x86_64.zip).
-2. Extract the complete ZIP into a permanent folder.
-3. Run `oswispa.exe` and keep its console window open.
-4. Allow desktop-app microphone access if Windows prompts for it.
-5. Hold **Ctrl+Windows**, speak, then release the keys.
-
-PowerShell installation:
+### Windows
 
 ```powershell
 Invoke-WebRequest https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa-windows-x86_64.zip -OutFile oswispa-windows-x86_64.zip
-Expand-Archive .\oswispa-windows-x86_64.zip -DestinationPath .\OSWispa
-Set-Location .\OSWispa
+Expand-Archive .\oswispa-windows-x86_64.zip -DestinationPath .\MorpheOS-Voice
+Set-Location .\MorpheOS-Voice
 .\oswispa.exe
 ```
 
-> **Note:** This alpha package is not code-signed. Windows SmartScreen may require **More info → Run anyway**. There is no native tray UI yet.
+Keep the console open. If SmartScreen appears, inspect the publisher warning and checksum before choosing **More info → Run anyway**. Hold **Ctrl+Windows** to dictate.
 
----
-
-## 🛠️ Manual Installation (Other Distros/OS)
-
-### 1. Prerequisites (All Platforms)
-*   Current stable [Rust](https://rustup.rs/)
-*   CMake 3.16+
-*   `libssl-dev`, `pkg-config`, `libasound2-dev` (Linux)
-
-### 2. GPU Acceleration (Optional but Recommended)
-
-#### AMD GPU (ROCm)
+### Build from source
 
 ```bash
-# Ensure ROCm is installed (6.0+) and hipcc is in PATH
-export PATH="/opt/rocm/bin:$PATH"
-
-# Compile for every architecture visible to ROCm (including names such as gfx90a)
-GFX_ARCHES=$(rocminfo | grep -oE 'gfx[0-9a-f]+' | sort -u | paste -sd ';' -)
-
-# Build with HIPBlas
-AMDGPU_TARGETS="$GFX_ARCHES" cargo build --release --features gpu-hipblas
+git clone https://github.com/tylerbuilds/OSWispa.git
+cd OSWispa
+./install.sh
 ```
 
-**Common GPU architectures:** `gfx1100` (RX 7900), `gfx1030` (RX 6800), `gfx900` (Vega), `gfx906` (MI50).
+The source installer supports Ubuntu/Debian, Fedora/RHEL, Arch/Manjaro and macOS. It detects supported CUDA, ROCm or Metal build paths and otherwise builds for the CPU. See [Building](docs/BUILDING.md) for manual and GPU-specific commands.
 
-**Multi-GPU systems:** Set `ROCR_VISIBLE_DEVICES` to the intended ROCm index if needed. Do not set `HSA_OVERRIDE_GFX_VERSION` automatically; it can disguise an incompatible build and should only be used when your ROCm/driver guidance explicitly requires it.
+## How processing works
 
-#### NVIDIA GPU (CUDA)
+### Local — processed on this computer
+
+Local mode records to an owner-only temporary WAV, runs the selected Whisper.cpp model on the same computer, then deletes the temporary audio on success, cancellation and handled failure paths. The first model download requires a network connection; later local dictation can work offline.
+
+### Remote — sent to the selected provider for processing
+
+Remote mode sends the WAV plus the configured model/language/task fields to the OpenAI-compatible endpoint you choose. That provider can receive and retain the request under its own policy. Remote mode is opt-in and requires explicit configuration.
+
+No product analytics or transcription telemetry is built into the desktop application. Completed transcript text is stored locally in bounded history unless history is disabled.
+
+Read [Privacy](PRIVACY.md) and the [voice data-flow map](docs/privacy/VOICE_DATA_FLOW.md) before configuring a remote provider.
+
+## Configuration
+
+The basic experience is deliberately small: install, complete first-run model setup, grant platform permissions, then hold a shortcut and speak.
+
+Linux exposes settings and personal vocabulary through its tray menu. The macOS and Windows alpha packages currently use the legacy JSON configuration file rather than a complete native settings interface.
+
+Advanced controls include:
+
+- local model selection and custom model import;
+- local or remote processing;
+- shortcut modifiers and an optional trigger key;
+- language, spoken punctuation and formatting;
+- history limits and auto-paste;
+- Linux microphone-source override; and
+- local personal vocabulary.
+
+The first transition release continues to use the established OSWispa data directories so existing settings, shortcuts, models, history, dictionary and stored token remain available. See the [migration map](docs/rebrand/01_MIGRATION_MAP.md).
+
+## Troubleshooting
+
+### The shortcut does nothing on Linux
+
+If installation added you to the `input` group, log out and back in. Confirm the helper and app services:
 
 ```bash
-# Ensure CUDA toolkit is installed and nvcc is in PATH
-cargo build --release --features gpu-cuda
+systemctl --user status ydotoold
+systemctl --user status oswispa
 ```
 
-**Multi-GPU systems:** Set `CUDA_VISIBLE_DEVICES=0` to select a specific GPU.
-
-#### macOS (Metal)
+### Recording uses the wrong Linux microphone
 
 ```bash
-cargo build --release --features gpu-metal
+pactl list short sources
+pactl get-default-source
 ```
 
-### 3. Build & Run (CPU-only)
+Choose the correct source system-wide with `pactl set-default-source SOURCE_NAME`, or set the Linux microphone override in Settings.
+
+### Text was copied but not inserted
+
+Paste manually with Ctrl+V or Cmd+V. Insertion depends on the focused application, desktop session and platform permissions; clipboard delivery is the recovery path.
+
+### The first launch cannot find a model
+
+Reconnect for the initial model download, or import a valid Whisper.cpp `.bin` or `.gguf` model. Downloads are validated before installation and incomplete files are not accepted as models.
+
+### macOS or Windows blocks the app
+
+Current packages are not signed. Verify the release checksum, then use the documented Gatekeeper or SmartScreen override. Signed installers are a release blocker, not a hidden claim.
+
+More help is in the [user guide](website/USER_GUIDE.md) and [Support](SUPPORT.md).
+
+## Known limitations
+
+- This is alpha software; do not rely on it as the only copy of important text.
+- The current native desktop shell is still a development host. Its Settings and History screens are not yet a complete replacement for the proven runtime and Linux tray controls.
+- macOS and Windows packages are unsigned. macOS uses a Terminal launcher; Windows uses a console and portable ZIP.
+- Linux global hotkeys require low-level input access, and Wayland insertion normally requires `ydotoold`.
+- Physical microphone, hotkey, permission, focus-sensitive insertion and GPU behaviour cannot be proven by hosted VM package tests.
+- Audio captured immediately before an operating-system or process crash is not recoverable. Completed transcripts are the recoverable unit.
+- MorpheOS Voice is not affiliated with OpenAI. Whisper.cpp and optional model files are third-party components.
+
+## Development
+
 ```bash
-cargo build --release
-./target/release/oswispa
+cargo fmt --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test --no-default-features
 ```
 
----
+See [Building](docs/BUILDING.md), [Contributing](CONTRIBUTING.md), [Releasing](docs/RELEASING.md) and the [July 2026 audit](docs/AUDIT-2026-07-18.md).
 
-## 📥 Models
+## Licence and official project
 
-OSWispa needs a model file to work. Managed models live in `~/.local/share/oswispa/models/` on Linux and `~/Library/Application Support/com.oswispa.OSWispa/models/` on macOS.
+The original MorpheOS Voice source code is licensed under the [MIT License](LICENSE). Third-party dependencies and optional speech models retain their respective licences; see [Third-party notices](THIRD_PARTY_NOTICES.md).
 
-| Model | Size | Speed | GPU VRAM | Recommendation |
-|-------|------|-------|----------|----------------|
-| `tiny.en` | 75MB | ⚡⚡⚡⚡ | <1GB | Quick testing |
-| `base.en` | 142MB | ⚡⚡⚡ | <1GB | Fast dictation |
-| `small.en` | 466MB | ⚡⚡ | ~1GB | Good accuracy |
-| `medium.en` | 1.5GB | ⚡ | ~2.5GB | **Good balance** |
-| `large-v3-turbo` | 1.6GB | ⚡⚡ | ~3GB | **Best speed/accuracy** |
-| `large-v3` | 2.9GB | 🐢 | ~5GB | Highest accuracy, multilingual |
+“MorpheOS” and “MorpheOS Voice” identify the official project. MIT permits forks, but unofficial builds must not impersonate official releases. See [Trademark](TRADEMARK.md).
 
-**Download:** [Hugging Face ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp/tree/main)
-
-**GPU model recommendations:**
-- **<4GB VRAM**: `base.en` or `small.en`
-- **4-8GB VRAM**: `medium.en` or `large-v3-turbo`
-- **8GB+ VRAM**: `large-v3-turbo` (recommended) or `large-v3`
-
----
-
-## 🌐 Optional VPS Backend
-
-OSWispa is local-first by default, but you can optionally route transcription to a VPS.
-
-- Set backend mode to `remote` in Settings.
-- Use an HTTPS endpoint (HTTP is blocked unless explicitly allowed).
-- Store API tokens via Settings (saved to a local `0600` secret file) or set an env var (e.g. `OSWISPA_REMOTE_API_KEY`).
-- If remote transcription fails and local models exist, OSWispa falls back to local automatically.
-- Remote mode sends recorded audio to the configured service; review its privacy and retention policy first.
-
----
-
-## 📖 Personal Dictionary
-
-OSWispa can replace phrases that Whisper commonly mishears, such as `os whisper` → `OSWispa`.
-Replacements are literal, run locally before spoken punctuation commands, and never learn from or
-monitor other applications. Enabled preferred spellings also form a small, bounded prompt for the
-local Whisper model; dictionary contents are not sent to the optional remote transcription backend.
-
-On Linux, open **Settings → Dictionary** to add, edit, enable, disable, delete, import, or export
-entries. Other platforms can edit `personalisation.json` in the OSWispa data directory and restart
-OSWispa. On Linux the path is normally `~/.local/share/oswispa/personalisation.json`:
-
-```json
-{
-  "schema_version": 1,
-  "dictionary": [
-    {
-      "spoken": "os whisper",
-      "written": "OSWispa",
-      "enabled": true,
-      "case_sensitive": false
-    }
-  ]
-}
-```
-
-OSWispa validates the version, entry count, lengths, control characters, and duplicate spoken
-phrases before using the file. If validation fails, it preserves the file, disables the dictionary
-for that run, and continues normal dictation.
-
----
-
-## 🔧 Troubleshooting
-
-**"It says recording but nothing happens."**
-*   Check the managed daemon: `systemctl --user status ydotoold`.
-*   Try manual paste: The text is also copied to your clipboard. Press `Ctrl+V`.
-
-**"It inserts `[BLANK_AUDIO]` or reports no speech."**
-*   OSWispa follows the system default PipeWire/PulseAudio input unless a source is set in Settings.
-*   Check the current source with `pactl get-default-source` and list alternatives with `pactl list short sources`.
-*   Select the working microphone with `pactl set-default-source SOURCE_NAME`, or paste its source name into **Settings → General → Linux microphone source** to override the system default for OSWispa only.
-
-**"The hotkey stops working after I close the terminal."**
-*   Run OSWispa through its user service: `systemctl --user enable --now oswispa`.
-*   Check startup and hotkey logs with `journalctl --user -u oswispa -n 100`.
-
-**"Permission denied accessing /dev/input/..."**
-*   You need to be in the `input` group.
-    *   Run: `sudo usermod -aG input $USER`
-    *   **Log out and log back in.**
-
-**"The app crashes with a 'segmentation fault'."**
-*   Usually a GPU driver mismatch. Try building without GPU features to test CPU mode first.
-
-**macOS: "Hotkeys don't work"**
-*   Grant Accessibility permission: **System Settings > Privacy & Security > Accessibility**.
-
----
-
-## 📜 License
-
-MIT License - Copyright (c) 2026 Tyler Casey. See [LICENSE](LICENSE) for details.
-
----
-
-**Made with ❤️ for the open source community.**
+Official product information lives at [morpheos.net/voice](https://morpheos.net/voice). During this compatibility transition, the official source and downloads remain at [github.com/tylerbuilds/OSWispa](https://github.com/tylerbuilds/OSWispa).

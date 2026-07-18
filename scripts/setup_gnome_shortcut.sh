@@ -1,8 +1,9 @@
 #!/bin/bash
 # scripts/setup_gnome_shortcut.sh
-# Adds a custom shortcut for OSWispa to GNOME settings
+# Adds a custom shortcut for MorpheOS Voice to GNOME settings.
+# The compatibility command remains oswispa-toggle for this release.
 
-NAME="OSWispa Toggle"
+NAME="MorpheOS Voice Toggle"
 COMMAND="/usr/local/bin/oswispa-toggle"
 BINDING="<Control><Super>"
 
