@@ -8,6 +8,9 @@ target/
 *~
 .vscode/
 .idea/
+__pycache__/
+*.py[cod]
+desktop/src-tauri/gen/
 
 # OS files
 .DS_Store

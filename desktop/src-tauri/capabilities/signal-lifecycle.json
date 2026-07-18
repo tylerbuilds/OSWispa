@@ -1,0 +1,9 @@
+{
+  "identifier": "signal-lifecycle",
+  "description": "Allow only the Signal window to subscribe to transcript-free lifecycle events.",
+  "windows": ["signal"],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten"
+  ]
+}

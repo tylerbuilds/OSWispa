@@ -84,6 +84,11 @@ opt-level = 3
 lto = true
 strip = true
 
+[workspace]
+members = ["desktop/src-tauri"]
+default-members = ["."]
+resolver = "2"
+
 [package.metadata.deb]
 section = "utils"
 priority = "optional"
