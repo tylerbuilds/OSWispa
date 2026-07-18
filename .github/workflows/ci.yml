@@ -5,12 +5,19 @@ on:
   push:
     branches: [master]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint-and-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Install Linux dependencies
         run: |
@@ -20,13 +27,30 @@ jobs:
             libssl-dev \
             libasound2-dev \
             libdbus-1-dev \
-            libgtk-4-dev
+            libgtk-4-dev \
+            desktop-file-utils \
+            rpm
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
 
       - name: Cache Rust build
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --locked --all-targets -- -D warnings
+
+      - name: Validate scripts and desktop metadata
+        run: |
+          bash -n install.sh scripts/install_helpers.sh tests/install_helpers.bash scripts/oswispa-toggle.sh
+          bash tests/install_helpers.bash
+          desktop-file-validate packaging/linux/oswispa.desktop
 
       - name: Build (no GUI feature)
         run: cargo check --locked --no-default-features --all-targets
@@ -39,21 +63,35 @@ jobs:
 
       - name: Build .deb package (smoke test)
         run: |
-          cargo install cargo-deb --locked
+          cargo install cargo-deb --version 3.7.0 --locked
           cargo deb --locked
 
+      - name: Build .rpm package (smoke test)
+        run: |
+          cargo build --release --locked
+          cargo install cargo-generate-rpm --version 0.21.0 --locked
+          cargo generate-rpm
+
+      - name: Dependency audit
+        run: |
+          cargo install cargo-audit --version 0.22.2 --locked
+          cargo audit \
+            --ignore RUSTSEC-2026-0194 \
+            --ignore RUSTSEC-2026-0195
 
   check-macos:
     runs-on: macos-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4
+        with:
+          toolchain: stable
 
       - name: Cache Rust build
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
 
       - name: Install CMake
         run: brew install cmake
@@ -68,13 +106,15 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4
+        with:
+          toolchain: stable
 
       - name: Cache Rust build
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
 
       - name: Build (no GUI feature)
         run: cargo check --locked --no-default-features --all-targets
