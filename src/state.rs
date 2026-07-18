@@ -5,7 +5,8 @@
 //! clipboard, window server, or desktop notification service.
 
 /// The result of delivering a completed transcript.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum DeliveryOutcome {
     /// The transcript was copied and inserted into the focused application.
     Inserted,
