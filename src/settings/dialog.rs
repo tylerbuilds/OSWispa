@@ -16,6 +16,7 @@ use gtk4::{
 };
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, RwLock};
 use tracing::{error, info, warn};
 
@@ -676,13 +677,19 @@ fn create_model_row(
             btn.set_label("Downloading...");
 
             let model_clone = model;
+            let last_progress_bucket = Arc::new(AtomicU32::new(u32::MAX));
             std::thread::spawn(move || {
-                let rt = tokio::runtime::Runtime::new().unwrap();
+                let Ok(rt) = tokio::runtime::Runtime::new() else {
+                    error!("Download failed: could not start async runtime");
+                    return;
+                };
+                let progress_bucket = Arc::clone(&last_progress_bucket);
                 rt.block_on(async {
-                    match models::download_model(model_clone, |downloaded, total| {
-                        let percent = (downloaded as f64 / total as f64 * 100.0) as u32;
-                        if percent % 10 == 0 {
-                            info!("Download progress: {}%", percent);
+                    match models::download_model(model_clone, move |downloaded, total| {
+                        let percent = (downloaded as f64 / total as f64 * 100.0).min(100.0) as u32;
+                        let bucket = percent / 10;
+                        if progress_bucket.swap(bucket, Ordering::Relaxed) != bucket {
+                            info!("Download progress: {}%", bucket * 10);
                         }
                     })
                     .await

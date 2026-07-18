@@ -6,7 +6,7 @@ COMMAND="${1:-toggle}"
 if [[ -n "${XDG_RUNTIME_DIR:-}" ]]; then
   SOCKET_PATH="${XDG_RUNTIME_DIR}/oswispa.sock"
 else
-  SOCKET_PATH="/tmp/oswispa-$(id -u).sock"
+  SOCKET_PATH="/tmp/oswispa-$(id -u)/oswispa.sock"
 fi
 
 if [[ ! -S "${SOCKET_PATH}" ]]; then

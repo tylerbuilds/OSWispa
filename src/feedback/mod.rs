@@ -27,30 +27,6 @@ pub struct ToneConfig {
 }
 
 impl ToneConfig {
-    /// Pleasant ascending two-tone for "start recording"
-    /// Uses a perfect fifth interval (C5 -> G5) which sounds uplifting
-    pub fn start_recording() -> Self {
-        Self {
-            frequency: 523.25, // C5
-            duration_ms: 100,
-            volume: 0.3,
-            frequency2: Some(783.99), // G5 (perfect fifth)
-            fade_ms: 15,
-        }
-    }
-
-    /// Pleasant descending tone for "stop recording"
-    /// Single warm tone that descends slightly via envelope
-    pub fn stop_recording() -> Self {
-        Self {
-            frequency: 659.25, // E5
-            duration_ms: 150,
-            volume: 0.25,
-            frequency2: Some(523.25), // C5 (resolving down)
-            fade_ms: 20,
-        }
-    }
-
     /// Short subtle tick for "transcription complete"
     pub fn transcription_complete() -> Self {
         Self {
@@ -112,33 +88,6 @@ pub fn play_cancel_sound() {
     play_tone(ToneConfig::cancel());
 }
 
-/// Play a two-part tone sequence (for start: rising, for stop: falling)
-pub fn play_start_sequence() {
-    std::thread::spawn(|| {
-        // First tone
-        let tone1 = ToneConfig {
-            frequency: 523.25, // C5
-            duration_ms: 80,
-            volume: 0.25,
-            frequency2: None,
-            fade_ms: 10,
-        };
-        let _ = play_tone_blocking(&tone1);
-
-        std::thread::sleep(Duration::from_millis(30));
-
-        // Second tone (higher)
-        let tone2 = ToneConfig {
-            frequency: 659.25, // E5
-            duration_ms: 100,
-            volume: 0.3,
-            frequency2: None,
-            fade_ms: 15,
-        };
-        let _ = play_tone_blocking(&tone2);
-    });
-}
-
 /// Play stop sequence (falling tones)
 pub fn play_stop_sequence() {
     std::thread::spawn(|| {
@@ -177,8 +126,7 @@ fn play_tone_blocking(config: &ToneConfig) -> anyhow::Result<()> {
     let supported_config = device
         .supported_output_configs()?
         .filter(|c| c.channels() == 2 || c.channels() == 1)
-        .filter(|c| c.sample_format() == SampleFormat::F32)
-        .next()
+        .find(|c| c.sample_format() == SampleFormat::F32)
         .ok_or_else(|| anyhow::anyhow!("No suitable output config"))?;
 
     let sample_rate = if supported_config.min_sample_rate().0 <= 44100
@@ -269,13 +217,6 @@ fn play_tone_blocking(config: &ToneConfig) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    #[ignore] // Requires audio output
-    fn test_start_sound() {
-        play_start_sequence();
-        std::thread::sleep(Duration::from_millis(500));
-    }
 
     #[test]
     #[ignore] // Requires audio output

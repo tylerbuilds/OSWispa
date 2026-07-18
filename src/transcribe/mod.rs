@@ -545,16 +545,26 @@ fn transcribe_with_model(
 
 /// Get available VRAM in bytes by querying the GPU.
 ///
-/// Detection chain: AMD sysfs → rocm-smi → nvidia-smi → assume sufficient.
+/// Detection chain: selected ROCm device → AMD sysfs → ROCm inventory → NVIDIA.
 fn get_available_vram() -> u64 {
+    // A configured ROCm device must win over physical sysfs enumeration.
+    let selected_rocm_device = crate::gpu::rocm_visible_device_index();
+    if selected_rocm_device.is_some() {
+        if let Some(vram) = detect_vram_rocm_smi() {
+            return vram;
+        }
+    }
+
     // 1. AMD sysfs (fastest, no subprocess)
     if let Some(vram) = detect_vram_amd_sysfs() {
         return vram;
     }
 
     // 2. rocm-smi (AMD fallback)
-    if let Some(vram) = detect_vram_rocm_smi() {
-        return vram;
+    if selected_rocm_device.is_none() {
+        if let Some(vram) = detect_vram_rocm_smi() {
+            return vram;
+        }
     }
 
     // 3. nvidia-smi (NVIDIA GPUs)
@@ -569,74 +579,12 @@ fn get_available_vram() -> u64 {
 
 /// Detect available VRAM via AMD sysfs paths.
 fn detect_vram_amd_sysfs() -> Option<u64> {
-    let cards = [
-        "/sys/class/drm/card1/device/mem_info_vram_used",
-        "/sys/class/drm/card0/device/mem_info_vram_used",
-    ];
-    let totals = [
-        "/sys/class/drm/card1/device/mem_info_vram_total",
-        "/sys/class/drm/card0/device/mem_info_vram_total",
-    ];
-
-    for (used_path, total_path) in cards.iter().zip(totals.iter()) {
-        if let (Ok(used_str), Ok(total_str)) = (
-            std::fs::read_to_string(used_path),
-            std::fs::read_to_string(total_path),
-        ) {
-            if let (Ok(used), Ok(total)) = (
-                used_str.trim().parse::<u64>(),
-                total_str.trim().parse::<u64>(),
-            ) {
-                // Only consider GPUs with significant VRAM (>1GB = discrete GPU)
-                if total > 1024 * 1024 * 1024 {
-                    let available = total.saturating_sub(used);
-                    debug!(
-                        "AMD sysfs GPU at {}: total={}, used={}, available={}",
-                        used_path, total, used, available
-                    );
-                    return Some(available);
-                }
-            }
-        }
-    }
-
-    None
+    crate::gpu::detect_amd_sysfs_available_bytes()
 }
 
 /// Detect available VRAM via rocm-smi (AMD).
 fn detect_vram_rocm_smi() -> Option<u64> {
-    let output = std::process::Command::new("rocm-smi")
-        .args(["--showmeminfo", "vram"])
-        .output()
-        .ok()?;
-
-    let stdout = String::from_utf8(output.stdout).ok()?;
-    let mut total: u64 = 0;
-    let mut used: u64 = 0;
-
-    for line in stdout.lines() {
-        if line.contains("VRAM Total Memory") && line.contains("GPU[0]") {
-            if let Some(val) = line.split(':').last() {
-                total = val.trim().parse().unwrap_or(0);
-            }
-        }
-        if line.contains("VRAM Total Used") && line.contains("GPU[0]") {
-            if let Some(val) = line.split(':').last() {
-                used = val.trim().parse().unwrap_or(0);
-            }
-        }
-    }
-
-    if total > 0 {
-        let available = total.saturating_sub(used);
-        debug!(
-            "rocm-smi: total={}, used={}, available={}",
-            total, used, available
-        );
-        Some(available)
-    } else {
-        None
-    }
+    crate::gpu::detect_rocm_smi_available_bytes(crate::gpu::rocm_visible_device_index())
 }
 
 /// Detect available VRAM via nvidia-smi (NVIDIA).
@@ -864,44 +812,6 @@ fn load_wav_samples(path: &PathBuf) -> Result<Vec<f32>> {
     };
 
     Ok(samples)
-}
-
-/// Shared Whisper context for streaming mode
-pub struct StreamingTranscriber {
-    ctx: Arc<WhisperContext>,
-    config: Config,
-}
-
-impl StreamingTranscriber {
-    /// Create a new streaming transcriber
-    pub fn new(config: &Config) -> Result<Self> {
-        let ctx = WhisperContext::new_with_params(
-            config
-                .model_path
-                .to_str()
-                .ok_or_else(|| anyhow::anyhow!("Invalid model path"))?,
-            WhisperContextParameters::default(),
-        )?;
-
-        Ok(Self {
-            ctx: Arc::new(ctx),
-            config: config.clone(),
-        })
-    }
-
-    /// Transcribe a chunk of audio samples (f32, 16kHz mono)
-    pub fn transcribe_chunk(&self, samples: &[f32]) -> Result<String> {
-        if samples.is_empty() {
-            return Ok(String::new());
-        }
-        transcribe_samples(
-            &self.ctx,
-            samples,
-            &self.config,
-            (num_cpus::get() / 2).max(1) as i32,
-            true,
-        )
-    }
 }
 
 #[cfg(test)]

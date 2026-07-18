@@ -266,63 +266,13 @@ fn detect_nvidia_vram() -> Option<(u64, u64)> {
 
 /// AMD sysfs -> available MB (total - used)
 fn detect_amd_vram_sysfs() -> Option<u64> {
-    let card_dirs = ["/sys/class/drm/card1/device", "/sys/class/drm/card0/device"];
-
-    for dir in &card_dirs {
-        let total_path = format!("{}/mem_info_vram_total", dir);
-        let used_path = format!("{}/mem_info_vram_used", dir);
-
-        if let (Ok(total_str), Ok(used_str)) = (
-            std::fs::read_to_string(&total_path),
-            std::fs::read_to_string(&used_path),
-        ) {
-            if let (Ok(total), Ok(used)) = (
-                total_str.trim().parse::<u64>(),
-                used_str.trim().parse::<u64>(),
-            ) {
-                if total > 1_073_741_824 {
-                    let available_mb = total.saturating_sub(used) / (1024 * 1024);
-                    debug!("AMD sysfs: available={}MB", available_mb);
-                    return Some(available_mb);
-                }
-            }
-        }
-    }
-
-    None
+    crate::gpu::detect_amd_sysfs_available_bytes().map(|bytes| bytes / (1024 * 1024))
 }
 
 /// rocm-smi fallback -> available MB
 fn detect_amd_vram_rocm_smi() -> Option<u64> {
-    let output = Command::new("rocm-smi")
-        .args(["--showmeminfo", "vram"])
-        .output()
-        .ok()?;
-
-    let stdout = String::from_utf8(output.stdout).ok()?;
-    let mut total: u64 = 0;
-    let mut used: u64 = 0;
-
-    for line in stdout.lines() {
-        if line.contains("Total Memory") {
-            if let Some(val) = line.split(':').next_back() {
-                total = val.trim().parse().unwrap_or(0);
-            }
-        }
-        if line.contains("Total Used") {
-            if let Some(val) = line.split(':').next_back() {
-                used = val.trim().parse().unwrap_or(0);
-            }
-        }
-    }
-
-    if total > 0 {
-        let available_mb = total.saturating_sub(used) / (1024 * 1024);
-        debug!("rocm-smi: available={}MB", available_mb);
-        Some(available_mb)
-    } else {
-        None
-    }
+    crate::gpu::detect_rocm_smi_available_bytes(crate::gpu::rocm_visible_device_index())
+        .map(|bytes| bytes / (1024 * 1024))
 }
 
 // ---------------------------------------------------------------------------

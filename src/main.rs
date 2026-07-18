@@ -1,5 +1,6 @@
 mod audio;
 mod feedback;
+mod gpu;
 mod hotkey;
 mod input;
 mod models;
@@ -330,7 +331,7 @@ pub fn get_socket_path() -> PathBuf {
     }
 
     let uid = unsafe { libc::geteuid() };
-    PathBuf::from(format!("/tmp/oswispa-{}.sock", uid))
+    PathBuf::from(format!("/tmp/oswispa-{}", uid)).join("oswispa.sock")
 }
 
 #[cfg(not(unix))]
@@ -585,19 +586,27 @@ fn main() -> Result<()> {
             let socket_path = get_socket_path();
             let socket_path_display = socket_path.display().to_string();
 
-            // Remove old socket if exists
-            let _ = std::fs::remove_file(&socket_path);
-
             if let Some(parent) = socket_path.parent() {
-                let _ = std::fs::create_dir_all(parent);
+                if let Err(error) = persistence::ensure_private_dir(parent) {
+                    warn!("Failed to secure Unix socket directory: {}", error);
+                    return;
+                }
             }
+
+            // Remove an old socket only after its parent has been verified.
+            let _ = std::fs::remove_file(&socket_path);
 
             match UnixListener::bind(&socket_path) {
                 Ok(listener) => {
-                    let _ = std::fs::set_permissions(
+                    if let Err(error) = std::fs::set_permissions(
                         &socket_path,
                         std::fs::Permissions::from_mode(0o600),
-                    );
+                    ) {
+                        warn!("Failed to secure Unix socket: {}", error);
+                        drop(listener);
+                        let _ = std::fs::remove_file(&socket_path);
+                        return;
+                    }
                     info!("Unix socket listener started at {}", socket_path_display);
                     info!(
                         "To toggle recording, run: printf toggle | nc -U {}",
@@ -606,9 +615,13 @@ fn main() -> Result<()> {
 
                     for stream in listener.incoming() {
                         match stream {
-                            Ok(mut stream) => {
+                            Ok(stream) => {
                                 let mut buf = String::new();
-                                if stream.read_to_string(&mut buf).is_ok() {
+                                if stream.take(65).read_to_string(&mut buf).is_ok() {
+                                    if buf.len() > 64 {
+                                        warn!("Ignoring oversized socket command");
+                                        continue;
+                                    }
                                     let cmd = buf.trim().to_ascii_lowercase();
                                     match cmd.as_str() {
                                         "toggle" => {
@@ -634,7 +647,10 @@ fn main() -> Result<()> {
                                             let _ = event_tx_socket.send(AppEvent::CancelRecording);
                                         }
                                         _ => {
-                                            warn!("Ignoring unknown socket command: '{}'", cmd);
+                                            warn!(
+                                                "Ignoring unknown socket command ({} bytes)",
+                                                cmd.len()
+                                            );
                                         }
                                     }
                                 }

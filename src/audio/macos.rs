@@ -120,9 +120,8 @@ fn run_cpal_session(recording: &Arc<AtomicBool>) -> Result<PathBuf> {
         buffer_size: cpal::BufferSize::Default,
     };
 
-    let temp_dir = std::env::temp_dir();
-    let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S_%3f");
-    let audio_path = temp_dir.join(format!("oswispa_recording_{}.wav", timestamp));
+    let audio_temp = super::private_recording_temp_path()?;
+    let audio_path = audio_temp.to_path_buf();
 
     let spec = hound::WavSpec {
         channels: CHANNELS,
@@ -187,5 +186,7 @@ fn run_cpal_session(recording: &Arc<AtomicBool>) -> Result<PathBuf> {
     }
 
     debug!("Audio file ready: {} bytes", metadata.len());
-    Ok(audio_path)
+    audio_temp
+        .keep()
+        .context("Failed to retain completed audio recording")
 }

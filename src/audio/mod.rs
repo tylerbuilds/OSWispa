@@ -1,8 +1,19 @@
 //! Audio recording integration.
 
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 use crate::{AppEvent, RecordCommand};
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 use crossbeam_channel::{Receiver, Sender};
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 use std::path::PathBuf;
+
+pub(crate) fn private_recording_temp_path() -> anyhow::Result<tempfile::TempPath> {
+    Ok(tempfile::Builder::new()
+        .prefix("oswispa_recording_")
+        .suffix(".wav")
+        .tempfile()?
+        .into_temp_path())
+}
 
 #[cfg(target_os = "linux")]
 mod linux;
@@ -30,5 +41,33 @@ pub fn audio_worker(
             ));
             let _ = audio_tx.send(None);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn temporary_recording_is_unique_and_deleted_on_drop() {
+        let first = private_recording_temp_path().unwrap();
+        let second = private_recording_temp_path().unwrap();
+        let first_path = first.to_path_buf();
+        let second_path = second.to_path_buf();
+        assert_ne!(first_path, second_path);
+
+        assert!(first_path.exists());
+        drop(first);
+        assert!(!first_path.exists());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn temporary_recording_is_owner_only() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let recording = private_recording_temp_path().unwrap();
+        let mode = std::fs::metadata(&recording).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o600);
     }
 }
