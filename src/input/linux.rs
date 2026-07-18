@@ -131,11 +131,10 @@ pub fn paste_text(text: &str) -> Result<()> {
     info!("Pasting clipboard contents via simulated Ctrl+V");
 
     // On X11, xdotool is usually the most reliable "no daemon" option.
-    if kind == SessionKind::X11 && command_exists("xdotool") {
-        if paste_with_xdotool_ctrl_v().is_ok() {
-            debug!("Clipboard pasted via xdotool Ctrl+V");
-            return Ok(());
-        }
+    if kind == SessionKind::X11 && command_exists("xdotool") && paste_with_xdotool_ctrl_v().is_ok()
+    {
+        debug!("Clipboard pasted via xdotool Ctrl+V");
+        return Ok(());
     }
 
     check_ydotoold_running();
@@ -249,55 +248,10 @@ fn paste_with_ydotool_ctrl_v() -> Result<()> {
     Ok(())
 }
 
-fn paste_with_ydotool_ctrl_shift_v() -> Result<()> {
-    let status = Command::new("ydotool")
-        .args(["key", "29:1", "42:1", "47:1", "47:0", "42:0", "29:0"])
-        .status()
-        .context("Failed to simulate Ctrl+Shift+V with ydotool")?;
-
-    if !status.success() {
-        anyhow::bail!("Failed to paste with Ctrl+Shift+V simulation");
-    }
-
-    Ok(())
-}
-
-fn paste_with_ydotool_shift_insert() -> Result<()> {
-    let status = Command::new("ydotool")
-        .args(["key", "42:1", "110:1", "110:0", "42:0"])
-        .status()
-        .context("Failed to simulate Shift+Insert with ydotool")?;
-
-    if !status.success() {
-        anyhow::bail!("Failed to paste with Shift+Insert simulation");
-    }
-
-    Ok(())
-}
-
-fn try_wayland_paste_shortcuts() -> Result<()> {
-    check_ydotoold_running();
-    paste_with_ydotool_ctrl_v()?;
-    debug!("Issued Wayland paste shortcut Ctrl+V");
-    Ok(())
-}
-
 /// Alternative clipboard copy using wl-copy command (Wayland only).
 pub fn copy_to_clipboard_cmd(text: &str) -> Result<()> {
-    copy_to_clipboard_cmd_internal(text, false)
-}
-
-fn prepare_wayland_clipboard_for_autopaste(text: &str) -> Result<()> {
-    copy_to_clipboard_cmd_internal(text, true)
-}
-
-fn copy_to_clipboard_cmd_internal(text: &str, paste_once: bool) -> Result<()> {
     let mut child = Command::new("wl-copy")
-        .args(if paste_once {
-            vec!["--paste-once", "--trim-newline"]
-        } else {
-            vec!["--trim-newline"]
-        })
+        .arg("--trim-newline")
         .stdin(Stdio::piped())
         .spawn()
         .context("Failed to run wl-copy. Install with: sudo apt install wl-clipboard")?;

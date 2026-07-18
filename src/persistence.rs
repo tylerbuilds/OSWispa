@@ -10,9 +10,28 @@ pub fn ensure_private_dir(path: &Path) -> Result<()> {
     std::fs::create_dir_all(path)
         .with_context(|| format!("Failed to create private directory {:?}", path))?;
 
+    let metadata = std::fs::symlink_metadata(path)
+        .with_context(|| format!("Failed to inspect private directory {:?}", path))?;
+    if metadata.file_type().is_symlink() {
+        anyhow::bail!(
+            "Refusing to use a symbolic link as a private directory: {:?}",
+            path
+        );
+    }
+    if !metadata.is_dir() {
+        anyhow::bail!("Private directory path is not a directory: {:?}", path);
+    }
+
     #[cfg(unix)]
     {
-        use std::os::unix::fs::PermissionsExt;
+        use std::os::unix::fs::{MetadataExt, PermissionsExt};
+        let effective_uid = unsafe { libc::geteuid() };
+        if metadata.uid() != effective_uid {
+            anyhow::bail!(
+                "Private directory is not owned by the current user: {:?}",
+                path
+            );
+        }
         std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700))
             .with_context(|| format!("Failed to secure private directory {:?}", path))?;
     }
@@ -68,7 +87,10 @@ pub fn read_private_string(path: &Path) -> Result<String> {
 }
 
 fn reject_symlink(path: &Path) -> Result<()> {
-    if path.exists() && std::fs::symlink_metadata(path)?.file_type().is_symlink() {
+    if std::fs::symlink_metadata(path)
+        .map(|metadata| metadata.file_type().is_symlink())
+        .unwrap_or(false)
+    {
         anyhow::bail!(
             "Refusing to read private data through a symbolic link: {:?}",
             path
@@ -158,5 +180,19 @@ mod tests {
         symlink(&target, &link).unwrap();
 
         assert!(read_private_string(&link).is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn private_directories_reject_symbolic_links() {
+        use std::os::unix::fs::symlink;
+
+        let dir = tempfile::tempdir().unwrap();
+        let target = dir.path().join("target");
+        let link = dir.path().join("link");
+        std::fs::create_dir(&target).unwrap();
+        symlink(&target, &link).unwrap();
+
+        assert!(ensure_private_dir(&link).is_err());
     }
 }

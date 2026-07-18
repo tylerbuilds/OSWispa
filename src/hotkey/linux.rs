@@ -138,7 +138,7 @@ fn find_keyboards() -> Result<Vec<Device>> {
                     }
 
                     // Check if device has keyboard capabilities
-                    if device.supported_keys().map_or(false, |keys| {
+                    if device.supported_keys().is_some_and(|keys| {
                         keys.contains(Key::KEY_LEFTCTRL) || keys.contains(Key::KEY_LEFTALT)
                     }) {
                         info!("Found keyboard: {} at {:?}", device_name, path);

@@ -1,8 +1,12 @@
 //! Global hotkey integration.
 
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 use crate::{AppEvent, Config};
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 use anyhow::Result;
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 use crossbeam_channel::{Receiver, Sender};
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 use std::sync::Arc;
 
 #[cfg(target_os = "linux")]

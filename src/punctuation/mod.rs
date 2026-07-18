@@ -125,12 +125,6 @@ pub fn apply_punctuation_commands(text: &str) -> String {
     result.trim_matches(|c| c == ' ' || c == '\t').to_string()
 }
 
-/// Check if a word is a punctuation command
-pub fn is_punctuation_command(word: &str) -> bool {
-    let lower = word.to_lowercase();
-    PUNCTUATION_COMMANDS.iter().any(|(cmd, _)| *cmd == lower)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -201,13 +195,5 @@ mod tests {
     #[test]
     fn test_no_commands() {
         assert_eq!(apply_punctuation_commands("hello world"), "hello world");
-    }
-
-    #[test]
-    fn test_is_punctuation_command() {
-        assert!(is_punctuation_command("period"));
-        assert!(is_punctuation_command("Period"));
-        assert!(is_punctuation_command("COMMA"));
-        assert!(!is_punctuation_command("hello"));
     }
 }

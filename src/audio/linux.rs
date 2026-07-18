@@ -113,9 +113,8 @@ fn run_arecord_session(
     stream_tx: &Sender<StreamingAudioMessage>,
     config: &Config,
 ) -> Result<PathBuf> {
-    let temp_dir = std::env::temp_dir();
-    let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S_%3f");
-    let audio_path = temp_dir.join(format!("oswispa_recording_{}.wav", timestamp));
+    let audio_temp = super::private_recording_temp_path()?;
+    let audio_path = audio_temp.to_path_buf();
 
     info!("Starting arecord process -> {:?}", audio_path);
 
@@ -242,7 +241,9 @@ fn run_arecord_session(
     fix_wav_header(&audio_path)?;
 
     info!("Audio file ready: {} bytes", metadata.len());
-    Ok(audio_path)
+    audio_temp
+        .keep()
+        .context("Failed to retain completed audio recording")
 }
 
 fn configured_audio_source(config: &Config) -> Option<&str> {
@@ -276,7 +277,7 @@ fn stream_new_pcm_data(
     *offset += new_bytes.len() as u64;
 
     pending_pcm.extend_from_slice(&new_bytes);
-    if pending_pcm.len() % 2 != 0 {
+    if pending_pcm.len() & 1 == 1 {
         pending_pcm.pop();
     }
 

@@ -100,14 +100,6 @@ pub fn get_models_dir() -> PathBuf {
     crate::get_data_dir().join("models")
 }
 
-/// List installed models
-pub fn get_installed_models() -> Vec<&'static ModelInfo> {
-    AVAILABLE_MODELS
-        .iter()
-        .filter(|model| is_model_installed(model))
-        .collect()
-}
-
 /// Check if a specific model is installed
 pub fn is_model_installed(model: &ModelInfo) -> bool {
     validate_downloaded_model(model, &get_models_dir().join(model.filename)).is_ok()
