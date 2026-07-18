@@ -32,11 +32,12 @@ pub fn audio_worker(
     audio_tx: Sender<Option<PathBuf>>,
     status_tx: Sender<AppEvent>,
 ) {
+    let capture_status_tx = status_tx.clone();
     audio_worker_with_runner(
         record_rx,
         audio_tx,
         status_tx,
-        Arc::new(|recording| run_wasapi_session(&recording)),
+        Arc::new(move |recording| run_wasapi_session(&recording, &capture_status_tx)),
     );
 }
 
@@ -163,7 +164,10 @@ fn finish_active_session(
     }
 }
 
-fn run_wasapi_session(recording: &Arc<AtomicBool>) -> Result<PathBuf> {
+fn run_wasapi_session(
+    recording: &Arc<AtomicBool>,
+    status_tx: &Sender<AppEvent>,
+) -> Result<PathBuf> {
     let host = cpal::default_host();
     let device = host
         .default_input_device()
@@ -177,12 +181,12 @@ fn run_wasapi_session(recording: &Arc<AtomicBool>) -> Result<PathBuf> {
     let input_channels = usize::from(config.channels);
     let input_sample_rate = config.sample_rate.0;
 
+    let device_name = device
+        .name()
+        .unwrap_or_else(|_| "System default microphone".to_string());
     info!(
         "Using Windows input device '{}' at {} Hz, {} channel(s), {}",
-        device.name().unwrap_or_else(|_| "unknown".to_string()),
-        input_sample_rate,
-        input_channels,
-        sample_format
+        device_name, input_sample_rate, input_channels, sample_format
     );
 
     let audio_temp = super::private_recording_temp_path()?;
@@ -265,6 +269,7 @@ fn run_wasapi_session(recording: &Arc<AtomicBool>) -> Result<PathBuf> {
     stream
         .play()
         .context("Failed to start the Windows input stream")?;
+    let _ = status_tx.send(AppEvent::CaptureStarted { device_name });
     while recording.load(Ordering::SeqCst) && !stream_failed.load(Ordering::SeqCst) {
         std::thread::sleep(std::time::Duration::from_millis(50));
     }

@@ -109,7 +109,7 @@ pub fn audio_worker(
 fn run_arecord_session(
     recording: &Arc<AtomicBool>,
     cancelled: &Arc<AtomicBool>,
-    _status_tx: &Sender<AppEvent>,
+    status_tx: &Sender<AppEvent>,
     stream_tx: &Sender<StreamingAudioMessage>,
     config: &Config,
 ) -> Result<PathBuf> {
@@ -148,6 +148,25 @@ fn run_arecord_session(
 
     let child_pid = child.id();
     debug!("arecord started with PID {}", child_pid);
+
+    // Do not report Listening merely because the command was queued. Give
+    // arecord a bounded opportunity to fail its device open, then acknowledge
+    // capture only while the process is actually alive.
+    std::thread::sleep(Duration::from_millis(25));
+    if let Some(status) = child
+        .try_wait()
+        .context("Failed to confirm that arecord is running")?
+    {
+        let _ = std::fs::remove_file(&audio_path);
+        anyhow::bail!(
+            "arecord exited before capture started with status: {}",
+            status
+        );
+    }
+    let device_name = configured_audio_source(config)
+        .unwrap_or("System default microphone")
+        .to_string();
+    let _ = status_tx.send(AppEvent::CaptureStarted { device_name });
 
     let streaming_active =
         config.backend == TranscriptionBackend::Local && config.streaming.enabled;
