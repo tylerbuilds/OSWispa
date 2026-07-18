@@ -5,7 +5,6 @@ Comment=Local-first voice dictation powered by Whisper
 Exec=oswispa
 Icon=oswispa
 Terminal=false
-Categories=Utility;Audio;
+Categories=AudioVideo;Audio;
 Keywords=voice;speech;dictation;transcription;whisper;
 StartupNotify=false
-
