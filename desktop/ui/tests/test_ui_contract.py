@@ -189,6 +189,13 @@ class DesktopUiContractTests(unittest.TestCase):
                 with self.subTest(path=path.name, term=term):
                     self.assertNotIn(term, source)
 
+    def test_public_product_name_replaces_legacy_name(self) -> None:
+        for path in tuple(UI_ROOT.glob("*.html")) + (UI_ROOT / "README.md",):
+            source = path.read_text(encoding="utf-8")
+            with self.subTest(path=path.name):
+                self.assertIn("MorpheOS Voice", source)
+                self.assertNotIn("OSWispa", source)
+
 
 if __name__ == "__main__":
     unittest.main()

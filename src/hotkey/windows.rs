@@ -254,7 +254,7 @@ pub fn listen_for_hotkey(
     if let Err(error) = listen(callback) {
         error!("Windows global hotkey listener failed: {:?}", error);
         anyhow::bail!(
-            "Global hotkey listener failed. Run OSWispa in an interactive Windows desktop session."
+            "Global hotkey listener failed. Run MorpheOS Voice in an interactive Windows desktop session."
         );
     }
     Ok(())

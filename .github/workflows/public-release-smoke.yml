@@ -164,14 +164,20 @@ jobs:
           mkdir -p "$mount_point" "$install_root"
           hdiutil attach -nobrowse -readonly -mountpoint "$mount_point" "$asset"
           trap 'hdiutil detach "$mount_point" >/dev/null 2>&1 || true' EXIT
-          ditto "$mount_point/OSWispa.app" "$install_root/OSWispa.app"
+          if [[ -d "$mount_point/MorpheOS Voice.app" ]]; then
+            source_app="$mount_point/MorpheOS Voice.app"
+          else
+            # v0.4.2 and earlier use the legacy display name.
+            source_app="$mount_point/OSWispa.app"
+          fi
+          ditto "$source_app" "$install_root/MorpheOS Voice.app"
           hdiutil detach "$mount_point"
           trap - EXIT
 
-          plist="$install_root/OSWispa.app/Contents/Info.plist"
+          plist="$install_root/MorpheOS Voice.app/Contents/Info.plist"
           plutil -lint "$plist"
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$plist")" = "$version"
-          output="$("$install_root/OSWispa.app/Contents/MacOS/OSWispa" --platform-smoke-test)"
+          output="$("$install_root/MorpheOS Voice.app/Contents/MacOS/OSWispa" --platform-smoke-test)"
           printf '%s\n' "$output"
           grep -Fq "OSWISPA_PLATFORM_SMOKE_OK version=$version os=macos arch=${{ matrix.rust_arch }}" <<<"$output"
           grep -Fq "audio=macos-coreaudio-cpal hotkey=macos-rdev input=macos-arboard-enigo" <<<"$output"

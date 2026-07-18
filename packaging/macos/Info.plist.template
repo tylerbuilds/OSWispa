@@ -5,9 +5,9 @@
   <key>CFBundleDevelopmentRegion</key>
   <string>en</string>
   <key>CFBundleDisplayName</key>
-  <string>OSWispa</string>
+  <string>MorpheOS Voice</string>
   <key>CFBundleExecutable</key>
-  <string>OSWispa</string>
+  <string>MorpheOS Voice</string>
   <key>CFBundleIdentifier</key>
   <string>com.tylerbuilds.oswispa</string>
   <key>CFBundleInfoDictionaryVersion</key>
@@ -23,10 +23,10 @@
   <key>LSApplicationCategoryType</key>
   <string>public.app-category.productivity</string>
   <key>NSAppleEventsUsageDescription</key>
-  <string>OSWispa opens Terminal to run the bundled dictation assistant.</string>
+  <string>MorpheOS Voice opens Terminal to run the bundled dictation app.</string>
   <key>NSHighResolutionCapable</key>
   <true/>
   <key>NSMicrophoneUsageDescription</key>
-  <string>OSWispa needs microphone access to turn speech into text.</string>
+  <string>MorpheOS Voice uses the microphone while you hold the dictation shortcut.</string>
 </dict>
 </plist>

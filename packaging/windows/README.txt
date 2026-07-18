@@ -1,5 +1,5 @@
-OSWispa for Windows
-===================
+MorpheOS Voice for Windows
+==========================
 
 1. Extract the complete ZIP into a permanent folder.
 2. Run oswispa.exe from that folder.
@@ -10,5 +10,5 @@ Windows may ask for microphone access on first use. If recording does not
 start, enable microphone access for desktop apps under Settings > Privacy &
 security > Microphone.
 
-OSWispa downloads a Whisper model during first-time setup. The release is not
+MorpheOS Voice downloads a speech-recognition model during first-time setup. The release is not
 code-signed, so Windows SmartScreen may require More info > Run anyway.

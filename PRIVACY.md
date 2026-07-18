@@ -1,28 +1,58 @@
-# Privacy
+# MorpheOS Voice privacy notice
 
-OSWispa is local-first. With the default local backend, microphone audio and transcripts stay on the computer running OSWispa.
+MorpheOS Voice supports local and remote transcription. The active choice changes where recorded audio is processed.
 
-## Data stored locally
+## Local — processed on this computer
 
-- Microphone audio is written to an owner-only temporary WAV file, processed, and deleted after transcription. Incomplete recordings are deleted automatically.
-- Clipboard history is stored in the OSWispa data directory. Configuration, history, and stored API keys use owner-only permissions on Unix systems.
-- Explicit personal dictionary entries are stored in a versioned, owner-only `personalisation.json` file on Unix systems. They are applied locally and are never learned by observing text, edits, keystrokes, or foreground applications.
-- Whisper models are stored locally and are not uploaded by OSWispa.
+Local mode is the default. MorpheOS Voice records into a unique owner-only temporary WAV, processes it with an installed speech model on the same computer and deletes the temporary file after the attempt is released by the application. The first model download needs a network connection.
 
-Enabled preferred spellings are supplied only to the local Whisper model as a bounded vocabulary prompt. OSWispa does not send the personal dictionary or its entries to the optional remote transcription endpoint.
+Local mode does not intentionally upload microphone audio or transcripts.
 
-## Optional remote transcription
+## Remote — sent to the endpoint you selected
 
-Remote mode is opt-in. When enabled, OSWispa sends the recorded audio, selected language, model name, and optional API credential to the endpoint configured by the user. The privacy and retention policy of that endpoint then applies. HTTPS is required unless the user explicitly enables insecure HTTP.
+Remote mode is optional. When selected, MorpheOS Voice sends the recorded WAV, remote model name, optional language/task fields and bearer credential to the configured OpenAI-compatible endpoint. HTTPS is required unless insecure HTTP is explicitly enabled. The endpoint operator's privacy and retention terms apply.
 
-## Desktop permissions
+If remote processing fails and a local model is available, the app may fall back to local processing.
 
-- Microphone access is required to record speech.
-- macOS Accessibility access is required for global hotkeys and text insertion.
-- Linux global hotkeys currently require membership in the `input` group, which grants broad access to input devices for that user session.
+## Data stored on the computer
 
-## Project website
+- `config.json`: shortcut, model path, processing mode, endpoint and preferences.
+- `history.json`: bounded text-only transcript history, default maximum 50 entries.
+- `personalisation.json`: phrase replacements explicitly created by the user.
+- `models/`: downloaded or imported speech models.
+- `secrets/remote_api_key`: optional fallback token file. On Unix it is owner-only; the app does not currently use the OS keychain.
 
-The project website does not load analytics or remote font services. The contact form is processed by FormSubmit and delivered by email. Do not submit secrets, API keys, private transcripts, or recorded audio through the contact form.
+For compatibility with existing OS Whisper/OSWispa installations, the first MorpheOS Voice transition release continues to use the legacy application directories. No rebrand code copies or deletes that data.
 
-Questions can be sent to [tc@tylerbuilds.com](mailto:tc@tylerbuilds.com).
+Enabled personal-dictionary spellings are supplied as a bounded prompt only to the local model. Dictionary entries are not sent to the optional remote endpoint and are not learned by monitoring edits, keystrokes or foreground applications.
+
+## Clipboard, insertion and other applications
+
+Completed text is copied to the system clipboard. If automatic insertion is enabled, MorpheOS Voice asks the operating system to insert it into the focused application. The clipboard manager and target application may retain data under their own policies.
+
+If insertion cannot be confirmed but clipboard copy succeeded, the app reports **Copied**. If clipboard copy fails, it does not paste stale clipboard content.
+
+## Permissions
+
+- Microphone permission is required to capture speech.
+- macOS Accessibility permission is required for global hotkeys and text insertion.
+- Linux global hotkeys currently require membership in the `input` group, which gives broad read access to input devices for that user session.
+- Windows must allow microphone access for desktop applications.
+
+## History, temporary audio and crashes
+
+Audio is not kept as recovery history. Normal completion, cancellation and handled errors delete the temporary WAV through the application's temporary-file lifecycle. A process or operating-system crash may leave a temporary-file remnant; the current product does not provide crash recovery for in-progress audio.
+
+The Linux runtime exposes recent text recovery. The current Tauri History screen is a development preview and cannot clear production files. A single verified cross-platform “clear all data” control is still required.
+
+## Diagnostics and telemetry
+
+The desktop application has no account, product analytics or telemetry. Diagnostics report states, sizes and redacted failures rather than transcript or remote response content. Operating-system service/console logs follow the retention settings of that system.
+
+Do not send transcripts, audio, credentials, configuration files or complete logs in a support request.
+
+## Website and contact
+
+The project website uses local assets and has no analytics or contact-form processor. Contact links open GitHub or the user's email client. Do not submit API keys, private transcripts or recorded audio. A future `morpheos.net/voice` deployment must document any parent-site analytics before publication.
+
+See [the detailed voice data flow](docs/privacy/VOICE_DATA_FLOW.md). Privacy questions can be sent to [hello@morpheos.net](mailto:hello@morpheos.net).

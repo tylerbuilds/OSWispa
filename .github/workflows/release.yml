@@ -162,7 +162,7 @@ jobs:
           version="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)"
           stage_root="$PWD/dist/macos"
           dmg_root="$stage_root/dmg"
-          app_dir="$dmg_root/OSWispa.app"
+          app_dir="$dmg_root/MorpheOS Voice.app"
           contents_dir="$app_dir/Contents"
 
           rm -rf "$stage_root"
@@ -185,7 +185,7 @@ jobs:
           ln -s /Applications "$dmg_root/Applications"
 
           ditto -c -k --sequesterRsrc --keepParent "$app_dir" "oswispa-macos-${{ matrix.arch }}.zip"
-          hdiutil create -volname "OSWispa Installer" -srcfolder "$dmg_root" -ov -format UDZO "oswispa-macos-${{ matrix.arch }}.dmg"
+          hdiutil create -volname "MorpheOS Voice" -srcfolder "$dmg_root" -ov -format UDZO "oswispa-macos-${{ matrix.arch }}.dmg"
 
       - name: Install DMG and run packaged app smoke test
         shell: bash
@@ -197,15 +197,15 @@ jobs:
           mkdir -p "$mount_point" "$install_root"
           hdiutil attach -nobrowse -readonly -mountpoint "$mount_point" "oswispa-macos-${{ matrix.arch }}.dmg"
           trap 'hdiutil detach "$mount_point" >/dev/null 2>&1 || true' EXIT
-          ditto "$mount_point/OSWispa.app" "$install_root/OSWispa.app"
+          ditto "$mount_point/MorpheOS Voice.app" "$install_root/MorpheOS Voice.app"
           hdiutil detach "$mount_point"
           trap - EXIT
 
-          plist="$install_root/OSWispa.app/Contents/Info.plist"
+          plist="$install_root/MorpheOS Voice.app/Contents/Info.plist"
           plutil -lint "$plist"
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$plist")" = "$version"
 
-          output="$("$install_root/OSWispa.app/Contents/MacOS/OSWispa" --platform-smoke-test)"
+          output="$("$install_root/MorpheOS Voice.app/Contents/MacOS/OSWispa" --platform-smoke-test)"
           printf '%s\n' "$output"
           grep -Fq "OSWISPA_PLATFORM_SMOKE_OK version=$version os=macos arch=${{ matrix.rust_arch }}" <<<"$output"
           grep -Fq "audio=macos-coreaudio-cpal hotkey=macos-rdev input=macos-arboard-enigo" <<<"$output"

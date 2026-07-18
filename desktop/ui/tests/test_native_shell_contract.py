@@ -27,6 +27,8 @@ class NativeShellContractTests(unittest.TestCase):
 
     def test_tauri_config_is_local_strict_and_stably_identified(self) -> None:
         config = json.loads((TAURI_ROOT / "tauri.conf.json").read_text(encoding="utf-8"))
+        self.assertEqual(config["productName"], "MorpheOS Voice")
+        # Retained for upgrade, permission and stored-state compatibility.
         self.assertEqual(config["identifier"], "com.tylerbuilds.oswispa")
         self.assertFalse(config["bundle"]["active"])
         self.assertFalse(config["bundle"]["createUpdaterArtifacts"])
@@ -38,6 +40,7 @@ class NativeShellContractTests(unittest.TestCase):
         self.assertFalse(windows["signal"]["focusable"])
         self.assertTrue(windows["signal"]["skipTaskbar"])
         for window in windows.values():
+            self.assertIn("MorpheOS Voice", window["title"])
             self.assertNotRegex(window["url"], r"^https?://")
 
         csp = config["app"]["security"]["csp"]

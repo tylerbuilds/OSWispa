@@ -69,7 +69,7 @@ fn build_settings_window(
 ) {
     let window = ApplicationWindow::builder()
         .application(app)
-        .title("OSWispa Settings")
+        .title("MorpheOS Voice Settings")
         .default_width(760)
         .default_height(600)
         .build();
@@ -447,7 +447,7 @@ fn create_models_tab(
     vbox.set_margin_start(20);
     vbox.set_margin_end(20);
 
-    let title = Label::new(Some("Whisper Models"));
+    let title = Label::new(Some("Speech models"));
     title.add_css_class("title-2");
     vbox.append(&title);
 
@@ -753,7 +753,7 @@ fn create_backend_tab(
     mode_box.append(&Label::new(Some("Backend mode:")));
     let backend_combo = ComboBoxText::new();
     backend_combo.append(Some("local"), "Local (Whisper.cpp)");
-    backend_combo.append(Some("remote"), "Remote VPS (OpenAI-compatible)");
+    backend_combo.append(Some("remote"), "Remote endpoint (OpenAI-compatible)");
     match config.backend {
         TranscriptionBackend::Local => backend_combo.set_active_id(Some("local")),
         TranscriptionBackend::Remote => backend_combo.set_active_id(Some("remote")),

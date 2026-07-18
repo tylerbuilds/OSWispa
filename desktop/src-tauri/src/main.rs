@@ -2,7 +2,7 @@
 
 fn main() {
     if oswispa_desktop::run().is_err() {
-        eprintln!("OSWispa desktop could not start");
+        eprintln!("MorpheOS Voice could not start");
         std::process::exit(1);
     }
 }

@@ -1,340 +1,314 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-GB">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#04060d">
-  <title>OSWispa — Local-first push-to-talk dictation</title>
-  <meta name="description" content="OSWispa is an open-source push-to-talk dictation app. Hold a hotkey, speak, and release to transcribe locally and insert text into the app you are using.">
+  <meta name="theme-color" content="#10110f">
+  <title>MorpheOS Voice — Free, Open-Source Voice Typing</title>
+  <meta name="description" content="Talk instead of type with MorpheOS Voice, a free, open-source voice typing tool for Linux, macOS and Windows alpha desktops.">
+  <link rel="canonical" href="https://morpheos.net/voice">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="MorpheOS Voice — Free, Open-Source Voice Typing">
+  <meta property="og:description" content="Hold one key, speak naturally, and put useful text wherever you are working.">
+  <meta property="og:url" content="https://morpheos.net/voice">
+  <meta property="og:image" content="https://morpheos.net/voice/morpheos-voice-social.png">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
-  <div class="page">
-    <header class="site-header">
-      <div class="header-brand">
-        <a class="logo" href="index.html" aria-label="OSWispa home">OSWispa</a>
-        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" data-nav-toggle>
-          <span class="nav-toggle-label">Menu</span>
-          <span class="nav-toggle-bars" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span></span>
-          </span>
-        </button>
-      </div>
-      <nav class="site-nav" id="primary-nav" aria-label="Primary" data-site-nav>
-        <a href="#workflow">How it works</a>
-        <a href="#why">Why OSWispa</a>
-        <a href="#platforms">Platforms</a>
-        <a href="#privacy">Privacy</a>
-        <a href="#faq">Help</a>
+
+  <header class="site-header" data-site-header>
+    <div class="header-inner">
+      <a class="brand-lockup" href="index.html" aria-label="MorpheOS Voice home">
+        <img src="morpheos-voice-mark.svg" alt="" width="40" height="40">
+        <span><b>MorpheOS</b> Voice</span>
+      </a>
+
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" data-nav-toggle>
+        <span>Menu</span>
+        <span class="nav-lines" aria-hidden="true"><i></i><i></i></span>
+      </button>
+
+      <nav class="site-nav" id="primary-nav" aria-label="Primary navigation" data-site-nav>
+        <a href="#how-it-works">How it works</a>
+        <a href="#processing">Privacy</a>
+        <a href="#downloads">Downloads</a>
+        <a href="models.html">Models</a>
       </nav>
+
       <div class="header-actions">
-        <a class="btn btn-ghost" href="https://github.com/tylerbuilds/OSWispa">GitHub</a>
-        <a class="btn btn-primary" href="#downloads" data-platform-download>Choose a download</a>
+        <a class="button button-quiet" href="https://github.com/tylerbuilds/OSWispa">GitHub</a>
+        <a class="button button-primary" href="#downloads" data-platform-download>Download</a>
       </div>
-    </header>
+    </div>
+  </header>
 
-    <main id="main-content">
-      <section class="hero product-hero">
-        <div class="hero-copy reveal" style="--delay: 0.05s">
-          <p class="eyebrow">Open-source push-to-talk dictation</p>
-          <p class="release-chip release-chip--truth">
-            <span class="chip-label">Alpha</span>
-            <span><span data-latest-release>v0.4.2</span> is available</span>
-            <span>Linux primary · macOS and Windows alpha</span>
-          </p>
-          <h1>Speak. Release. Keep writing.</h1>
-          <p class="lead">
-            OSWispa is a small dictation layer between your microphone and your cursor.
-            Hold one hotkey, say a short thought, and release. Whisper transcribes locally
-            by default, then copies and inserts the text into the app you are already using.
-          </p>
-          <div class="hero-actions">
-            <a class="btn btn-primary" href="#downloads" data-platform-download>Choose a download</a>
-            <a class="btn btn-secondary" href="#workflow">See the workflow</a>
-          </div>
-          <ul class="hero-proof-list" aria-label="Product principles">
-            <li>No account</li>
-            <li>Local by default</li>
-            <li>MIT licensed</li>
+  <main id="main-content">
+    <section class="hero shell">
+      <div class="hero-copy reveal">
+        <div class="product-label">
+          <span class="parent-mark">M</span>
+          <span>MorpheOS product 01 / Voice</span>
+        </div>
+        <h1>Talk instead of type — in any app.</h1>
+        <p class="hero-descriptor">Free, open-source voice typing for your computer.</p>
+        <p class="hero-support">Hold one key, speak naturally, and put useful text wherever you are working. Local speech-to-text is the default; a remote provider is optional and clearly separate.</p>
+        <div class="hero-actions">
+          <a class="button button-primary button-large" href="#downloads" data-platform-download>Download MorpheOS Voice</a>
+          <a class="button button-outline button-large" href="https://github.com/tylerbuilds/OSWispa">View on GitHub</a>
+        </div>
+        <div class="release-line" aria-label="Release status">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span><b data-latest-release>v0.5.0</b> public alpha</span>
+          <span>Linux primary</span>
+          <span>macOS + Windows alpha</span>
+        </div>
+      </div>
+
+      <figure class="voice-console reveal" aria-labelledby="console-caption">
+        <figcaption id="console-caption">
+          <span>Write mode</span>
+          <span>Illustrated flow — not a live screenshot</span>
+        </figcaption>
+        <ol class="voice-rail">
+          <li class="rail-step is-ready">
+            <span class="rail-node">01</span>
+            <div>
+              <p class="rail-label">Ready</p>
+              <p>Focus the place you want to write.</p>
+            </div>
+          </li>
+          <li class="rail-step is-listening">
+            <span class="rail-node">02</span>
+            <div>
+              <p class="rail-label">Hold <kbd data-platform-hotkey>Ctrl + Super</kbd></p>
+              <div class="voice-bars" aria-label="Listening indicator"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+              <p>Speak while the shortcut is held.</p>
+            </div>
+          </li>
+          <li class="rail-step is-processing">
+            <span class="rail-node">03</span>
+            <div>
+              <p class="rail-label">Release</p>
+              <p>Audio is transcribed using the selected processing mode.</p>
+            </div>
+          </li>
+          <li class="rail-step is-inserted">
+            <span class="rail-node">04</span>
+            <div>
+              <p class="rail-label">Inserted <span class="cursor" aria-hidden="true"></span></p>
+              <blockquote>Draft the release note:<br>Windows now works.</blockquote>
+              <p>Also kept on the clipboard for recovery.</p>
+            </div>
+          </li>
+        </ol>
+      </figure>
+    </section>
+
+    <section id="how-it-works" class="section shell">
+      <div class="section-index">01 / Voice to cursor</div>
+      <div class="editorial-grid">
+        <div class="section-heading reveal">
+          <p class="eyebrow">Stay where you are</p>
+          <h2>A thought should not need a new destination.</h2>
+        </div>
+        <div class="section-copy reveal">
+          <p class="large-copy">MorpheOS Voice sits between your microphone and your cursor. Use it for emails, documents, messages, prompts, notes and code comments without moving the thought into a separate editor.</p>
+          <ul class="use-list" aria-label="Ways to use MorpheOS Voice">
+            <li><span>01</span>Reply while the context is still visible.</li>
+            <li><span>02</span>Speak a longer AI prompt before the thought fragments.</li>
+            <li><span>03</span>Draft around typing friction, RSI or a temporary injury.</li>
+            <li><span>04</span>Correct names locally with a personal vocabulary.</li>
           </ul>
-          <p class="hero-footnote">
-            First launch downloads a Whisper model. After that, local mode can work offline.
-            Remote transcription is optional and uses an endpoint you choose.
-          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-paper">
+      <div class="shell">
+        <div class="section-index section-index-dark">02 / Simple by default</div>
+        <div class="proof-strip">
+          <article class="proof-item reveal">
+            <span>Install</span>
+            <h3>Choose the package for your computer.</h3>
+            <p>Linux packages provide the most complete current experience. macOS and Windows remain honest alphas.</p>
+          </article>
+          <article class="proof-item reveal">
+            <span>Prepare</span>
+            <h3>Grant access and download one model.</h3>
+            <p>The first run checks the computer before selecting a local model. Advanced model details can wait.</p>
+          </article>
+          <article class="proof-item reveal">
+            <span>Speak</span>
+            <h3>Hold, speak, release.</h3>
+            <p>Clear lifecycle states distinguish listening, processing, insertion, clipboard fallback and failure.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="processing" class="section shell">
+      <div class="section-index">03 / Processing and privacy</div>
+      <div class="processing-layout">
+        <div class="section-heading reveal">
+          <p class="eyebrow">Choose how speech is processed</p>
+          <h2>“Local” and “remote” mean different things here.</h2>
+          <p>There is no account and no product analytics. The selected processing mode still determines where microphone audio goes.</p>
+          <a class="text-link" href="https://github.com/tylerbuilds/OSWispa/blob/master/PRIVACY.md">Read the complete privacy notice <span>→</span></a>
         </div>
 
-        <figure class="workflow-figure reveal" style="--delay: 0.15s" aria-labelledby="workflow-preview-title">
-          <figcaption class="workflow-caption">
-            <span id="workflow-preview-title">Voice-to-cursor workflow</span>
-            <span>Illustrated product flow — not a live app overlay</span>
-          </figcaption>
-          <ol class="workflow-rail workflow-rail--compact">
-            <li class="workflow-step">
-              <span class="workflow-index">01</span>
-              <div>
-                <p class="workflow-label">Hold</p>
-                <p class="workflow-value"><span class="kbd" data-platform-hotkey>Ctrl + Super</span></p>
-                <p class="workflow-note">Recording starts while the shortcut is held.</p>
-              </div>
-            </li>
-            <li class="workflow-step workflow-step--signal">
-              <span class="workflow-index">02</span>
-              <div>
-                <p class="workflow-label">Speak</p>
-                <div class="signal-line" aria-hidden="true">
-                  <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-                </div>
-                <p class="workflow-spoken">“Draft the release note colon new line Windows now works period”</p>
-              </div>
-            </li>
-            <li class="workflow-step workflow-step--output">
-              <span class="workflow-index">03</span>
-              <div>
-                <p class="workflow-label">Release</p>
-                <blockquote>Draft the release note:<br>Windows now works.</blockquote>
-                <p class="workflow-note">Copied to the clipboard and inserted when auto-paste is enabled.</p>
-              </div>
-            </li>
-          </ol>
-        </figure>
-      </section>
+        <div class="mode-stack reveal">
+          <article class="mode-card mode-local">
+            <div class="mode-title"><span>Local</span><b>Processed on this computer</b></div>
+            <p>After the first model download, Whisper.cpp transcribes on the computer running MorpheOS Voice. Each recording uses an owner-only temporary WAV that is deleted on success, cancellation and handled failure paths.</p>
+          </article>
+          <article class="mode-card mode-remote">
+            <div class="mode-title"><span>Remote</span><b>Sent to the selected provider</b></div>
+            <p>If you explicitly configure remote mode, the audio file and request fields are sent to your chosen OpenAI-compatible endpoint. That provider's security and retention terms apply.</p>
+          </article>
+          <p class="mode-note">Completed transcripts can be stored in bounded local history. Audio being captured at the instant of a process or operating-system crash is not recoverable.</p>
+        </div>
+      </div>
+    </section>
 
-      <section id="workflow" class="section scope-section">
-        <div class="scope-layout">
-          <div class="scope-statement reveal" style="--delay: 0.05s">
-            <p class="eyebrow">A deliberately small tool</p>
-            <h2>Built for the sentence, not the meeting.</h2>
-            <p class="section-lead">
-              Use OSWispa for replies, prompts, notes and code comments. It is designed for
-              short dictation bursts, not hour-long recordings or cloud document memory.
-            </p>
-          </div>
-          <div class="capability-list reveal" style="--delay: 0.12s">
-            <article class="capability-row">
-              <p class="capability-number">01</p>
-              <div>
-                <h3>One shortcut, one thought</h3>
-                <p>Hold to record, release to transcribe, or cancel without leaving the app in front of you.</p>
-              </div>
-            </article>
-            <article class="capability-row">
-              <p class="capability-number">02</p>
-              <div>
-                <h3>Formatting you can say aloud</h3>
-                <p>Commands such as “comma”, “new line” and “new paragraph” become real punctuation and spacing.</p>
-              </div>
-            </article>
-            <article class="capability-row">
-              <p class="capability-number">03</p>
-              <div>
-                <h3>A verified hand-off</h3>
-                <p>OSWispa verifies the clipboard update before auto-paste, avoiding accidental insertion of stale clipboard text.</p>
-              </div>
-            </article>
+    <section id="open-source" class="section open-band">
+      <div class="shell open-layout">
+        <div class="open-mark" aria-hidden="true">MIT</div>
+        <div class="reveal">
+          <p class="eyebrow">Built in the open</p>
+          <h2>The open voice layer for your computer.</h2>
+          <p>The original MorpheOS Voice source code is MIT-licensed. You can inspect it, build it, adapt it and learn from it. Dependencies and optional speech models retain their own licences, and official branding remains distinct from unofficial forks.</p>
+          <div class="inline-links">
+            <a href="https://github.com/tylerbuilds/OSWispa">Browse the source</a>
+            <a href="https://github.com/tylerbuilds/OSWispa/blob/master/THIRD_PARTY_NOTICES.md">Third-party notices</a>
+            <a href="https://github.com/tylerbuilds/OSWispa/blob/master/TRADEMARK.md">Official project identity</a>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section id="why" class="section product-evidence">
-        <div class="section-heading reveal" style="--delay: 0.05s">
-          <p class="eyebrow">Useful without becoming a platform</p>
-          <h2>The essentials around the dictation loop.</h2>
-          <p class="section-lead">OSWispa chooses a sensible local model on first launch, keeps recent transcripts locally, and lets you trade speed for accuracy when your hardware allows it.</p>
-        </div>
-        <div class="evidence-bands">
-          <article class="evidence-band reveal" style="--delay: 0.1s">
-            <p class="evidence-kicker">Local models</p>
-            <h3>Hardware-aware first run</h3>
-            <p>The device probe considers the available build acceleration, memory and a small CPU test before selecting a responsive default model.</p>
-            <a href="models.html">Understand the model choices</a>
-          </article>
-          <article class="evidence-band reveal" style="--delay: 0.16s">
-            <p class="evidence-kicker">Your shortcut</p>
-            <h3>Configurable push-to-talk</h3>
-            <p>Choose modifiers and an optional trigger key. Linux exposes these controls in its tray settings; other platforms use configuration files in the current alpha.</p>
-          </article>
-          <article class="evidence-band reveal" style="--delay: 0.22s">
-            <p class="evidence-kicker">Optional escape hatch</p>
-            <h3>Your remote endpoint</h3>
-            <p>Local mode is the default. If you opt into remote transcription, OSWispa uses an OpenAI-compatible endpoint you configure and can fall back to an installed local model.</p>
-          </article>
-        </div>
-      </section>
+    <section id="downloads" class="section shell downloads-section">
+      <div class="section-index">04 / Downloads</div>
+      <div class="section-heading download-heading reveal">
+        <p class="eyebrow">Current public alpha</p>
+        <h2>Choose the package that matches your desktop.</h2>
+        <p>Current download filenames retain the legacy <code>oswispa</code> name so existing links and upgrade paths keep working. Every release asset is covered by <code>SHA256SUMS</code>.</p>
+      </div>
 
-      <section id="platforms" class="section platform-section">
-        <div class="section-heading reveal" style="--delay: 0.05s">
-          <p class="eyebrow">Platform truth</p>
-          <h2>Choose the package that matches your desktop.</h2>
-          <p class="section-lead">All current builds are alpha software. Linux is the primary desktop experience; macOS and Windows provide the working dictation loop with more visible setup edges.</p>
-        </div>
-        <div id="downloads" class="platform-grid">
-          <article class="platform-card platform-card--primary reveal" style="--delay: 0.1s">
-            <div class="platform-card-header">
-              <div>
-                <p class="platform-name">Linux x86-64</p>
-                <h3>Primary alpha</h3>
-              </div>
-              <span class="status-badge status-badge--primary">Tray + settings</span>
-            </div>
-            <p>Ubuntu/Debian and Fedora packages include the tray and GTK settings. Global hotkeys currently require <code>input</code> group access; Wayland insertion uses <code>ydotoold</code>.</p>
-            <p class="platform-caveat">The downloadable <code>.deb</code>, <code>.rpm</code> and tarball are CPU-only. CUDA and ROCm builds are available from source.</p>
-            <div class="platform-actions">
-              <a class="btn btn-primary" href="https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa_amd64.deb">Download .deb</a>
-              <a class="btn btn-secondary" href="https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa_x86_64.rpm">Download .rpm</a>
-              <a class="text-link" href="https://github.com/tylerbuilds/OSWispa/releases/latest">Other Linux downloads</a>
-            </div>
-          </article>
-
-          <article class="platform-card reveal" style="--delay: 0.16s">
-            <div class="platform-card-header">
-              <div>
-                <p class="platform-name">macOS 12+</p>
-                <h3>macOS alpha</h3>
-              </div>
-              <span class="status-badge">DMG</span>
-            </div>
-            <p>The app currently launches in Terminal, which must remain open. There is no menu-bar UI yet. Microphone and Accessibility permissions are required.</p>
-            <p class="platform-caveat">Unsigned and unnotarised. Apple Silicon uses Metal; Intel uses the CPU path.</p>
-            <div class="platform-actions platform-actions--stacked">
-              <a class="btn btn-secondary" href="https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa-macos-arm64.dmg">Apple Silicon DMG</a>
-              <a class="btn btn-secondary" href="https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa-macos-x86_64.dmg">Intel DMG</a>
-            </div>
-          </article>
-
-          <article class="platform-card reveal" style="--delay: 0.22s">
-            <div class="platform-card-header">
-              <div>
-                <p class="platform-name">Windows x86-64</p>
-                <h3>Windows alpha</h3>
-              </div>
-              <span class="status-badge">ZIP</span>
-            </div>
-            <p>Extract the complete ZIP, run <code>oswispa.exe</code>, and keep its console window open. The default shortcut is <span class="kbd">Ctrl + Windows</span>.</p>
-            <p class="platform-caveat">Unsigned, with no tray or installer yet. SmartScreen may require “More info → Run anyway”.</p>
-            <div class="platform-actions platform-actions--stacked">
-              <a class="btn btn-secondary" href="https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa-windows-x86_64.zip">Download Windows ZIP</a>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section id="privacy" class="section privacy-section">
-        <div class="privacy-layout">
-          <div class="privacy-copy reveal" style="--delay: 0.05s">
-            <p class="eyebrow">Private by architecture</p>
-            <h2>Local by default means local by default.</h2>
-            <p class="section-lead">The desktop app has no account or product analytics. In local mode, microphone audio and transcripts stay on the computer running OSWispa.</p>
-            <a class="text-link" href="https://github.com/tylerbuilds/OSWispa/blob/master/PRIVACY.md">Read the privacy notice</a>
+      <div class="download-layout">
+        <article class="platform platform-primary reveal">
+          <div class="platform-top">
+            <p class="platform-os">Linux / x86-64</p>
+            <span class="platform-status">Primary alpha</span>
           </div>
-          <ol class="privacy-facts reveal" style="--delay: 0.12s">
-            <li>
-              <span>Temporary audio</span>
-              <p>Each recording uses an owner-only temporary WAV that is deleted after transcription, including error paths.</p>
-            </li>
-            <li>
-              <span>Local state</span>
-              <p>Configuration and transcript history stay in OS-specific application directories rather than one universal path.</p>
-            </li>
-            <li>
-              <span>Remote is explicit</span>
-              <p>Audio leaves the device only when you select remote mode and configure an endpoint. That endpoint’s privacy policy then applies.</p>
-            </li>
-          </ol>
-        </div>
-      </section>
-
-      <section class="section proof-section">
-        <div class="proof-panel reveal" style="--delay: 0.05s">
-          <div>
-            <p class="eyebrow">Release proof, with boundaries</p>
-            <h2>Checksummed packages, tested as packages.</h2>
-            <p class="section-lead">Every release asset is covered by <code>SHA256SUMS</code>. Clean hosted VMs install and launch both macOS DMGs and the Windows ZIP before publication.</p>
+          <h3>Tray, settings and the most complete setup path.</h3>
+          <p>Ubuntu/Debian and Fedora packages are CPU-only. CUDA and ROCm builds are available from source. Global shortcuts require input-device access; Wayland insertion normally uses the <code>ydotoold</code> user service.</p>
+          <div class="platform-buttons">
+            <a class="button button-primary" href="https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa_amd64.deb">Download .deb</a>
+            <a class="button button-outline" href="https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa_x86_64.rpm">Download .rpm</a>
+            <a class="text-link" href="https://github.com/tylerbuilds/OSWispa/releases/latest">Other Linux files <span>→</span></a>
           </div>
-          <div class="proof-boundary">
-            <p class="proof-boundary-label">What that does not prove</p>
-            <p>Hosted VMs do not prove physical microphones, operating-system permission prompts, global keypresses, focus-sensitive insertion or GPU acceleration. Those remain hardware checks.</p>
-            <a class="text-link" href="https://github.com/tylerbuilds/OSWispa/releases/latest">Release assets and checksums</a>
-          </div>
-        </div>
-      </section>
+        </article>
 
-      <section id="faq" class="section faq-section">
-        <div class="section-heading reveal" style="--delay: 0.05s">
-          <p class="eyebrow">Setup help</p>
-          <h2>The edges worth knowing before download.</h2>
+        <div class="platform-secondary">
+          <article class="platform reveal">
+            <div class="platform-top">
+              <p class="platform-os">macOS 12+</p>
+              <span class="platform-status">Alpha / unsigned</span>
+            </div>
+            <h3>Apple Silicon and Intel.</h3>
+            <p>Package install and launch are VM-tested. The current public app launches through Terminal, has no menu-bar UI and is not signed or notarised. Microphone and Accessibility permission are required.</p>
+            <div class="platform-buttons">
+              <a class="button button-outline" href="https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa-macos-arm64.dmg">Apple Silicon DMG</a>
+              <a class="text-link" href="https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa-macos-x86_64.dmg">Intel DMG <span>→</span></a>
+            </div>
+          </article>
+
+          <article class="platform reveal">
+            <div class="platform-top">
+              <p class="platform-os">Windows / x86-64</p>
+              <span class="platform-status">Alpha / unsigned</span>
+            </div>
+            <h3>Portable ZIP, console visible.</h3>
+            <p>Package extraction and launch are VM-tested. There is no installer or tray yet. Keep the console window open; SmartScreen may require a reviewed override.</p>
+            <div class="platform-buttons">
+              <a class="button button-outline" href="https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa-windows-x86_64.zip">Download Windows ZIP</a>
+            </div>
+          </article>
         </div>
-        <div class="faq-list">
-          <details class="faq-detail reveal" style="--delay: 0.1s">
-            <summary>What happens on first launch?</summary>
-            <p>OSWispa runs a short device probe, selects a responsive Whisper model and downloads it. The application needs network access for that first model download; local dictation can work offline afterwards.</p>
+      </div>
+
+      <div class="proof-boundary reveal">
+        <p><b>Release proof boundary:</b> hosted VM checks prove package install and launch, backend wiring, WAV contract and clipboard round-trip. They do not prove a physical microphone, operating-system permission prompts, physical global shortcuts, focus-sensitive insertion or GPU acceleration.</p>
+        <a href="USER_GUIDE.md">Read the user guide</a>
+      </div>
+    </section>
+
+    <section id="faq" class="section shell faq-section">
+      <div class="section-index">05 / Questions</div>
+      <div class="faq-layout">
+        <div class="section-heading reveal">
+          <p class="eyebrow">Useful answers</p>
+          <h2>What this product is—and is not.</h2>
+        </div>
+        <div class="faq-list reveal">
+          <details>
+            <summary>Is MorpheOS Voice fully local?</summary>
+            <p>Local processing is the default and stays on the computer after a model has been downloaded. Optional remote processing sends audio to the endpoint you choose, so the product is not described as universally local.</p>
           </details>
-          <details class="faq-detail reveal" style="--delay: 0.14s">
-            <summary>Why does Linux copy text but not insert it?</summary>
-            <p>Wayland insertion depends on the installed <code>ydotoold</code> user service. Check it without root:</p>
-            <pre><code>systemctl --user status ydotoold
-journalctl --user -u ydotoold -n 50</code></pre>
-            <p>The transcript remains on the clipboard if insertion fails.</p>
+          <details>
+            <summary>Does it control my computer?</summary>
+            <p>No. Write mode produces and inserts text. There is no action or autonomous-agent mode in the current product.</p>
           </details>
-          <details class="faq-detail reveal" style="--delay: 0.18s">
-            <summary>Why do macOS and Windows show security warnings?</summary>
-            <p>The current alpha packages are not signed. macOS may require Control-click → Open; Windows may require SmartScreen’s More info → Run anyway. Only download from the official GitHub release.</p>
+          <details>
+            <summary>Does it learn from corrections?</summary>
+            <p>No automatic learning occurs. You can maintain an explicit local personal vocabulary for names and phrases.</p>
           </details>
-          <details class="faq-detail reveal" style="--delay: 0.22s">
-            <summary>Where are settings and models stored?</summary>
-            <p>Locations differ by operating system. Linux has tray-based settings; macOS and Windows currently use their OS-specific configuration files. The user guide lists platform behaviour without assuming a Linux home-directory path.</p>
+          <details>
+            <summary>Why do downloads still say oswispa?</summary>
+            <p>The first MorpheOS Voice transition release retains the established executable, packages and data locations so existing users keep settings, shortcuts, models, history and rollback options.</p>
           </details>
-          <details class="faq-detail reveal" style="--delay: 0.26s">
-            <summary>What should I try for [BLANK_AUDIO] on Linux?</summary>
-            <p>Confirm the active PipeWire/PulseAudio source, then choose the working source in Linux Settings if needed:</p>
-            <pre><code>pactl get-default-source
-pactl list short sources</code></pre>
+          <details>
+            <summary>Is this affiliated with OpenAI?</summary>
+            <p>No. MorpheOS Voice is an independent open-source project. It uses Whisper.cpp locally and can optionally call an OpenAI-compatible endpoint chosen by the user.</p>
           </details>
         </div>
-        <div class="guide-link-row reveal" style="--delay: 0.3s">
-          <p>Need the full setup and troubleshooting notes?</p>
-          <a class="btn btn-secondary" href="https://github.com/tylerbuilds/OSWispa/blob/master/website/USER_GUIDE.md">Read the user guide</a>
-        </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="section cta">
-        <div class="cta-card reveal" style="--delay: 0.05s">
-          <div>
-            <p class="eyebrow">Open source and still early</p>
-            <h2>Help turn the working loop into a polished desktop product.</h2>
-            <p class="section-lead">Native macOS and Windows shells, signing, onboarding and hardware testing are the next visible product gaps.</p>
-          </div>
-          <div class="cta-actions">
-            <a class="btn btn-primary" href="https://github.com/tylerbuilds/OSWispa">View the source</a>
-            <a class="btn btn-secondary" href="https://github.com/tylerbuilds/OSWispa/blob/master/CONTRIBUTING.md">Contribution guide</a>
-          </div>
+    <section class="final-cta">
+      <div class="shell final-cta-inner reveal">
+        <div>
+          <p class="eyebrow">MorpheOS Voice</p>
+          <h2>Say the thought. Keep your place.</h2>
+          <p>Free, open-source voice typing for your computer.</p>
         </div>
-      </section>
-    </main>
+        <div class="final-actions">
+          <a class="button button-primary button-large" href="#downloads">Download MorpheOS Voice</a>
+          <a class="text-link" href="https://morpheos.net">Explore MorpheOS <span>→</span></a>
+        </div>
+      </div>
+    </section>
+  </main>
 
-    <footer class="site-footer">
+  <footer class="site-footer">
+    <div class="shell footer-inner">
       <div>
-        <a class="logo" href="index.html">OSWispa</a>
-        <p>Open-source, local-first dictation for short writing bursts.</p>
+        <a class="brand-lockup footer-brand" href="https://morpheos.net">
+          <span class="parent-mark">M</span>
+          <span><b>MorpheOS</b> Voice</span>
+        </a>
+        <p>A free product from MorpheOS, built in the open.</p>
       </div>
-      <div class="footer-links">
-        <div class="footer-link-group">
-          <a href="#platforms">Downloads</a>
-          <a href="models.html">Model guide</a>
-          <a href="https://github.com/tylerbuilds/OSWispa">GitHub</a>
-          <a href="https://github.com/tylerbuilds/OSWispa/blob/master/PRIVACY.md">Privacy</a>
-          <a href="https://github.com/tylerbuilds/OSWispa/blob/master/SECURITY.md">Security</a>
-          <a href="contact.html">Contact</a>
-        </div>
-      </div>
-      <div class="footer-meta-group">
-        <p class="footer-meta">Copyright (c) 2026 Tyler Casey. OSWispa is MIT licensed.</p>
-      </div>
-    </footer>
-  </div>
+      <nav aria-label="Footer navigation">
+        <a href="https://github.com/tylerbuilds/OSWispa">GitHub</a>
+        <a href="https://github.com/tylerbuilds/OSWispa/blob/master/PRIVACY.md">Privacy</a>
+        <a href="https://github.com/tylerbuilds/OSWispa/blob/master/SECURITY.md">Security</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+    </div>
+  </footer>
 
   <script src="app.js"></script>
 </body>

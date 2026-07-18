@@ -8,6 +8,7 @@ use crossbeam_channel::{Receiver, Sender};
 use std::path::PathBuf;
 
 pub(crate) fn private_recording_temp_path() -> anyhow::Result<tempfile::TempPath> {
+    // The legacy prefix is retained so existing diagnostics and cleanup guidance stay valid.
     Ok(tempfile::Builder::new()
         .prefix("oswispa_recording_")
         .suffix(".wav")

@@ -350,7 +350,7 @@ mod tests {
     #[test]
     #[ignore] // Requires Wayland session
     fn test_clipboard_roundtrip() {
-        let test_text = "Hello from OSWispa test!";
+        let test_text = "Hello from MorpheOS Voice test!";
         copy_to_clipboard(test_text).unwrap();
         let retrieved = get_from_clipboard().unwrap();
         assert_eq!(test_text, retrieved);

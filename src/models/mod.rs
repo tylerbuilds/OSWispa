@@ -187,7 +187,7 @@ fn is_supported_model_path(path: &Path) -> bool {
     matches!(ext, "bin" | "gguf")
 }
 
-/// Import a local model file into OSWispa's managed model directory.
+/// Import a local model file into MorpheOS Voice's managed model directory.
 pub fn import_model_from_path(source: &Path) -> Result<PathBuf> {
     if !source.exists() {
         anyhow::bail!("Model file does not exist: {:?}", source);

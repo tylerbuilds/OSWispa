@@ -6,7 +6,7 @@ use crossbeam_channel::{bounded, unbounded, Receiver, Sender, TrySendError};
 use serde::{Deserialize, Serialize};
 use std::thread::JoinHandle;
 
-/// Commands accepted by a running OSWispa engine.
+/// Commands accepted by a running MorpheOS Voice engine.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum EngineCommand {
@@ -62,7 +62,7 @@ pub enum EngineEvent {
 /// Compatibility services started alongside the engine runtime.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EngineOptions {
-    /// Start OSWispa's existing platform tray implementation.
+    /// Start MorpheOS Voice's existing platform tray implementation.
     pub launch_tray: bool,
     /// Start the existing Unix-socket shortcut bridge where supported.
     pub launch_ipc: bool,
@@ -102,7 +102,7 @@ pub struct EngineHandle {
 }
 
 impl EngineHandle {
-    /// Start the complete OSWispa runtime on a named worker thread.
+    /// Start the complete MorpheOS Voice runtime on a named worker thread.
     pub fn start(options: EngineOptions) -> Result<Self> {
         Self::spawn_worker(move |command_rx, event_tx| {
             crate::runtime::run_engine(options, command_rx, event_tx)
@@ -127,7 +127,7 @@ impl EngineHandle {
                 let _ = terminal_event_tx.send(EngineEvent::PhaseChanged(EnginePhase::Stopped));
                 result
             })
-            .context("Failed to start the OSWispa engine thread")?;
+            .context("Failed to start the MorpheOS Voice engine thread")?;
 
         Ok(Self {
             command_tx,
@@ -145,9 +145,11 @@ impl EngineHandle {
     pub fn command(&self, command: EngineCommand) -> Result<()> {
         match self.command_tx.try_send(command) {
             Ok(()) => Ok(()),
-            Err(TrySendError::Full(_)) => Err(anyhow!("OSWispa engine command queue is full")),
+            Err(TrySendError::Full(_)) => {
+                Err(anyhow!("MorpheOS Voice engine command queue is full"))
+            }
             Err(TrySendError::Disconnected(_)) => {
-                Err(anyhow!("OSWispa engine is not accepting commands"))
+                Err(anyhow!("MorpheOS Voice engine is not accepting commands"))
             }
         }
     }
@@ -188,7 +190,7 @@ impl EngineHandle {
         };
         worker
             .join()
-            .map_err(|_| anyhow!("OSWispa engine thread panicked"))?
+            .map_err(|_| anyhow!("MorpheOS Voice engine thread panicked"))?
     }
 }
 

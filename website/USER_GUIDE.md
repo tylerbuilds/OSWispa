@@ -1,83 +1,95 @@
-# OSWispa User Guide
+# MorpheOS Voice user guide
 
-OSWispa is built for short dictation bursts, not hour-long live captioning. Hold the hotkey, speak, release, and it inserts the transcript into the active app.
+MorpheOS Voice is for short dictation: hold a shortcut, speak, release and put the completed text into the application you are already using. It is not a meeting recorder or live-captioning service.
 
-## How recording works
+## First dictation
 
-1. Press and hold your hotkey. The default is **Ctrl + Super**.
-2. Speak naturally.
-3. Release the hotkey.
+1. Install the package for your operating system.
+2. Complete the first-run device check and local model download.
+3. Grant the requested platform permissions.
+4. Focus a normal text field.
+5. Hold the shortcut, speak a short phrase and release the keys.
+6. Wait for the inserted or copied status.
 
-OSWispa transcribes locally by default, inserts the text into the focused app, and also copies the transcript to the clipboard.
+Default shortcuts:
 
-On Windows the default shortcut is **Ctrl + Windows**. Keep the OSWispa console window open while dictating.
+- Linux: **Ctrl + Super**
+- macOS: **Ctrl + Cmd**
+- Windows: **Ctrl + Windows**
 
-## What happens on first launch
+The transcript is copied to the clipboard before supported auto-insertion. If insertion is blocked by the focused application or operating-system permissions, paste the clipboard contents manually.
 
-OSWispa now runs a short device test before it downloads a model. It looks at:
-- whether the current app build can use Metal, CUDA, HIPBLAS, or CPU only
-- available memory
-- a small local CPU speed probe
+## Understand the states
 
-Then it picks a model that tries to stay responsive instead of chasing the biggest model.
+- **Ready** — waiting for the shortcut.
+- **Arming** — starting the microphone capture path.
+- **Listening** — the audio backend has confirmed capture.
+- **Processing** — recording has stopped and transcription is running.
+- **Delivering** — the completed text is being copied and inserted.
+- **Inserted** — clipboard delivery and automatic insertion succeeded.
+- **Copied** — text is on the clipboard but automatic insertion did not complete.
+- **Failed / Needs attention** — the current step did not complete; follow the displayed recovery action.
 
-## What model you should expect
+Press **Escape** while recording to cancel. A very quick shortcut tap is also treated as a cancellation rather than useful speech.
 
-- Older Intel Macs and other CPU-only machines usually get `base.en`. Expect fast short dictation, but names, accents, and noisy rooms will be less reliable.
-- Faster CPU-only desktops and Intel workstations may get `small.en`. Expect better wording than `base.en`, but still slower than a GPU-backed setup.
-- Apple Silicon Macs with lighter memory budgets usually land on `small.en`. This is the safe choice for keeping the Mac responsive.
-- Apple Silicon Macs with more unified memory can move up to `medium.en`.
-- High-headroom GPU systems can use `distil-large-v3` for the best English speed/accuracy balance.
-- `large-v3` is accuracy-first, not speed-first. It is not the default auto-pick.
+## Local and remote processing
 
-## What “fast” actually means
+### Local — processed on this computer
 
-- `base.en`: best for quick replies, messages, and short prompts
-- `small.en`: still practical for day-to-day dictation, but a little heavier
-- `medium.en`: better accuracy, but you should expect more delay on CPU-only systems
-- `distil-large-v3`: strong English dictation on capable hardware
-- `large-v3`: use it when accuracy matters more than latency
+Local mode is the default. MorpheOS Voice records to an owner-only temporary WAV, transcribes it with the selected local Whisper.cpp model, then deletes the WAV on success, cancellation and handled failure paths. The first model download needs a network connection; local dictation can work offline after that.
 
-## Tips for better results
+### Remote — sent to the selected provider for processing
 
-- Speak in short phrases if you are on a CPU-only machine.
-- Use a quiet room if you want better punctuation and fewer word misses.
-- If a model makes your machine feel heavy, step down one size.
-- If you care about speed more than absolute accuracy, do not force `large-v3`.
+Remote mode is optional. It sends the WAV and configured request fields to the OpenAI-compatible endpoint you choose. That provider can receive and retain the request under its own terms. Personal dictionary entries are not sent as a remote vocabulary prompt.
 
-## Settings on Linux
+See [Privacy](../PRIVACY.md) and the [voice data-flow map](../docs/privacy/VOICE_DATA_FLOW.md).
 
-The current graphical settings and tray are Linux-only. Right-click the OSWispa icon in the Linux tray to:
-- change the hotkey
-- choose a Linux PipeWire/PulseAudio microphone source, or leave it blank to follow the system default
-- choose or import a different model
-- enable or disable audio feedback
-- enable or disable automatic text insertion
-- manage local personal dictionary entries on Linux
-- configure the optional remote backend
+## First-launch model choice
 
-The macOS and Windows alpha packages do not have a tray or graphical settings yet. They use configuration files in each operating system's application configuration directory; do not assume the Linux `~/.config/oswispa/` path applies to them.
+The first-run check looks at:
 
-## Personal dictionary
+- whether the current build can use Metal, CUDA, HIPBLAS or CPU only;
+- available memory; and
+- a short local CPU sample.
 
-Use the personal dictionary for names, product terms, and phrases that Whisper repeatedly spells the
-wrong way. Linux users can open **Settings → Dictionary** to add, edit, enable, disable, delete,
-import, or export entries. Changes made in Settings apply immediately.
+It then favours a model that should remain responsive rather than choosing the largest model automatically. Start with that choice. Move up for accuracy or down for responsiveness only after trying real dictation.
 
-OSWispa applies enabled entries literally before spoken punctuation. Replacements run once, so the
-written result of one entry cannot trigger another entry. Longer phrases win when entries overlap,
-and matching does not replace text inside a larger word.
+Typical choices:
 
-macOS and Windows do not yet have a native dictionary editor. Edit `personalisation.json` in the
-OSWispa data directory, then restart OSWispa. The document format is:
+- `base.en` — fast English replies and prompts on modest hardware;
+- `small.en` — stronger English accuracy with moderate memory use;
+- `medium.en` — a heavier English option for capable computers;
+- `distil-large-v3` — high-end English speed/accuracy balance; and
+- `large-v3` — multilingual and accuracy-first, with the highest local resource cost in the curated list.
+
+Model size does not guarantee a specific speed or accuracy. Audio quality, accent, language, hardware and backend all matter. See the [model guide](models.html).
+
+## Settings and personal vocabulary
+
+The current tray and graphical settings are Linux-only. Open the MorpheOS Voice tray menu to:
+
+- change the shortcut;
+- choose a Linux PipeWire/PulseAudio microphone source or follow the system default;
+- choose or import a model;
+- enable or disable audio feedback and auto-insertion;
+- manage local personal-vocabulary entries; and
+- configure the optional remote backend.
+
+The macOS and Windows alpha packages do not yet have a complete native settings interface. They use the legacy configuration file in each operating system's application configuration directory.
+
+Use the personal vocabulary for names and phrases that transcription repeatedly spells incorrectly. Linux users can add, edit, enable, disable, delete, import and export entries through **Settings → Dictionary**. Changes apply immediately.
+
+MorpheOS Voice applies enabled replacements literally before spoken punctuation. Longer phrases win when entries overlap, replacements do not cascade and matching does not replace text inside a larger word.
+
+macOS and Windows users can edit `personalisation.json` in the established application-data directory, then restart the app:
 
 ```json
 {
   "schema_version": 1,
   "dictionary": [
     {
-      "spoken": "os whisper",
-      "written": "OSWispa",
+      "spoken": "morph e os voice",
+      "written": "MorpheOS Voice",
       "enabled": true,
       "case_sensitive": false
     }
@@ -85,28 +97,47 @@ OSWispa data directory, then restart OSWispa. The document format is:
 }
 ```
 
-The dictionary stays local, does not observe other applications, and is not sent to a configured
-remote transcription backend. If the document is invalid, OSWispa preserves it, disables the
-dictionary for that run, and continues normal dictation.
+The dictionary stays local, does not monitor other applications and is not sent to the optional remote backend. If the document is invalid, MorpheOS Voice preserves it, disables the dictionary for that run and continues normal dictation.
 
-## Linux microphone troubleshooting
+## Platform notes
 
-If OSWispa inserts `[BLANK_AUDIO]` or reports no speech, confirm which input PipeWire/PulseAudio is using:
+### Linux
+
+The global shortcut reads Linux input devices directly. If the installer added you to the `input` group, log out and back in. Wayland insertion normally uses the `ydotoold` user service.
+
+```bash
+systemctl --user status oswispa
+systemctl --user status ydotoold
+```
+
+If transcription returns `[BLANK_AUDIO]` or reports no speech, confirm the PipeWire/PulseAudio source:
 
 ```bash
 pactl get-default-source
 pactl list short sources
 ```
 
-Set the working microphone system-wide with `pactl set-default-source SOURCE_NAME`, or copy the source name into **Settings → General → Linux microphone source** to override it only for OSWispa.
+Set the working source system-wide with `pactl set-default-source SOURCE_NAME`, or choose a source in **Settings → General → Linux microphone source**.
 
-For reliable login startup, use the installed user service:
+### macOS
 
-```bash
-systemctl --user enable --now oswispa
-systemctl --user status oswispa
-```
+The current package is unsigned and unnotarised. It launches through Terminal, which must stay open, and needs:
 
-## Windows microphone troubleshooting
+1. **Microphone** access for audio capture.
+2. **Accessibility** access for the global shortcut and text insertion.
 
-If recording does not start, open **Settings > Privacy & security > Microphone** and enable microphone access for desktop apps. The unsigned alpha may also require **More info > Run anyway** at the first SmartScreen prompt.
+If the existing published app is still named OSWispa, grant permission to that compatibility bundle rather than creating a second data location.
+
+### Windows
+
+Extract the complete ZIP, run `oswispa.exe` and keep the console window open. Enable microphone access for desktop applications under **Settings → Privacy & security → Microphone**. The unsigned alpha may require a reviewed **More info → Run anyway** SmartScreen override.
+
+## Recovery and limits
+
+- Completed text is copied to the clipboard and may also be present in bounded local history.
+- A failed insertion should leave the completed text available to paste manually.
+- Audio being captured at the moment of a process or operating-system crash is not recoverable.
+- The app does not automatically learn from corrections.
+- The app does not execute actions or control the computer beyond inserting the text it produced.
+
+If a failure repeats, follow [Support](../SUPPORT.md) and remove private content before sharing diagnostics.

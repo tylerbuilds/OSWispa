@@ -5,7 +5,7 @@ APP_CONTENTS="$(cd "$(dirname "$0")/.." && pwd)"
 BIN_PATH="$APP_CONTENTS/Resources/bin/oswispa"
 
 if [ ! -x "$BIN_PATH" ]; then
-  /usr/bin/osascript -e 'display alert "OSWispa is incomplete" message "The bundled OSWispa binary could not be found." as critical'
+  /usr/bin/osascript -e 'display alert "MorpheOS Voice is incomplete" message "The bundled compatibility binary could not be found." as critical'
   exit 1
 fi
 

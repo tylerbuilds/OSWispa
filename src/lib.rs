@@ -1,4 +1,4 @@
-//! Reusable OSWispa dictation engine and compatibility CLI entry points.
+//! Reusable MorpheOS Voice dictation engine and compatibility CLI entry points.
 
 mod audio;
 pub mod engine;
@@ -30,6 +30,12 @@ pub use runtime::{
 pub(crate) use runtime::{format_hotkey, AppEvent, AppState, RecordCommand, StreamingAudioMessage};
 pub use state::{AppPhase, DeliveryOutcome};
 
+/// Public product identity. Installed `oswispa` identifiers remain as compatibility contracts.
+pub const PRODUCT_NAME: &str = "MorpheOS Voice";
+pub const COMPANY_NAME: &str = "MorpheOS";
+pub const CANONICAL_PRODUCT_URL: &str = "https://morpheos.net/voice";
+pub const LEGACY_CLI_NAME: &str = "oswispa";
+
 /// Run the existing command-line application contract.
 ///
 /// Desktop shells should start [`EngineHandle`] directly instead of invoking
@@ -42,7 +48,7 @@ pub fn run_cli() -> Result<()> {
         warn!("Logging subscriber was already initialised: {}", error);
     }
 
-    info!("Starting OSWispa - Voice to Text");
+    info!("Starting {} - Voice Typing", PRODUCT_NAME);
 
     if std::env::args_os()
         .skip(1)
@@ -52,4 +58,21 @@ pub fn run_cli() -> Result<()> {
     }
 
     EngineHandle::start(EngineOptions::default())?.wait()
+}
+
+#[cfg(test)]
+mod brand_contract_tests {
+    use super::*;
+
+    #[test]
+    fn public_identity_is_morpheos_voice() {
+        assert_eq!(PRODUCT_NAME, "MorpheOS Voice");
+        assert_eq!(COMPANY_NAME, "MorpheOS");
+        assert_eq!(CANONICAL_PRODUCT_URL, "https://morpheos.net/voice");
+    }
+
+    #[test]
+    fn transition_release_retains_legacy_cli_contract() {
+        assert_eq!(LEGACY_CLI_NAME, "oswispa");
+    }
 }

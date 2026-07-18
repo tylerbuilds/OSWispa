@@ -1,4 +1,4 @@
-//! Thin, transcript-free desktop boundary around the reusable OSWispa engine.
+//! Thin, transcript-free desktop boundary around the reusable MorpheOS Voice engine.
 
 use oswispa::{DeliveryOutcome, EnginePhase};
 use serde::Serialize;
@@ -116,7 +116,7 @@ mod desktop {
         let thread_app = app.clone();
         let thread_state = Arc::clone(&shared);
         let spawn_result = std::thread::Builder::new()
-            .name("oswispa-shell-engine".to_string())
+            .name("morpheos-voice-shell-engine".to_string())
             .spawn(
                 move || match EngineHandle::start(EngineOptions::embedded()) {
                     Ok(engine) => {
@@ -188,7 +188,7 @@ mod desktop {
     }
 
     fn build_tray(app: &AppHandle, shared: Arc<ShellState>) -> tauri::Result<()> {
-        let open = MenuItem::with_id(app, MENU_OPEN, "Open OSWispa", true, None::<&str>)?;
+        let open = MenuItem::with_id(app, MENU_OPEN, "Open MorpheOS Voice", true, None::<&str>)?;
         let history = MenuItem::with_id(app, MENU_HISTORY, "History", true, None::<&str>)?;
         let signal = MenuItem::with_id(app, MENU_SIGNAL, "Show Signal", true, None::<&str>)?;
         let start = MenuItem::with_id(app, MENU_START, "Start", true, None::<&str>)?;
@@ -203,7 +203,7 @@ mod desktop {
         TrayIconBuilder::with_id("oswispa")
             .icon(signal_icon())
             .icon_as_template(cfg!(target_os = "macos"))
-            .tooltip("OSWispa — local voice to text")
+            .tooltip("MorpheOS Voice — voice typing")
             .menu(&menu)
             .on_menu_event(move |app, event| match event.id().as_ref() {
                 MENU_OPEN => {
@@ -249,14 +249,24 @@ mod desktop {
 
         for y in 0..SIZE {
             for x in 0..SIZE {
-                let dx = x as i32 - 15;
-                let dy = y as i32 - 15;
-                let distance = dx * dx + dy * dy;
-                let ring = (150..=210).contains(&distance) || (52..=86).contains(&distance);
-                let compass = dx.abs() + dy.abs() <= 4;
-                if ring || compass {
+                let left_stem = (3..=5).contains(&x) && (7..=24).contains(&y);
+                let right_stem = (14..=16).contains(&x) && (7..=24).contains(&y);
+                let diagonal_offset = y.saturating_sub(7) / 2;
+                let left_diagonal = (7..=15).contains(&y)
+                    && (5 + diagonal_offset..=6 + diagonal_offset).contains(&x);
+                let right_diagonal = (7..=15).contains(&y)
+                    && (13_usize.saturating_sub(diagonal_offset)
+                        ..=14_usize.saturating_sub(diagonal_offset))
+                        .contains(&x);
+                let voice_bar = ((20..=21).contains(&x) && (11..=20).contains(&y))
+                    || ((24..=25).contains(&x) && (7..=24).contains(&y))
+                    || ((28..=29).contains(&x) && (13..=18).contains(&y));
+                let cursor = (19..=30).contains(&x) && (26..=27).contains(&y);
+
+                if left_stem || right_stem || left_diagonal || right_diagonal || voice_bar || cursor
+                {
                     let offset = (y * SIZE + x) * 4;
-                    rgba[offset..offset + 4].copy_from_slice(&[119, 227, 181, 255]);
+                    rgba[offset..offset + 4].copy_from_slice(&[185, 242, 124, 255]);
                 }
             }
         }

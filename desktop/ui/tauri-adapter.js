@@ -1,7 +1,7 @@
 (function installTauriLifecycleAdapter(global) {
   "use strict";
 
-  const bridge = global.OSWispaDesktopBridge;
+  const bridge = global.MorpheOSVoiceDesktopBridge;
   const tauriEvents = global.__TAURI__?.event;
   if (!bridge || typeof tauriEvents?.listen !== "function") return;
 

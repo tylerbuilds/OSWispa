@@ -1,6 +1,6 @@
 //! First-run setup wizard — automatic hardware probing and model download.
 //!
-//! When OSWispa launches for the first time (no model found), this module
+//! When MorpheOS Voice launches for the first time (no model found), this module
 //! runs a short local device probe, chooses a sensible default model, and
 //! downloads it automatically. Manual selection is still available via an
 //! environment override for power users.
@@ -438,7 +438,7 @@ fn manual_selection_requested() -> bool {
 pub fn run_first_time_setup() -> Result<PathBuf> {
     eprintln!();
     eprintln!("  ┌─────────────────────────────────────┐");
-    eprintln!("  │     OSWispa — First-Time Setup      │");
+    eprintln!("  │  MorpheOS Voice — First-Time Setup  │");
     eprintln!("  └─────────────────────────────────────┘");
     eprintln!();
 
@@ -506,6 +506,7 @@ pub fn run_first_time_setup() -> Result<PathBuf> {
             eprintln!("        {}", chosen.reason);
         }
         eprintln!("  Set OSWISPA_SETUP_MANUAL=1 if you want to override this choice.");
+        eprintln!("  (The OSWISPA_ name is retained for compatibility.)");
     }
     eprintln!();
     eprintln!("  Downloading {}...", chosen.model.name);
@@ -516,7 +517,7 @@ pub fn run_first_time_setup() -> Result<PathBuf> {
 
     eprintln!();
     eprintln!("  ✓ Model installed successfully.");
-    eprintln!("  ✓ OSWispa is ready — starting up...");
+    eprintln!("  ✓ MorpheOS Voice is ready — starting up...");
     eprintln!();
 
     Ok(path)

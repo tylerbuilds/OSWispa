@@ -1,4 +1,4 @@
-name: Deploy Website
+name: Deploy MorpheOS Voice Website
 
 on:
   push:

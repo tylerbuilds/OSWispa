@@ -11,7 +11,7 @@ use std::sync::{Arc, Mutex, RwLock};
 use tracing::info;
 
 /// System tray icon and menu
-struct OswispaTray {
+struct MorpheosVoiceTray {
     event_tx: Sender<AppEvent>,
     state: Arc<Mutex<AppState>>,
     config: Arc<RwLock<Config>>,
@@ -19,17 +19,17 @@ struct OswispaTray {
 
 fn phase_title(phase: &AppPhase) -> &'static str {
     match phase {
-        AppPhase::Booting => "OSWispa [STARTING]",
-        AppPhase::Ready => "OSWispa",
-        AppPhase::Arming => "OSWispa [STARTING MICROPHONE]",
-        AppPhase::Listening { .. } => "OSWispa [LISTENING]",
-        AppPhase::Processing => "OSWispa [PROCESSING]",
-        AppPhase::Delivering => "OSWispa [DELIVERING]",
-        AppPhase::Delivered(DeliveryOutcome::Inserted) => "OSWispa [INSERTED]",
-        AppPhase::Delivered(DeliveryOutcome::CopiedOnly) => "OSWispa [COPIED]",
-        AppPhase::Delivered(DeliveryOutcome::Failed) => "OSWispa [DELIVERY FAILED]",
-        AppPhase::Cancelled => "OSWispa [CANCELLED]",
-        AppPhase::NeedsAttention => "OSWispa [NEEDS ATTENTION]",
+        AppPhase::Booting => "MorpheOS Voice [STARTING]",
+        AppPhase::Ready => "MorpheOS Voice",
+        AppPhase::Arming => "MorpheOS Voice [STARTING MICROPHONE]",
+        AppPhase::Listening { .. } => "MorpheOS Voice [LISTENING]",
+        AppPhase::Processing => "MorpheOS Voice [PROCESSING]",
+        AppPhase::Delivering => "MorpheOS Voice [DELIVERING]",
+        AppPhase::Delivered(DeliveryOutcome::Inserted) => "MorpheOS Voice [INSERTED]",
+        AppPhase::Delivered(DeliveryOutcome::CopiedOnly) => "MorpheOS Voice [COPIED]",
+        AppPhase::Delivered(DeliveryOutcome::Failed) => "MorpheOS Voice [DELIVERY FAILED]",
+        AppPhase::Cancelled => "MorpheOS Voice [CANCELLED]",
+        AppPhase::NeedsAttention => "MorpheOS Voice [NEEDS ATTENTION]",
     }
 }
 
@@ -49,7 +49,7 @@ fn phase_icon(phase: &AppPhase) -> &'static str {
 
 fn phase_description(phase: &AppPhase, hotkey: &str) -> String {
     match phase {
-        AppPhase::Booting => "Starting OSWispa…".to_string(),
+        AppPhase::Booting => "Starting MorpheOS Voice…".to_string(),
         AppPhase::Ready => format!("Ready — hold {} to record", hotkey),
         AppPhase::Arming => "Starting microphone…".to_string(),
         AppPhase::Listening { .. } => {
@@ -64,11 +64,13 @@ fn phase_description(phase: &AppPhase, hotkey: &str) -> String {
         AppPhase::Delivered(DeliveryOutcome::CopiedOnly) => "Text copied to clipboard".to_string(),
         AppPhase::Delivered(DeliveryOutcome::Failed) => "Text delivery failed".to_string(),
         AppPhase::Cancelled => format!("Cancelled — hold {} to try again", hotkey),
-        AppPhase::NeedsAttention => "OSWispa needs attention — check the logs".to_string(),
+        AppPhase::NeedsAttention => {
+            "MorpheOS Voice needs attention — open Settings or check the logs".to_string()
+        }
     }
 }
 
-impl Tray for OswispaTray {
+impl Tray for MorpheosVoiceTray {
     fn id(&self) -> String {
         "oswispa".to_string()
     }
@@ -92,7 +94,7 @@ impl Tray for OswispaTray {
         ToolTip {
             icon_name: icon.to_string(),
             icon_pixmap: Vec::new(),
-            title: "OSWispa - Voice to Text".to_string(),
+            title: "MorpheOS Voice — Voice typing".to_string(),
             description: status,
         }
     }
@@ -162,7 +164,7 @@ impl Tray for OswispaTray {
                 label: "Help".to_string(),
                 activate: Box::new(|_| {
                     let _ = std::process::Command::new("xdg-open")
-                        .arg("https://github.com/tylerbuilds/OSWispa")
+                        .arg(crate::CANONICAL_PRODUCT_URL)
                         .spawn();
                 }),
                 ..Default::default()
@@ -191,7 +193,7 @@ pub fn run_tray(
 ) -> Result<()> {
     info!("Starting system tray indicator...");
 
-    let tray = OswispaTray {
+    let tray = MorpheosVoiceTray {
         event_tx,
         state,
         config,

@@ -100,7 +100,7 @@ pub(super) fn create_personalisation_tab(state: Arc<RwLock<Personalisation>>) ->
     let status_for_import = status.clone();
     import.connect_clicked(move |_| {
         let chooser = FileChooserNative::new(
-            Some("Import OSWispa Dictionary"),
+            Some("Import MorpheOS Voice dictionary"),
             None::<&gtk4::Window>,
             FileChooserAction::Open,
             Some("Import"),
@@ -135,12 +135,14 @@ pub(super) fn create_personalisation_tab(state: Arc<RwLock<Personalisation>>) ->
     let status_for_export = status.clone();
     export.connect_clicked(move |_| {
         let chooser = FileChooserNative::new(
-            Some("Export OSWispa Dictionary"),
+            Some("Export MorpheOS Voice dictionary"),
             None::<&gtk4::Window>,
             FileChooserAction::Save,
             Some("Export"),
             Some("Cancel"),
         );
+        // Retain the legacy export filename for compatibility with existing
+        // documentation and user backups during the transition release.
         chooser.set_current_name("oswispa-personalisation.json");
         let state = state_for_export.clone();
         let status = status_for_export.clone();

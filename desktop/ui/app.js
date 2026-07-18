@@ -1,7 +1,7 @@
 (function runDesktopFoundation(global) {
   "use strict";
 
-  const bridge = global.OSWispaDesktopBridge;
+  const bridge = global.MorpheOSVoiceDesktopBridge;
   if (!bridge) return;
 
   if (document.documentElement.dataset.bridge === "development") {
@@ -18,7 +18,7 @@
     inserted: Object.freeze({ label: "Inserted", detail: "Text reached the focused app", receipt: "Verified" }),
     copied: Object.freeze({ label: "Copied", detail: "Paste manually when ready", receipt: "Fallback" }),
     cancelled: Object.freeze({ label: "Cancelled", detail: "No text was delivered", receipt: "Local" }),
-    needs_attention: Object.freeze({ label: "Needs attention", detail: "Open OSWispa for the recovery step", receipt: "Check" }),
+    needs_attention: Object.freeze({ label: "Needs attention", detail: "Open MorpheOS Voice for the recovery step", receipt: "Check" }),
   });
 
   function setView(viewId, options = {}) {
