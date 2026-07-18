@@ -15,6 +15,9 @@ pub(crate) fn private_recording_temp_path() -> anyhow::Result<tempfile::TempPath
         .into_temp_path())
 }
 
+#[cfg(any(target_os = "macos", test))]
+mod conversion;
+
 #[cfg(target_os = "linux")]
 mod linux;
 
