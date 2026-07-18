@@ -1,10 +1,10 @@
 //! Audio recording integration.
 
-#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
 use crate::{AppEvent, RecordCommand};
-#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
 use crossbeam_channel::{Receiver, Sender};
-#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
 use std::path::PathBuf;
 
 pub(crate) fn private_recording_temp_path() -> anyhow::Result<tempfile::TempPath> {
@@ -27,7 +27,33 @@ mod macos;
 #[cfg(target_os = "macos")]
 pub use macos::audio_worker;
 
-#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+#[cfg(target_os = "windows")]
+mod windows;
+
+#[cfg(target_os = "windows")]
+pub use windows::audio_worker;
+
+#[cfg(target_os = "linux")]
+pub fn backend_name() -> &'static str {
+    "linux-arecord"
+}
+
+#[cfg(target_os = "macos")]
+pub fn backend_name() -> &'static str {
+    "macos-coreaudio-cpal"
+}
+
+#[cfg(target_os = "windows")]
+pub fn backend_name() -> &'static str {
+    "windows-wasapi-cpal"
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+pub fn backend_name() -> &'static str {
+    "unsupported"
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
 pub fn audio_worker(
     record_rx: Receiver<RecordCommand>,
     audio_tx: Sender<Option<PathBuf>>,
