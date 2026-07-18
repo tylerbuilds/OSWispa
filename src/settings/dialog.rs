@@ -1,9 +1,11 @@
 //! GTK4 Settings Dialog Implementation
 //!
-//! Full settings UI with tabs for General, Hotkey, Models, and Backend
+//! Full settings UI with tabs for General, Hotkey, Models, Dictionary, and Backend
 //! configuration.
 
 use crate::models::{self, ModelBenchmark, ModelInfo, AVAILABLE_MODELS};
+use crate::personalisation::Personalisation;
+use crate::settings::personalisation::create_personalisation_tab;
 use crate::{
     clear_remote_api_key, get_remote_api_key, save_config, set_remote_api_key, AppEvent, Config,
     HotkeyConfig, TranscriptionBackend,
@@ -21,8 +23,13 @@ use std::sync::{Arc, RwLock};
 use tracing::{error, info, warn};
 
 /// Show the settings dialog
-pub fn show_settings_dialog(config: &Arc<RwLock<Config>>, event_tx: Sender<AppEvent>) {
+pub fn show_settings_dialog(
+    config: &Arc<RwLock<Config>>,
+    personalisation: &Arc<RwLock<Personalisation>>,
+    event_tx: Sender<AppEvent>,
+) {
     let config = config.clone();
+    let personalisation = personalisation.clone();
     let event_tx = event_tx.clone();
 
     std::thread::spawn(move || {
@@ -36,10 +43,17 @@ pub fn show_settings_dialog(config: &Arc<RwLock<Config>>, event_tx: Sender<AppEv
             .build();
 
         let config_state = config.clone();
+        let personalisation_state = personalisation.clone();
         let event_tx_clone = event_tx.clone();
         app.connect_activate(move |app| {
             let snapshot = config_state.read().unwrap().clone();
-            build_settings_window(app, &snapshot, config_state.clone(), event_tx_clone.clone());
+            build_settings_window(
+                app,
+                &snapshot,
+                config_state.clone(),
+                personalisation_state.clone(),
+                event_tx_clone.clone(),
+            );
         });
 
         app.run_with_args::<String>(&[]);
@@ -50,13 +64,14 @@ fn build_settings_window(
     app: &Application,
     config: &Config,
     config_state: Arc<RwLock<Config>>,
+    personalisation_state: Arc<RwLock<Personalisation>>,
     event_tx: Sender<AppEvent>,
 ) {
     let window = ApplicationWindow::builder()
         .application(app)
         .title("OSWispa Settings")
-        .default_width(640)
-        .default_height(540)
+        .default_width(760)
+        .default_height(600)
         .build();
 
     let notebook = Notebook::new();
@@ -72,6 +87,10 @@ fn build_settings_window(
     notebook.append_page(
         &create_models_tab(config, config_state.clone(), event_tx.clone()),
         Some(&Label::new(Some("Models"))),
+    );
+    notebook.append_page(
+        &create_personalisation_tab(personalisation_state),
+        Some(&Label::new(Some("Dictionary"))),
     );
     notebook.append_page(
         &create_backend_tab(config, config_state, event_tx.clone()),

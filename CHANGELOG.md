@@ -6,7 +6,15 @@ This changelog is reconstructed from Git history, tags, GitHub Releases, merged 
 
 ## Unreleased
 
-No changes yet.
+### Added
+
+- Added a deterministic, user-curated personal dictionary with literal longest-first phrase replacement and a bounded local Whisper vocabulary prompt.
+- Added a Linux Settings tab for adding, editing, enabling, disabling, deleting, importing, and exporting dictionary entries.
+
+### Security
+
+- Stored personalisation in a versioned private file with bounded input, control-character and duplicate rejection, symlink-safe canonical persistence, and no app monitoring or automatic learning.
+- Kept dictionary entries local even when the optional remote transcription backend is enabled.
 
 ## 0.4.2 - 2026-07-18
 

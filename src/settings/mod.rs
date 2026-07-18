@@ -4,6 +4,8 @@
 
 #[cfg(feature = "gui")]
 mod dialog;
+#[cfg(feature = "gui")]
+mod personalisation;
 
 #[cfg(feature = "gui")]
 pub use dialog::*;
@@ -11,6 +13,7 @@ pub use dialog::*;
 #[cfg(not(feature = "gui"))]
 pub fn show_settings_dialog(
     _config: &std::sync::Arc<std::sync::RwLock<crate::Config>>,
+    _personalisation: &std::sync::Arc<std::sync::RwLock<crate::personalisation::Personalisation>>,
     _event_tx: crossbeam_channel::Sender<crate::AppEvent>,
 ) {
     tracing::warn!(

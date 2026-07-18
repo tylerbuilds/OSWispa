@@ -6,7 +6,10 @@ OSWispa is local-first. With the default local backend, microphone audio and tra
 
 - Microphone audio is written to an owner-only temporary WAV file, processed, and deleted after transcription. Incomplete recordings are deleted automatically.
 - Clipboard history is stored in the OSWispa data directory. Configuration, history, and stored API keys use owner-only permissions on Unix systems.
+- Explicit personal dictionary entries are stored in a versioned, owner-only `personalisation.json` file on Unix systems. They are applied locally and are never learned by observing text, edits, keystrokes, or foreground applications.
 - Whisper models are stored locally and are not uploaded by OSWispa.
+
+Enabled preferred spellings are supplied only to the local Whisper model as a bounded vocabulary prompt. OSWispa does not send the personal dictionary or its entries to the optional remote transcription endpoint.
 
 ## Optional remote transcription
 

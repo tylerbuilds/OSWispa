@@ -7,7 +7,9 @@
 //! - Automatic fallback to smaller model when VRAM is constrained
 //! - CPU fallback when GPU is unavailable
 
-use crate::{AppEvent, Config, StreamingAudioMessage, TranscriptionBackend};
+use crate::{
+    personalisation::Personalisation, AppEvent, Config, StreamingAudioMessage, TranscriptionBackend,
+};
 use anyhow::Result;
 use crossbeam_channel::{select, Receiver, Sender};
 use reqwest::blocking::{multipart, Client};
@@ -119,6 +121,7 @@ pub fn transcription_worker(
     stream_rx: Receiver<StreamingAudioMessage>,
     event_tx: Sender<AppEvent>,
     config: Arc<RwLock<Config>>,
+    personalisation: Arc<RwLock<Personalisation>>,
 ) {
     info!("Transcription worker started (lazy initialization mode)");
 
@@ -152,7 +155,16 @@ pub fn transcription_worker(
                             continue;
                         }
 
-                        match transcribe_stream_chunk(&samples, &current_config, &mut context_cache) {
+                        let vocabulary_prompt = personalisation
+                            .read()
+                            .ok()
+                            .and_then(|dictionary| dictionary.vocabulary_prompt());
+                        match transcribe_stream_chunk(
+                            &samples,
+                            &current_config,
+                            &mut context_cache,
+                            vocabulary_prompt.as_deref(),
+                        ) {
                             Ok(text) => {
                                 let text = text.trim();
                                 if !text.is_empty() && !is_garbage_output(text) {
@@ -195,15 +207,25 @@ pub fn transcription_worker(
                 };
 
                 info!("Processing audio file: {:?}", audio_path);
+                let vocabulary_prompt = personalisation
+                    .read()
+                    .ok()
+                    .and_then(|dictionary| dictionary.vocabulary_prompt());
 
                 let result = match current_config.backend {
                     TranscriptionBackend::Local => {
-                        transcribe_with_fallback(&audio_path, &current_config, &mut context_cache)
+                        transcribe_with_fallback(
+                            &audio_path,
+                            &current_config,
+                            &mut context_cache,
+                            vocabulary_prompt.as_deref(),
+                        )
                     }
                     TranscriptionBackend::Remote => transcribe_remote_with_local_fallback(
                         &audio_path,
                         &current_config,
                         &mut context_cache,
+                        vocabulary_prompt.as_deref(),
                     ),
                 };
 
@@ -305,6 +327,7 @@ fn transcribe_remote_with_local_fallback(
     audio_path: &PathBuf,
     config: &Config,
     context_cache: &mut ContextCache,
+    vocabulary_prompt: Option<&str>,
 ) -> Result<String> {
     match transcribe_with_remote_backend(audio_path, config) {
         Ok(text) => Ok(text),
@@ -319,7 +342,7 @@ fn transcribe_remote_with_local_fallback(
                     .unwrap_or(false)
             {
                 warn!("Falling back to local transcription backend");
-                transcribe_with_fallback(audio_path, config, context_cache)
+                transcribe_with_fallback(audio_path, config, context_cache, vocabulary_prompt)
             } else {
                 Err(anyhow::anyhow!(
                     "Remote transcription failed and no local model is available: {}",
@@ -447,6 +470,7 @@ fn transcribe_with_fallback(
     audio_path: &PathBuf,
     config: &Config,
     context_cache: &mut ContextCache,
+    vocabulary_prompt: Option<&str>,
 ) -> Result<String> {
     let primary_model = &config.model_path;
     let fallback_model = config.fallback_model_path.as_ref();
@@ -465,7 +489,14 @@ fn transcribe_with_fallback(
         // Enough VRAM - try primary model on GPU
         info!("Sufficient VRAM available, attempting GPU transcription with primary model");
 
-        match transcribe_with_model(audio_path, primary_model, config, true, context_cache) {
+        match transcribe_with_model(
+            audio_path,
+            primary_model,
+            config,
+            true,
+            context_cache,
+            vocabulary_prompt,
+        ) {
             Ok(text) if !is_garbage_output(text.trim()) => {
                 return Ok(text);
             }
@@ -493,7 +524,14 @@ fn transcribe_with_fallback(
     if let Some(fallback) = fallback_model {
         if fallback.exists() {
             info!("Trying fallback model on CPU: {:?}", fallback);
-            match transcribe_with_model(audio_path, fallback, config, false, context_cache) {
+            match transcribe_with_model(
+                audio_path,
+                fallback,
+                config,
+                false,
+                context_cache,
+                vocabulary_prompt,
+            ) {
                 Ok(text) if !is_garbage_output(text.trim()) => {
                     return Ok(text);
                 }
@@ -512,7 +550,14 @@ fn transcribe_with_fallback(
         "Trying primary model on CPU (last resort): {:?}",
         primary_model
     );
-    transcribe_with_model(audio_path, primary_model, config, false, context_cache)
+    transcribe_with_model(
+        audio_path,
+        primary_model,
+        config,
+        false,
+        context_cache,
+        vocabulary_prompt,
+    )
 }
 
 fn prewarm_active_local_context(config: &Config, context_cache: &mut ContextCache) {
@@ -538,9 +583,10 @@ fn transcribe_with_model(
     config: &Config,
     use_gpu: bool,
     context_cache: &mut ContextCache,
+    vocabulary_prompt: Option<&str>,
 ) -> Result<String> {
     let ctx = context_cache.get_or_create(model_path, use_gpu)?;
-    transcribe_audio(ctx, audio_path, config)
+    transcribe_audio(ctx, audio_path, config, vocabulary_prompt)
 }
 
 /// Get available VRAM in bytes by querying the GPU.
@@ -646,6 +692,7 @@ fn transcribe_stream_chunk(
     samples: &[f32],
     config: &Config,
     context_cache: &mut ContextCache,
+    vocabulary_prompt: Option<&str>,
 ) -> Result<String> {
     if samples.is_empty() {
         return Ok(String::new());
@@ -674,6 +721,7 @@ fn transcribe_stream_chunk(
         config,
         (num_cpus::get() / 2).max(1) as i32,
         true,
+        vocabulary_prompt,
     )
 }
 
@@ -701,7 +749,12 @@ fn can_run_model_on_gpu(model_path: &Path, available_vram: u64) -> bool {
 }
 
 /// Transcribe a single audio file
-fn transcribe_audio(ctx: &WhisperContext, audio_path: &PathBuf, config: &Config) -> Result<String> {
+fn transcribe_audio(
+    ctx: &WhisperContext,
+    audio_path: &PathBuf,
+    config: &Config,
+    vocabulary_prompt: Option<&str>,
+) -> Result<String> {
     // Load audio file
     let samples = load_wav_samples(audio_path)?;
 
@@ -711,7 +764,14 @@ fn transcribe_audio(ctx: &WhisperContext, audio_path: &PathBuf, config: &Config)
         samples.len() as f32 / 16000.0
     );
 
-    transcribe_samples(ctx, &samples, config, num_cpus::get() as i32, false)
+    transcribe_samples(
+        ctx,
+        &samples,
+        config,
+        num_cpus::get() as i32,
+        false,
+        vocabulary_prompt,
+    )
 }
 
 fn transcribe_samples(
@@ -720,6 +780,7 @@ fn transcribe_samples(
     config: &Config,
     n_threads: i32,
     single_segment: bool,
+    vocabulary_prompt: Option<&str>,
 ) -> Result<String> {
     // Create whisper state
     let mut state = ctx.create_state()?;
@@ -738,6 +799,9 @@ fn transcribe_samples(
     };
     params.set_language(language);
     params.set_translate(config.translate_to_english);
+    if let Some(prompt) = vocabulary_prompt {
+        params.set_initial_prompt(prompt);
+    }
 
     info!(
         "Transcribing with language: {:?}, translate: {}",
