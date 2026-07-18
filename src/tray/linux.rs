@@ -2,17 +2,18 @@
 //!
 //! Uses ksni for system tray indicator (works with GNOME's AppIndicator extension)
 
-use crate::{AppEvent, AppState, ClipboardEntry};
+use crate::{AppEvent, AppState, Config};
 use anyhow::Result;
 use crossbeam_channel::Sender;
 use ksni::{menu::*, ToolTip, Tray, TrayService};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 use tracing::info;
 
 /// System tray icon and menu
 struct OswispaTray {
     event_tx: Sender<AppEvent>,
     state: Arc<Mutex<AppState>>,
+    config: Arc<RwLock<Config>>,
 }
 
 impl Tray for OswispaTray {
@@ -42,20 +43,24 @@ impl Tray for OswispaTray {
 
     fn tool_tip(&self) -> ToolTip {
         let state = self.state.lock().unwrap();
+        let hotkey = crate::format_hotkey(&self.config.read().unwrap().hotkey);
         let (status, icon) = if state.is_recording {
             (
-                "RECORDING - Release Ctrl+Super to transcribe, ESC to cancel",
+                format!(
+                    "RECORDING - Release {} to transcribe, ESC to cancel",
+                    hotkey
+                ),
                 "audio-input-microphone-high",
             )
         } else {
-            ("Ready - Hold Ctrl+Super to record", "face-smile")
+            (format!("Ready - Hold {} to record", hotkey), "face-smile")
         };
 
         ToolTip {
             icon_name: icon.to_string(),
             icon_pixmap: Vec::new(),
             title: "OSWispa - Voice to Text".to_string(),
-            description: status.to_string(),
+            description: status,
         }
     }
 
@@ -80,9 +85,7 @@ impl Tray for OswispaTray {
             MenuItem::Separator,
             StandardItem {
                 label: format!("Clipboard History ({} items)", history_count),
-                activate: Box::new(|tray: &mut Self| {
-                    let _ = tray.event_tx.send(AppEvent::ShowHistory);
-                }),
+                enabled: false,
                 ..Default::default()
             }
             .into(),
@@ -153,10 +156,18 @@ impl Tray for OswispaTray {
 }
 
 /// Run the system tray
-pub fn run_tray(event_tx: Sender<AppEvent>, state: Arc<Mutex<AppState>>) -> Result<()> {
+pub fn run_tray(
+    event_tx: Sender<AppEvent>,
+    state: Arc<Mutex<AppState>>,
+    config: Arc<RwLock<Config>>,
+) -> Result<()> {
     info!("Starting system tray indicator...");
 
-    let tray = OswispaTray { event_tx, state };
+    let tray = OswispaTray {
+        event_tx,
+        state,
+        config,
+    };
 
     let service = TrayService::new(tray);
 
@@ -175,12 +186,4 @@ pub fn run_tray(event_tx: Sender<AppEvent>, state: Arc<Mutex<AppState>>) -> Resu
             Err(anyhow::anyhow!("Tray service failed: {}", e))
         }
     }
-}
-
-/// GTK4 Clipboard History Window (optional, for ShowHistory event)
-#[allow(dead_code)]
-pub fn show_history_window(history: &[ClipboardEntry]) {
-    // This would require GTK4 initialization
-    // For now, we show history in the tray menu
-    info!("History window requested with {} items", history.len());
 }

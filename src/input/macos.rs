@@ -37,16 +37,21 @@ pub fn copy_to_clipboard_verified(text: &str) -> Result<()> {
                 return Ok(());
             }
             debug!(
-                "Clipboard mismatch: got '{}', expected '{}'",
-                contents.chars().take(30).collect::<String>(),
-                text.chars().take(30).collect::<String>()
+                "Clipboard mismatch (got {} chars, expected {} chars)",
+                contents.chars().count(),
+                text.chars().count()
             );
         }
     }
 
     // Fall back to pbcopy if arboard verification fails
     warn!("arboard verification failed, trying pbcopy fallback");
-    copy_via_pbcopy(text)
+    copy_via_pbcopy(text)?;
+    let contents = read_via_pbpaste()?;
+    if contents.trim() != text.trim() {
+        anyhow::bail!("pbcopy fallback did not update the clipboard");
+    }
+    Ok(())
 }
 
 /// Paste text by typing it via enigo, falling back to Cmd+V keystroke.
@@ -114,6 +119,16 @@ fn copy_via_pbcopy(text: &str) -> Result<()> {
 
     debug!("Text copied via pbcopy");
     Ok(())
+}
+
+fn read_via_pbpaste() -> Result<String> {
+    let output = Command::new("pbpaste")
+        .output()
+        .context("Failed to run pbpaste")?;
+    if !output.status.success() {
+        anyhow::bail!("pbpaste failed");
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).to_string())
 }
 
 /// Get text from clipboard.

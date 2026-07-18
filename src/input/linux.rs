@@ -328,6 +328,27 @@ fn read_clipboard_cmd() -> Result<String> {
     Ok(String::from_utf8_lossy(&output.stdout).to_string())
 }
 
+fn read_x11_clipboard_xclip() -> Result<String> {
+    let output = Command::new("xclip")
+        .args(["-selection", "clipboard", "-out"])
+        .output()
+        .context("Failed to read X11 clipboard with xclip")?;
+
+    if !output.status.success() {
+        anyhow::bail!("xclip clipboard read failed");
+    }
+
+    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
+fn read_clipboard_for_session() -> Result<String> {
+    match session_kind() {
+        SessionKind::Wayland => read_clipboard_cmd().or_else(|_| get_from_clipboard()),
+        SessionKind::X11 => read_x11_clipboard_xclip(),
+        SessionKind::Unknown => get_from_clipboard().or_else(|_| read_x11_clipboard_xclip()),
+    }
+}
+
 /// Copy text to clipboard and verify it actually landed before returning.
 /// Retries up to 5 times with 100ms sleeps to handle the race between
 /// wl-copy establishing clipboard ownership and wl-paste reading it back.
@@ -337,23 +358,21 @@ pub fn copy_to_clipboard_verified(text: &str) -> Result<()> {
     for attempt in 0..5 {
         std::thread::sleep(std::time::Duration::from_millis(100));
 
-        if let Ok(contents) = read_clipboard_cmd() {
+        if let Ok(contents) = read_clipboard_for_session() {
             if contents.trim() == text.trim() {
                 debug!("Clipboard verified on attempt {}", attempt + 1);
                 return Ok(());
             }
             debug!(
-                "Clipboard mismatch attempt {}: got '{}', expected '{}'",
+                "Clipboard mismatch on attempt {} (got {} chars, expected {} chars)",
                 attempt + 1,
-                contents.chars().take(30).collect::<String>(),
-                text.chars().take(30).collect::<String>()
+                contents.chars().count(),
+                text.chars().count()
             );
         }
     }
 
-    // Even if verification fails, the copy may have worked — don't error out.
-    warn!("Clipboard verification timed out, proceeding anyway");
-    Ok(())
+    anyhow::bail!("Clipboard verification timed out after 5 attempts")
 }
 
 /// Get text from clipboard (Wayland only).

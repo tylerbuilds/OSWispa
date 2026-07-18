@@ -5,7 +5,7 @@
 
 use crate::models::{self, ModelBenchmark, ModelInfo, AVAILABLE_MODELS};
 use crate::{
-    clear_remote_api_key, get_config_dir, get_remote_api_key, set_remote_api_key, AppEvent, Config,
+    clear_remote_api_key, get_remote_api_key, save_config, set_remote_api_key, AppEvent, Config,
     HotkeyConfig, TranscriptionBackend,
 };
 use crossbeam_channel::Sender;
@@ -919,14 +919,4 @@ fn format_hotkey(hotkey: &HotkeyConfig) -> String {
     } else {
         parts.join(" + ")
     }
-}
-
-/// Save configuration to disk
-fn save_config(config: &Config) -> anyhow::Result<()> {
-    let config_path = get_config_dir().join("config.json");
-    std::fs::create_dir_all(get_config_dir())?;
-    let json = serde_json::to_string_pretty(config)?;
-    std::fs::write(&config_path, json)?;
-    info!("Configuration saved to {:?}", config_path);
-    Ok(())
 }
