@@ -60,3 +60,56 @@ async function hydrateLatestReleaseTag() {
 
 hydrateLatestReleaseTag();
 
+function detectPlatform() {
+  const platform = (
+    navigator.userAgentData?.platform
+    || navigator.platform
+    || navigator.userAgent
+    || ""
+  ).toLowerCase();
+
+  if (platform.includes("win")) return "windows";
+  if (platform.includes("mac")) return "macos";
+  if (platform.includes("linux") || platform.includes("x11")) return "linux";
+  return "other";
+}
+
+function personalisePlatformControls() {
+  const platform = detectPlatform();
+  const download = {
+    windows: {
+      label: "Download Windows alpha",
+      href: "https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa-windows-x86_64.zip",
+    },
+    macos: {
+      label: "Choose a macOS download",
+      href: "#downloads",
+    },
+    linux: {
+      label: "Choose a Linux download",
+      href: "#downloads",
+    },
+    other: {
+      label: "View all downloads",
+      href: "https://github.com/tylerbuilds/OSWispa/releases/latest",
+    },
+  }[platform];
+
+  document.querySelectorAll("[data-platform-download]").forEach((node) => {
+    node.textContent = download.label;
+    node.setAttribute("href", download.href);
+  });
+
+  const hotkey = {
+    windows: "Ctrl + Windows",
+    macos: "Ctrl + Cmd",
+    linux: "Ctrl + Super",
+    other: "Ctrl + Super",
+  }[platform];
+
+  document.querySelectorAll("[data-platform-hotkey]").forEach((node) => {
+    node.textContent = hotkey;
+  });
+}
+
+personalisePlatformControls();

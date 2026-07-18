@@ -45,15 +45,17 @@ Then it picks a model that tries to stay responsive instead of chasing the bigge
 - If a model makes your machine feel heavy, step down one size.
 - If you care about speed more than absolute accuracy, do not force `large-v3`.
 
-## Settings
+## Settings on Linux
 
-Right-click the OSWispa icon in the tray to:
+The current graphical settings and tray are Linux-only. Right-click the OSWispa icon in the Linux tray to:
 - change the hotkey
 - choose a Linux PipeWire/PulseAudio microphone source, or leave it blank to follow the system default
 - choose or import a different model
 - enable or disable audio feedback
 - enable or disable automatic text insertion
 - configure the optional remote backend
+
+The macOS and Windows alpha packages do not have a tray or graphical settings yet. They use configuration files in each operating system's application configuration directory; do not assume the Linux `~/.config/oswispa/` path applies to them.
 
 ## Linux microphone troubleshooting
 
