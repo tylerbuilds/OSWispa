@@ -6,7 +6,7 @@ Security fixes target the current `master` branch and the latest GitHub release.
 
 ## Reporting a vulnerability
 
-Please report suspected vulnerabilities privately to [tc@tylerbuilds.com](mailto:tc@tylerbuilds.com). Include:
+Please use [GitHub private vulnerability reporting](https://github.com/tylerbuilds/OSWispa/security/advisories/new) or email [tc@tylerbuilds.com](mailto:tc@tylerbuilds.com). Include:
 
 - the affected version or commit;
 - platform and installation method;

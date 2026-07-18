@@ -15,6 +15,7 @@ These changes are on `master` after v0.4.1 and are not yet in a tagged release.
 - Made microphone recordings owner-only temporary files that are automatically deleted on failed or cancelled paths.
 - Restricted remote endpoints to HTTPS unless insecure HTTP is explicitly enabled, and capped remote responses at 2 MiB.
 - Moved fallback IPC into an owner-only directory, made socket permissions fail closed, and bounded IPC commands.
+- Enabled GitHub vulnerability alerts, automated security-update pull requests, private vulnerability reporting, secret scanning, push protection, and pinned Rust CodeQL analysis.
 
 ### Fixed
 
