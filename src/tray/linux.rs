@@ -2,6 +2,7 @@
 //!
 //! Uses ksni for system tray indicator (works with GNOME's AppIndicator extension)
 
+use crate::state::{AppPhase, DeliveryOutcome};
 use crate::{AppEvent, AppState, Config};
 use anyhow::Result;
 use crossbeam_channel::Sender;
@@ -16,6 +17,57 @@ struct OswispaTray {
     config: Arc<RwLock<Config>>,
 }
 
+fn phase_title(phase: &AppPhase) -> &'static str {
+    match phase {
+        AppPhase::Booting => "OSWispa [STARTING]",
+        AppPhase::Ready => "OSWispa",
+        AppPhase::Arming => "OSWispa [STARTING MICROPHONE]",
+        AppPhase::Listening { .. } => "OSWispa [LISTENING]",
+        AppPhase::Processing => "OSWispa [PROCESSING]",
+        AppPhase::Delivering => "OSWispa [DELIVERING]",
+        AppPhase::Delivered(DeliveryOutcome::Inserted) => "OSWispa [INSERTED]",
+        AppPhase::Delivered(DeliveryOutcome::CopiedOnly) => "OSWispa [COPIED]",
+        AppPhase::Delivered(DeliveryOutcome::Failed) => "OSWispa [DELIVERY FAILED]",
+        AppPhase::Cancelled => "OSWispa [CANCELLED]",
+        AppPhase::NeedsAttention => "OSWispa [NEEDS ATTENTION]",
+    }
+}
+
+fn phase_icon(phase: &AppPhase) -> &'static str {
+    match phase {
+        AppPhase::Booting | AppPhase::Processing => "process-working",
+        AppPhase::Ready => "face-smile",
+        AppPhase::Arming => "audio-input-microphone-low",
+        AppPhase::Listening { .. } => "audio-input-microphone-high",
+        AppPhase::Delivering => "edit-paste",
+        AppPhase::Delivered(DeliveryOutcome::Inserted) => "emblem-ok",
+        AppPhase::Delivered(DeliveryOutcome::CopiedOnly) => "edit-copy",
+        AppPhase::Delivered(DeliveryOutcome::Failed) | AppPhase::NeedsAttention => "dialog-error",
+        AppPhase::Cancelled => "process-stop",
+    }
+}
+
+fn phase_description(phase: &AppPhase, hotkey: &str) -> String {
+    match phase {
+        AppPhase::Booting => "Starting OSWispa…".to_string(),
+        AppPhase::Ready => format!("Ready — hold {} to record", hotkey),
+        AppPhase::Arming => "Starting microphone…".to_string(),
+        AppPhase::Listening { .. } => {
+            format!(
+                "Listening — release {} to transcribe, Esc to cancel",
+                hotkey
+            )
+        }
+        AppPhase::Processing => "Turning speech into text…".to_string(),
+        AppPhase::Delivering => "Delivering text…".to_string(),
+        AppPhase::Delivered(DeliveryOutcome::Inserted) => "Text inserted".to_string(),
+        AppPhase::Delivered(DeliveryOutcome::CopiedOnly) => "Text copied to clipboard".to_string(),
+        AppPhase::Delivered(DeliveryOutcome::Failed) => "Text delivery failed".to_string(),
+        AppPhase::Cancelled => format!("Cancelled — hold {} to try again", hotkey),
+        AppPhase::NeedsAttention => "OSWispa needs attention — check the logs".to_string(),
+    }
+}
+
 impl Tray for OswispaTray {
     fn id(&self) -> String {
         "oswispa".to_string()
@@ -23,38 +75,19 @@ impl Tray for OswispaTray {
 
     fn title(&self) -> String {
         let state = self.state.lock().unwrap();
-        if state.is_recording {
-            "OSWispa [RECORDING]".to_string()
-        } else {
-            "OSWispa".to_string()
-        }
+        phase_title(&state.phase).to_string()
     }
 
     fn icon_name(&self) -> String {
         let state = self.state.lock().unwrap();
-        if state.is_recording {
-            // Mic icon when recording
-            "audio-input-microphone-high".to_string()
-        } else {
-            // Smiley face when idle
-            "face-smile".to_string()
-        }
+        phase_icon(&state.phase).to_string()
     }
 
     fn tool_tip(&self) -> ToolTip {
         let state = self.state.lock().unwrap();
         let hotkey = crate::format_hotkey(&self.config.read().unwrap().hotkey);
-        let (status, icon) = if state.is_recording {
-            (
-                format!(
-                    "RECORDING - Release {} to transcribe, ESC to cancel",
-                    hotkey
-                ),
-                "audio-input-microphone-high",
-            )
-        } else {
-            (format!("Ready - Hold {} to record", hotkey), "face-smile")
-        };
+        let status = phase_description(&state.phase, &hotkey);
+        let icon = phase_icon(&state.phase);
 
         ToolTip {
             icon_name: icon.to_string(),
@@ -67,13 +100,8 @@ impl Tray for OswispaTray {
     fn menu(&self) -> Vec<MenuItem<Self>> {
         let state = self.state.lock().unwrap();
         let history_count = state.clipboard_history.len();
-        let is_recording = state.is_recording;
-
-        let status_label = if is_recording {
-            ">> RECORDING... (ESC to cancel)".to_string()
-        } else {
-            "OSWispa - Voice to Text".to_string()
-        };
+        let hotkey = crate::format_hotkey(&self.config.read().unwrap().hotkey);
+        let status_label = phase_description(&state.phase, &hotkey);
 
         let mut menu = vec![
             StandardItem {
@@ -185,5 +213,39 @@ pub fn run_tray(
             );
             Err(anyhow::anyhow!("Tray service failed: {}", e))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tray_copy_distinguishes_listening_processing_and_delivery() {
+        let listening = AppPhase::Listening {
+            device_name: "Private device name".to_string(),
+        };
+        assert!(phase_description(&listening, "Ctrl+Super").starts_with("Listening"));
+        assert_eq!(
+            phase_description(&AppPhase::Processing, "Ctrl+Super"),
+            "Turning speech into text…"
+        );
+        assert_eq!(
+            phase_description(
+                &AppPhase::Delivered(DeliveryOutcome::CopiedOnly),
+                "Ctrl+Super"
+            ),
+            "Text copied to clipboard"
+        );
+    }
+
+    #[test]
+    fn tray_status_never_exposes_device_name() {
+        let private_device = "Tyler's private studio microphone";
+        let phase = AppPhase::Listening {
+            device_name: private_device.to_string(),
+        };
+        assert!(!phase_title(&phase).contains(private_device));
+        assert!(!phase_description(&phase, "Ctrl+Super").contains(private_device));
     }
 }

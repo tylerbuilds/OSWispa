@@ -45,7 +45,7 @@ pub fn audio_worker(
 
                 _recording_thread = Some(std::thread::spawn(move || {
                     info!("AudioWorker: Starting cpal recording session");
-                    let result = run_cpal_session(&recording_clone);
+                    let result = run_cpal_session(&recording_clone, &status_tx_clone);
 
                     match result {
                         Ok(path) => {
@@ -87,13 +87,16 @@ pub fn audio_worker(
 }
 
 /// Record audio from the default input device using cpal.
-fn run_cpal_session(recording: &Arc<AtomicBool>) -> Result<PathBuf> {
+fn run_cpal_session(recording: &Arc<AtomicBool>, status_tx: &Sender<AppEvent>) -> Result<PathBuf> {
     let host = cpal::default_host();
     let device = host
         .default_input_device()
         .context("No input device available")?;
 
-    info!("Using input device: {}", device.name().unwrap_or_default());
+    let device_name = device
+        .name()
+        .unwrap_or_else(|_| "System default microphone".to_string());
+    info!("Using input device: {}", device_name);
 
     // Verify the device supports our desired config. CoreAudio can often
     // resample transparently, but we check to give a clear error if not.
@@ -163,6 +166,7 @@ fn run_cpal_session(recording: &Arc<AtomicBool>) -> Result<PathBuf> {
 
     stream.play().context("Failed to start audio stream")?;
     info!("Recording started via cpal");
+    let _ = status_tx.send(AppEvent::CaptureStarted { device_name });
 
     // Wait until recording flag is cleared
     while recording.load(Ordering::SeqCst) && !err_flag.load(Ordering::SeqCst) {
