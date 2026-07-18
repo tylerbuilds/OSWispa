@@ -7,10 +7,10 @@ This guide is for maintainers and contributors preparing to launch or mirror OSW
 1. **Pull request**: Merge the release changes only after Linux, macOS, and Windows CI is green.
 2. **Versioning**: Update `Cargo.toml`, refresh `Cargo.lock`, and move the relevant `CHANGELOG.md` entries out of Unreleased.
 3. **Source commit**: Confirm the release commit is on `master` and the working tree is clean.
-4. **Tag**: Create and push `vX.Y.Z`, exactly matching the Cargo package version. The workflow rejects tags that do not match or are not contained in `master`.
+4. **Tag**: Create and push `vX.Y.Z`, exactly matching the Cargo package version, from the current `master` tip. The workflow rejects tags that do not match or point anywhere other than the current `master` commit.
 5. **Assets**: Confirm the release contains the Linux tarball, Debian package, RPM package, both macOS ZIP/DMG pairs, the Windows x86-64 ZIP, and `SHA256SUMS`.
 6. **VM package gate**: Mount and install both macOS DMGs and extract the Windows ZIP on clean hosted VMs. Execute the packaged launcher and require the version, platform, WAV contract, clipboard round-trip, and native backend checks to pass.
-7. **Public-download gate**: After publication, dispatch `Public Release Smoke` with the new tag. It downloads the public assets, verifies `SHA256SUMS`, reinstalls them on clean macOS and Windows VMs, and reruns the package checks.
+7. **Public-download gate**: After publication, dispatch `Public Release Smoke` with the new tag. It downloads the public assets, verifies `SHA256SUMS`, reinstalls the Debian package, RPM, Linux tarball, both macOS DMGs, and Windows ZIP on clean hosted runners, then reruns the package checks.
 8. **Hardware boundary**: VM automation does not prove microphone permission prompts, physical hotkeys, focus-sensitive auto-paste, or GPU acceleration. Record those separately whenever suitable hardware is available; never describe them as covered by the VM gate.
 
 ## Multi-Platform Roadmap
