@@ -75,6 +75,7 @@ jobs:
       - name: Dependency audit
         run: |
           cargo install cargo-audit --version 0.22.2 --locked
+          # Accepted transitive-only risks are documented in docs/AUDIT-2026-07-18.md.
           cargo audit \
             --ignore RUSTSEC-2026-0194 \
             --ignore RUSTSEC-2026-0195

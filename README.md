@@ -4,15 +4,19 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform: Linux & macOS](https://img.shields.io/badge/Platform-Linux%20%26%20macOS-green.svg)](#)
-[![Status: Release Ready](https://img.shields.io/badge/Status-Release--Ready-blue.svg)](#)
+[![Status: Alpha](https://img.shields.io/badge/Status-Alpha-orange.svg)](#)
 
 A privacy-focused, local-first voice transcription tool powered by [Whisper.cpp](https://github.com/ggerganov/whisper.cpp). Hold a hotkey, speak, release - your words appear instantly.
+
+[Privacy](PRIVACY.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md) · [July 2026 audit](docs/AUDIT-2026-07-18.md)
 
 ---
 
 ## 🚧 Project Status & Transparency
 
 **Current State:** v0.4.1 (Alpha)
+
+The downloadable release remains v0.4.1. Security and reliability fixes merged afterwards are listed under [Unreleased](CHANGELOG.md#unreleased) and are not in release binaries until a new tag is published.
 
 | Platform | Status | Notes |
 |----------|--------|-------|
@@ -26,6 +30,7 @@ A privacy-focused, local-first voice transcription tool powered by [Whisper.cpp]
 2.  **Auto-Paste (Linux)**: Uses `ydotool` to simulate typing. The source installer enables its user service.
 3.  **Global Hotkeys (Linux)**: Reads `/dev/input` directly, requires `input` group membership.
 4.  **Global Hotkeys (macOS)**: Requires Accessibility permission in System Settings.
+5.  **macOS Packaging**: The current app bundle is not signed or notarised.
 
 ---
 
@@ -55,7 +60,9 @@ If you can help, please fork the repo and submit a PR! See [CONTRIBUTING.md](CON
 
 ## 🚀 Installation (Linux)
 
-### Option A (Recommended): Install the `.deb`
+### Option A: Install the `.deb`
+
+The v0.4.1 Linux artefacts require GLIBC 2.39. On Ubuntu 22.04 or Debian 12, use the source installer below until the next release; future Linux releases are built on Ubuntu 22.04 for a lower compatibility floor.
 
 1. Download the latest `amd64` `.deb` from GitHub Releases.
 2. Install it with `apt` (preferred, pulls dependencies):
@@ -68,7 +75,17 @@ oswispa
 
 > **Note:** The `.deb` ships a CPU-only binary. For GPU acceleration, build from source (see below).
 
-### Option B: Build From Source (with GPU auto-detection)
+### Option B: Install the `.rpm`
+
+```bash
+curl -LO https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa_x86_64.rpm
+sudo dnf install ./oswispa_x86_64.rpm
+oswispa
+```
+
+Starting with the next release, the release page also includes `SHA256SUMS` covering every downloadable asset.
+
+### Option C (Recommended for GPU builds): Build From Source
 
 The install script automatically detects your GPU and builds with the right features.
 
@@ -147,7 +164,7 @@ OSWispa needs two permissions on macOS:
 ## 🛠️ Manual Installation (Other Distros/OS)
 
 ### 1. Prerequisites (All Platforms)
-*   [Rust](https://rustup.rs/) (1.70+)
+*   Current stable [Rust](https://rustup.rs/)
 *   CMake 3.16+
 *   `libssl-dev`, `pkg-config`, `libasound2-dev` (Linux)
 
@@ -223,6 +240,7 @@ OSWispa is local-first by default, but you can optionally route transcription to
 - Use an HTTPS endpoint (HTTP is blocked unless explicitly allowed).
 - Store API tokens via Settings (saved to a local `0600` secret file) or set an env var (e.g. `OSWISPA_REMOTE_API_KEY`).
 - If remote transcription fails and local models exist, OSWispa falls back to local automatically.
+- Remote mode sends recorded audio to the configured service; review its privacy and retention policy first.
 
 ---
 
