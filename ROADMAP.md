@@ -1,71 +1,47 @@
 # OSWispa Roadmap
 
-OSWispa is a local-first, privacy-first voice dictation app inspired by Wispr Flow: push-to-talk, fast transcription, and frictionless text insertion.
+OSWispa is local-first voice-to-cursor dictation, built for the sentence, not the meeting.
 
-This roadmap is intentionally versioned and biased toward shipping real artifacts people can install and run without building from source.
+**Speak. Release. Keep writing.**
 
-## v0.3.0 (Released) - Standalone Linux Desktop App
+This roadmap separates what people can download today from the proof still required before the next product layer ships.
 
-Goal: "Download -> install/run -> dictate" on Ubuntu/Debian.
+## Released foundation — v0.4.2
 
-Deliverables:
-- Publish an `amd64` `.deb` on GitHub Releases.
-- Keep the existing `amd64` `.tar.gz` as a fallback portable artifact.
-- Install a desktop entry + icon so OSWispa shows up in the app launcher.
-- Install `oswispa` and `oswispa-toggle` to the PATH.
-- Update docs (README + website) to point to the latest release and recommend the `.deb`.
+The [v0.4.2 release](https://github.com/tylerbuilds/OSWispa/releases/tag/v0.4.2) is the current public alpha.
 
-Engineering notes:
-- Package using `cargo-deb` to keep packaging maintainable.
-- Keep Linux-first behavior unchanged.
-- Add buildability guardrails so `cargo check --no-default-features` works on macOS and Windows (prep work for v0.4.0/v0.5.0).
+- Linux ships as a Debian package, RPM, and portable tarball, with a desktop entry, configurable push-to-talk, local Whisper, and clipboard/text delivery.
+- macOS ships Intel and Apple Silicon DMG/ZIP packages with CoreAudio capture, global hotkeys, clipboard insertion, and optional Metal on Apple Silicon. The current package launches through Terminal and is not signed or notarised.
+- Windows ships an x86-64 portable ZIP with native WASAPI capture, a Ctrl+Windows global hotkey, clipboard verification, and text insertion. The package passed installed-app hosted-VM proof but remains unsigned and has no native tray or installer.
+- Local transcription remains the default, and the remote backend is explicit and opt-in.
 
-Known Linux/Wayland constraints (still true in v0.3.x):
-- Global hotkeys require `/dev/input` access (user must be in the `input` group).
-- Auto-paste uses `ydotoold`/`uinput` and may require extra permissions depending on distro/session.
+## Unreleased product foundation
 
-## v0.3.1 (Patch) - Debian Packaging Fix
+The following work is merged after v0.4.2 and is not part of the current download:
 
-Goal: ensure the Ubuntu/Debian `.deb` installs cleanly by pulling in the required runtime shared libraries.
+- Truthful lifecycle states from capture acknowledgement through delivery outcome.
+- A private deterministic personal dictionary and Linux editor; dictionary contents stay out of the optional remote backend.
+- A reusable, transcript-redacted engine boundary for an embedding desktop host.
+- An original local-only UI contract for Ready Check, Settings, the compact Signal, and bounded recovery history. Its development adapter does not claim native microphone, hotkey, model, or insertion behaviour.
+- Per-session Windows and macOS capture hardening, including streaming macOS anti-alias conversion.
 
-Deliverables:
-- Include Debian auto-dependencies (`$auto`) alongside helper tools (`alsa-utils`, `ydotool`, `netcat-openbsd`).
-- No behavior changes: packaging-only patch.
+Track the merged detail in [Unreleased](CHANGELOG.md#unreleased).
 
-## v0.4.0 - macOS Desktop App
+## Next productisation gates
 
-Goal: a native menu bar app with a configurable global hotkey, microphone capture, and paste into the focused app.
+These gates are ordered. Passing a build or VM smoke test is not a substitute for the native and physical proof below.
 
-Deliverables:
-- Distributable macOS app (`.dmg` or `.zip`) published on GitHub Releases.
-- Global hotkey implementation for macOS with a Settings UI.
-- Audio capture on macOS (CoreAudio via `cpal` or a native implementation).
-- Text insertion via clipboard + Cmd+V (requires Accessibility permissions for key simulation).
-- Keep model management and optional VPS backend behavior consistent with Linux.
+1. **Native shell and onboarding** — host the existing engine behind real Ready Check, Settings, Signal, tray/menu, first-run model, and permission flows while preserving the current CLI as a compatibility path.
+2. **Signing and notarisation** — establish stable application identity, sign Windows and macOS artefacts, notarise macOS packages, and verify permission persistence across upgrades.
+3. **Physical workflow proof** — on supported hardware, exercise microphone permission, rapid press/release hotkeys, cancellation/restart, focused-app insertion, copied-only fallback, and recovery from device or worker failure.
+4. **Installer parity** — retain verified Linux formats, replace the Windows ZIP-only path with a signed installer plus portable option, and prove clean install, upgrade, uninstall, and rollback on each platform.
+5. **Updater** — add update checks and signed update delivery only after stable identity, signed artefacts, installer parity, and rollback proof exist.
 
-Engineering milestones:
-- Introduce a small platform abstraction layer for hotkeys, audio capture, tray/menubar, and text insertion.
-- CI build checks on macOS.
+## Ongoing quality bar
 
-## v0.5.0 - Windows Desktop App
-
-Goal: a tray app with a configurable global hotkey, microphone capture, and paste into the focused app.
-
-Deliverables:
-- Installer (`.msi`/`.exe`) plus a portable `.zip` on GitHub Releases.
-- Global hotkey via Windows APIs.
-- Audio capture via WASAPI (via `cpal` or a native implementation).
-- Text insertion via clipboard + key simulation (SendInput).
-- CI build checks on Windows.
-
-Engineering milestones:
-- Platform abstraction layer completed across Linux/macOS/Windows.
-- Replace Linux-only assumptions in runtime checks and error messages.
-
-## Ongoing Quality Bar
-
-Always true for every release:
-- GitHub Release is the source of truth (assets + changelog).
-- Website links and copy must reference the latest GitHub Release.
-- Local-first and privacy-first defaults (remote/VPS is opt-in).
-
+- A GitHub Release, its checksummed assets, and its changelog are the release source of truth.
+- Website download links and platform copy must match that release, not `master`.
+- Linux, macOS, Windows, CodeQL, package, and public-download checks must pass at the protected release commit.
+- Local-first and privacy-first behaviour remains the default; remote transcription stays explicit and opt-in.
+- Transcript text, microphone audio, clipboard contents, dictionary entries, credentials, and raw remote bodies stay out of routine logs and lifecycle events.
+- Hardware-dependent capabilities are described as proven only when a signed release candidate has a recorded physical test receipt.

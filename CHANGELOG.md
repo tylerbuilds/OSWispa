@@ -1,6 +1,6 @@
 # Changelog
 
-Scope window: project inception on 2025-12-11 through v0.4.2 on 2026-07-18.
+Scope window: project inception on 2025-12-11 through v0.4.2 and the Unreleased work merged on 2026-07-18.
 
 This changelog is reconstructed from Git history, tags, GitHub Releases, merged pull requests, and the current source tree. A tag link is used where no GitHub Release was published.
 
@@ -8,13 +8,27 @@ This changelog is reconstructed from Git history, tags, GitHub Releases, merged 
 
 ### Added
 
-- Added a deterministic, user-curated personal dictionary with literal longest-first phrase replacement and a bounded local Whisper vocabulary prompt.
-- Added a Linux Settings tab for adding, editing, enabling, disabling, deleting, importing, and exporting dictionary entries.
+- Added privacy-safe runtime, installation, and feature-proposal forms, with Q&A and early ideas routed to GitHub Discussions ([PR #33](https://github.com/tylerbuilds/OSWispa/pull/33)).
+- Added a deterministic, user-curated personal dictionary with literal longest-first phrase replacement, a bounded local Whisper vocabulary prompt, and a Linux editor ([PR #38](https://github.com/tylerbuilds/OSWispa/pull/38)).
+- Exposed the existing runtime through a reusable engine library with typed non-blocking commands, transcript-redacted lifecycle events, and joined shutdown ([PR #39](https://github.com/tylerbuilds/OSWispa/pull/39)).
+- Added an original local-only desktop UI foundation for Ready Check, Settings, the compact Signal, and bounded recovery history. This remains a development host contract rather than a native shell ([PR #40](https://github.com/tylerbuilds/OSWispa/pull/40)).
+
+### Changed
+
+- Reworked the public website around OSWispa's own voice-to-cursor story, truthful platform boundaries, local assets, and automated claim/link validation ([PR #35](https://github.com/tylerbuilds/OSWispa/pull/35)).
+- Replaced ambiguous recording notifications with truthful Arming, Listening, Processing, Delivering, Inserted, Copied, and Failed lifecycle states, without transcript previews ([PR #37](https://github.com/tylerbuilds/OSWispa/pull/37)).
+- Required release tags to match the current `master` commit, bounded every workflow job, and expanded installed public-package smoke proof across Linux formats ([PR #36](https://github.com/tylerbuilds/OSWispa/pull/36)).
+
+### Fixed
+
+- Isolated Windows recorder sessions so stop, cancellation, error, panic, and immediate restart paths cannot overlap or leak stale state ([PR #34](https://github.com/tylerbuilds/OSWispa/pull/34)).
+- Hardened macOS CoreAudio capture with per-session cleanup, native sample-format conversion, exact mono 16 kHz output, and streaming anti-alias filtering before downsampling ([PR #41](https://github.com/tylerbuilds/OSWispa/pull/41)).
 
 ### Security
 
 - Stored personalisation in a versioned private file with bounded input, control-character and duplicate rejection, symlink-safe canonical persistence, and no app monitoring or automatic learning.
 - Kept dictionary entries local even when the optional remote transcription backend is enabled.
+- Kept support intake privacy-safe by explicitly excluding transcripts, recordings, keys, clipboard contents, and raw environment or configuration dumps ([PR #33](https://github.com/tylerbuilds/OSWispa/pull/33)).
 
 ## 0.4.2 - 2026-07-18
 
