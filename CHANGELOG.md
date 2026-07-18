@@ -1,12 +1,14 @@
 # Changelog
 
-Scope window: project inception on 2025-12-11 through unreleased `master` on 2026-07-18.
+Scope window: project inception on 2025-12-11 through v0.4.2 on 2026-07-18.
 
 This changelog is reconstructed from Git history, tags, GitHub Releases, merged pull requests, and the current source tree. A tag link is used where no GitHub Release was published.
 
 ## Unreleased
 
-These changes are on `master` after v0.4.1 and are not yet in a tagged release.
+No changes yet.
+
+## 0.4.2 - 2026-07-18
 
 ### Security
 
@@ -29,6 +31,7 @@ These changes are on `master` after v0.4.1 and are not yet in a tagged release.
 - The source installer now downloads models safely, uses the application's real macOS data directory, and delays service startup when a new Linux group login is required.
 - Multi-GPU ROCm builds include every detected architecture, select the largest-VRAM device, and preserve that choice during runtime VRAM checks.
 - RPM runtime requirements and Linux desktop categories now match the application.
+- Windows now has working WASAPI recording, global push-to-talk hotkeys, verified clipboard delivery, and text insertion instead of compile-only stubs.
 
 ### Changed
 
@@ -36,23 +39,28 @@ These changes are on `master` after v0.4.1 and are not yet in a tagged release.
 - Compatible dependency updates repair the audited `anyhow` and `memmap2` versions and move Wayland clipboard support off its future-incompatible release line.
 - CI now enforces formatting, strict Clippy, shell fixtures, package smoke tests, desktop validation, and RustSec auditing.
 - Release automation pins every action, validates tag/version/master ancestry, builds Linux on Ubuntu 22.04, verifies package requirements, and publishes one checksummed asset set.
+- Release candidates now install and execute both macOS DMGs and the Windows ZIP on hosted VMs before artefacts can be published.
 
 ### Documentation
 
 - Added a privacy notice, security reporting policy, and [full July 2026 audit](docs/AUDIT-2026-07-18.md).
-- Clarified v0.4.1 package compatibility, installer service behaviour, model locations, and the boundary between released and unreleased fixes.
+- Clarified package compatibility, installer service behaviour, model locations, and the boundary between released and unreleased fixes.
+- Added a Windows package readme covering microphone permission, first-run setup, SmartScreen, and the default Ctrl+Windows push-to-talk shortcut.
 
 ### Evidence
 
 - Runtime truth and transcript privacy: [PR #17](https://github.com/tylerbuilds/OSWispa/pull/17).
 - Model and source-installer integrity: [PR #18](https://github.com/tylerbuilds/OSWispa/pull/18).
 - Temporary-audio privacy and GPU selection: [PR #19](https://github.com/tylerbuilds/OSWispa/pull/19).
+- CI, package and release hardening: [PR #20](https://github.com/tylerbuilds/OSWispa/pull/20), [PR #26](https://github.com/tylerbuilds/OSWispa/pull/26), and [PR #28](https://github.com/tylerbuilds/OSWispa/pull/28).
+- Windows runtime and installed-package VM gates: [PR #29](https://github.com/tylerbuilds/OSWispa/pull/29) and [release rehearsal 29654348248](https://github.com/tylerbuilds/OSWispa/actions/runs/29654348248).
 
 ## Version Timeline
 
 | Version | Date | Kind | Evidence |
 | --- | --- | --- | --- |
-| Unreleased | 2026-07-18 | Development | [v0.4.1...master](https://github.com/tylerbuilds/OSWispa/compare/v0.4.1...master) |
+| Unreleased | 2026-07-18 | Development | [v0.4.2...master](https://github.com/tylerbuilds/OSWispa/compare/v0.4.2...master) |
+| v0.4.2 | 2026-07-18 | Release | [GitHub Release](https://github.com/tylerbuilds/OSWispa/releases/tag/v0.4.2) |
 | v0.4.1 | 2026-03-13 | Release | [GitHub Release](https://github.com/tylerbuilds/OSWispa/releases/tag/v0.4.1) |
 | v0.4.0 | 2026-02-26 | Release | [GitHub Release](https://github.com/tylerbuilds/OSWispa/releases/tag/v0.4.0) |
 | v0.3.3 | 2026-02-19 | Release | [GitHub Release](https://github.com/tylerbuilds/OSWispa/releases/tag/v0.3.3) |
@@ -133,6 +141,8 @@ These changes are on `master` after v0.4.1 and are not yet in a tagged release.
 - Made Linux microphone discovery and startup reliable, including hot-plug recovery and better device diagnostics.
 - Corrected false-success clipboard behaviour, recording-state recovery, transcript logging, remote response handling, configuration persistence, and IPC permissions.
 - Hardened model acquisition, installer service management, temporary audio lifecycle, multi-GPU runtime selection, dependencies, CI, packaging, and release publication.
+- Replaced the Windows compile-only stubs with native recording, hotkey, clipboard and text-insertion paths, then added a downloadable Windows ZIP.
+- Added installed-app release gates on Apple Silicon macOS, Intel macOS and Windows hosted VMs.
 
 #### Closed workstreams
 
@@ -140,6 +150,8 @@ These changes are on `master` after v0.4.1 and are not yet in a tagged release.
 - Runtime truth and transcript privacy in [PR #17](https://github.com/tylerbuilds/OSWispa/pull/17).
 - Model and installer integrity in [PR #18](https://github.com/tylerbuilds/OSWispa/pull/18).
 - Temporary-audio privacy and GPU correctness in [PR #19](https://github.com/tylerbuilds/OSWispa/pull/19).
+- CI, release and security automation in [PR #20](https://github.com/tylerbuilds/OSWispa/pull/20), [PR #26](https://github.com/tylerbuilds/OSWispa/pull/26), and [PR #28](https://github.com/tylerbuilds/OSWispa/pull/28).
+- Windows runtime and VM-tested desktop packages in [PR #29](https://github.com/tylerbuilds/OSWispa/pull/29).
 
 #### Representative commits
 
@@ -147,6 +159,7 @@ These changes are on `master` after v0.4.1 and are not yet in a tagged release.
 - [Runtime truth and privacy fixes](https://github.com/tylerbuilds/OSWispa/commit/3984a298eafbec12d2e5b33997fe0e6fc18421ac).
 - [Model and source-installer integrity](https://github.com/tylerbuilds/OSWispa/commit/e05d4f1bbbc4e37ccffd899a3a61844d53854dee).
 - [Temporary-audio and GPU selection hardening](https://github.com/tylerbuilds/OSWispa/commit/679f21e4850a94645b4f7a4288d734182e12a99e).
+- [Windows runtime and VM-tested desktop packages](https://github.com/tylerbuilds/OSWispa/commit/32fdfc4665b678dbe29e03f12e880d5f69663aad).
 
 ## Notes for Agents
 

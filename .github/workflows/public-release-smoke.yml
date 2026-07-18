@@ -1,0 +1,116 @@
+name: Public Release Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published release tag to verify (for example v0.4.2)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            asset_arch: arm64
+            rust_arch: aarch64
+          - os: macos-15-intel
+            asset_arch: x86_64
+            rust_arch: x86_64
+    runs-on: ${{ matrix.os }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - name: Download public release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          mkdir -p "$RUNNER_TEMP/download"
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "oswispa-macos-${{ matrix.asset_arch }}.dmg" \
+            --pattern SHA256SUMS \
+            --dir "$RUNNER_TEMP/download"
+
+      - name: Verify checksum, install DMG and run app
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${RELEASE_TAG#v}"
+          asset="oswispa-macos-${{ matrix.asset_arch }}.dmg"
+          cd "$RUNNER_TEMP/download"
+          grep -F "  $asset" SHA256SUMS | shasum -a 256 --check
+
+          mount_point="$RUNNER_TEMP/oswispa-public-dmg"
+          install_root="$RUNNER_TEMP/PublicApplications"
+          mkdir -p "$mount_point" "$install_root"
+          hdiutil attach -nobrowse -readonly -mountpoint "$mount_point" "$asset"
+          trap 'hdiutil detach "$mount_point" >/dev/null 2>&1 || true' EXIT
+          ditto "$mount_point/OSWispa.app" "$install_root/OSWispa.app"
+          hdiutil detach "$mount_point"
+          trap - EXIT
+
+          plist="$install_root/OSWispa.app/Contents/Info.plist"
+          plutil -lint "$plist"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$plist")" = "$version"
+          output="$("$install_root/OSWispa.app/Contents/MacOS/OSWispa" --platform-smoke-test)"
+          printf '%s\n' "$output"
+          grep -Fq "OSWISPA_PLATFORM_SMOKE_OK version=$version os=macos arch=${{ matrix.rust_arch }}" <<<"$output"
+          grep -Fq "audio=macos-coreaudio-cpal hotkey=macos-rdev input=macos-arboard-enigo" <<<"$output"
+
+  smoke-windows:
+    runs-on: windows-2025
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - name: Download public release assets
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          if ($env:RELEASE_TAG -notmatch '^v\d+\.\d+\.\d+$') {
+            throw "Release tag has an invalid format"
+          }
+          $downloadRoot = Join-Path $env:RUNNER_TEMP "download"
+          New-Item -ItemType Directory -Force $downloadRoot | Out-Null
+          gh release download $env:RELEASE_TAG `
+            --repo $env:GITHUB_REPOSITORY `
+            --pattern "oswispa-windows-x86_64.zip" `
+            --pattern "SHA256SUMS" `
+            --dir $downloadRoot
+          if ($LASTEXITCODE -ne 0) { throw "Public Windows release download failed" }
+
+      - name: Verify checksum, install ZIP and run app
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $version = $env:RELEASE_TAG.Substring(1)
+          $downloadRoot = Join-Path $env:RUNNER_TEMP "download"
+          $asset = Join-Path $downloadRoot "oswispa-windows-x86_64.zip"
+          $checksumLine = Get-Content (Join-Path $downloadRoot "SHA256SUMS") |
+            Where-Object { $_ -match '  oswispa-windows-x86_64\.zip$' }
+          if (-not $checksumLine) { throw "Windows asset checksum is missing" }
+          $expectedHash = ($checksumLine -split '\s+')[0].ToUpperInvariant()
+          $actualHash = (Get-FileHash -Algorithm SHA256 $asset).Hash
+          if ($actualHash -ne $expectedHash) { throw "Windows asset checksum mismatch" }
+
+          $installRoot = Join-Path $env:RUNNER_TEMP "PublicPrograms\OSWispa"
+          Expand-Archive $asset -DestinationPath $installRoot -Force
+          $output = & "$installRoot\oswispa.exe" --platform-smoke-test
+          if ($LASTEXITCODE -ne 0) { throw "Public Windows package smoke test failed" }
+          $output | Write-Host
+          $joined = $output -join "`n"
+          if (-not $joined.Contains("OSWISPA_PLATFORM_SMOKE_OK version=$version os=windows arch=x86_64")) {
+            throw "Public Windows package reported the wrong version or platform"
+          }
+          if (-not $joined.Contains("audio=windows-wasapi-cpal hotkey=windows-rdev input=windows-arboard-enigo")) {
+            throw "Public Windows package reported the wrong runtime backends"
+          }
