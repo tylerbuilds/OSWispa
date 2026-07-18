@@ -1,0 +1,124 @@
+name: Installation problem
+description: Report a failure installing, launching, or upgrading an OSWispa package.
+title: "[Install]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for package installation, first launch, upgrade, model setup, and platform-permission failures.
+
+        **Do not include transcript text, audio or video recordings, API keys, configuration files, environment dumps, clipboard contents, secrets, or unreviewed crash/core dumps.** Redact usernames, hostnames, device serials, private paths, and remote endpoint details from any excerpt.
+
+        Report security vulnerabilities through the [private security policy](https://github.com/tylerbuilds/OSWispa/security/policy).
+
+  - type: input
+    id: oswispa_version
+    attributes:
+      label: OSWispa version or release attempted
+      placeholder: v0.4.2
+    validations:
+      required: true
+
+  - type: input
+    id: operating_system
+    attributes:
+      label: Operating system, version, and architecture
+      placeholder: Ubuntu 24.04 x86-64, macOS 15.5 arm64, or Windows 11 24H2 x86-64
+    validations:
+      required: true
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Installation package
+      options:
+        - Debian package (.deb)
+        - RPM package (.rpm)
+        - Linux tarball
+        - macOS Apple Silicon DMG
+        - macOS Apple Silicon ZIP
+        - macOS Intel DMG
+        - macOS Intel ZIP
+        - Windows x86-64 ZIP
+        - Source installer (install.sh)
+        - Manual source build
+    validations:
+      required: true
+
+  - type: dropdown
+    id: failure_stage
+    attributes:
+      label: Failure stage
+      options:
+        - Download or checksum verification
+        - Package installation or extraction
+        - Gatekeeper, SmartScreen, or execution permission
+        - First launch
+        - Microphone or Accessibility permission
+        - Model selection or download
+        - Upgrade from an earlier version
+        - Uninstall
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Include the package filename and the exact stage that fails, but omit private filesystem paths.
+      placeholder: |
+        1. Download the named release asset.
+        2. Install or extract it using the documented method.
+        3. Launch OSWispa.
+        4. Observe the failure.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Describe the visible failure without pasting private data.
+    validations:
+      required: true
+
+  - type: textarea
+    id: safe_error_excerpt
+    attributes:
+      label: Minimal, reviewed error excerpt
+      description: Optional. Paste only the few relevant error lines after reviewing and redacting them. Never paste a complete installer log, environment dump, configuration file, endpoint, token, or secret.
+      placeholder: A short, manually reviewed and redacted error excerpt
+
+  - type: dropdown
+    id: prior_install
+    attributes:
+      label: Previous OSWispa installation
+      options:
+        - Fresh installation
+        - Upgrade from a release package
+        - Upgrade from a source installation
+        - Not sure
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety checks
+      options:
+        - label: I used an official asset or the documented source installation route.
+          required: true
+        - label: I searched existing issues for this problem.
+          required: true
+        - label: I removed transcript text, recordings, API keys, configuration files, environment dumps, clipboard contents, secrets, and other private data.
+          required: true
