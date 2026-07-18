@@ -12,6 +12,7 @@ use anyhow::Result;
 use crossbeam_channel::{select, Receiver, Sender};
 use reqwest::blocking::{multipart, Client};
 use serde_json::Value;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
@@ -22,6 +23,7 @@ use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextPar
 const MIN_VRAM_BYTES: u64 = 2 * 1024 * 1024 * 1024;
 /// Keep a conservative reserve so OSWispa does not consume the last chunk of free VRAM.
 const GPU_RESERVED_HEADROOM_BYTES: u64 = 6 * 1024 * 1024 * 1024;
+const MAX_REMOTE_RESPONSE_BYTES: u64 = 2 * 1024 * 1024;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct CacheSignature {
@@ -347,12 +349,14 @@ fn resolve_remote_api_key(config: &Config) -> Option<String> {
 
 fn validate_remote_endpoint(endpoint: &str, allow_insecure_http: bool) -> Result<()> {
     let url = reqwest::Url::parse(endpoint)?;
-    if url.scheme() != "https" && !allow_insecure_http {
-        anyhow::bail!(
+    match url.scheme() {
+        "https" => Ok(()),
+        "http" if allow_insecure_http => Ok(()),
+        "http" => anyhow::bail!(
             "Remote endpoint must use HTTPS. Enable allow_insecure_http to opt into plain HTTP."
-        );
+        ),
+        scheme => anyhow::bail!("Remote endpoint uses unsupported URL scheme: {}", scheme),
     }
-    Ok(())
 }
 
 fn transcribe_with_remote_backend(audio_path: &PathBuf, config: &Config) -> Result<String> {
@@ -394,11 +398,24 @@ fn transcribe_with_remote_backend(audio_path: &PathBuf, config: &Config) -> Resu
 
     let response = request.send()?;
     let status = response.status();
-    let body = response.text()?;
+    if response
+        .content_length()
+        .map(|length| length > MAX_REMOTE_RESPONSE_BYTES)
+        .unwrap_or(false)
+    {
+        anyhow::bail!("Remote backend response exceeded the 2 MiB limit");
+    }
+
+    let mut body = String::new();
+    response
+        .take(MAX_REMOTE_RESPONSE_BYTES + 1)
+        .read_to_string(&mut body)?;
+    if body.len() as u64 > MAX_REMOTE_RESPONSE_BYTES {
+        anyhow::bail!("Remote backend response exceeded the 2 MiB limit");
+    }
 
     if !status.is_success() {
-        let snippet: String = body.chars().take(300).collect();
-        anyhow::bail!("Remote backend returned {}: {}", status, snippet);
+        anyhow::bail!("Remote backend returned {}", status);
     }
 
     if let Ok(json) = serde_json::from_str::<Value>(&body) {
@@ -828,11 +845,12 @@ fn load_wav_samples(path: &PathBuf) -> Result<Vec<f32>> {
             let max_val = (1 << (spec.bits_per_sample - 1)) as f32;
             reader
                 .samples::<i32>()
-                .filter_map(|s| s.ok())
-                .map(|s| s as f32 / max_val)
-                .collect()
+                .map(|sample| sample.map(|value| value as f32 / max_val))
+                .collect::<std::result::Result<Vec<_>, _>>()?
         }
-        hound::SampleFormat::Float => reader.samples::<f32>().filter_map(|s| s.ok()).collect(),
+        hound::SampleFormat::Float => reader
+            .samples::<f32>()
+            .collect::<std::result::Result<Vec<_>, _>>()?,
     };
 
     // Convert to mono if stereo
@@ -926,5 +944,6 @@ mod tests {
         assert!(
             validate_remote_endpoint("http://example.com/v1/audio/transcriptions", true).is_ok()
         );
+        assert!(validate_remote_endpoint("file:///tmp/transcript", true).is_err());
     }
 }

@@ -3,17 +3,17 @@ mod feedback;
 mod hotkey;
 mod input;
 mod models;
+mod persistence;
 mod punctuation;
 mod settings;
 mod setup;
 mod transcribe;
 mod tray;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use crossbeam_channel::{bounded, Receiver, Sender};
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
-use std::fs;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, RwLock};
 use tracing::{error, info, warn};
@@ -44,7 +44,6 @@ pub enum AppEvent {
     /// Streaming partial result
     StreamingPartial(String),
     Error(String),
-    ShowHistory,
     OpenSettings,
     /// Reload configuration from disk
     ReloadConfig,
@@ -340,19 +339,24 @@ pub fn get_socket_path() -> PathBuf {
     std::env::temp_dir().join("oswispa.sock")
 }
 
-fn load_config() -> Config {
+fn load_config() -> Result<Config> {
     let config_path = get_config_dir().join("config.json");
     if config_path.exists() {
-        fs::read_to_string(&config_path)
-            .ok()
-            .and_then(|s| serde_json::from_str(&s).ok())
-            .unwrap_or_default()
+        persistence::read_json_private(&config_path).with_context(|| {
+            format!(
+                "Configuration is invalid; fix or move {:?} before restarting OSWispa",
+                config_path
+            )
+        })
     } else {
         let config = Config::default();
-        let _ = fs::create_dir_all(get_config_dir());
-        let _ = fs::write(&config_path, serde_json::to_string_pretty(&config).unwrap());
-        config
+        save_config(&config)?;
+        Ok(config)
     }
+}
+
+pub fn save_config(config: &Config) -> Result<()> {
+    persistence::write_json_private(&get_config_dir().join("config.json"), config)
 }
 
 fn remote_api_key_path() -> PathBuf {
@@ -368,14 +372,9 @@ pub fn set_remote_api_key(token: &str) -> Result<()> {
 
     let path = remote_api_key_path();
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)?;
+        persistence::ensure_private_dir(parent)?;
     }
-    std::fs::write(&path, token)?;
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600))?;
-    }
+    persistence::write_private(&path, token.as_bytes())?;
 
     Ok(())
 }
@@ -383,7 +382,7 @@ pub fn set_remote_api_key(token: &str) -> Result<()> {
 /// Load remote API key from local secure file.
 pub fn get_remote_api_key() -> Option<String> {
     let path = remote_api_key_path();
-    std::fs::read_to_string(path)
+    persistence::read_private_string(&path)
         .ok()
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty())
@@ -398,25 +397,18 @@ pub fn clear_remote_api_key() -> Result<()> {
     Ok(())
 }
 
-fn load_history() -> Vec<ClipboardEntry> {
+fn load_history() -> Result<Vec<ClipboardEntry>> {
     let history_path = get_data_dir().join("history.json");
     if history_path.exists() {
-        fs::read_to_string(&history_path)
-            .ok()
-            .and_then(|s| serde_json::from_str(&s).ok())
-            .unwrap_or_default()
+        persistence::read_json_private(&history_path)
     } else {
-        Vec::new()
+        Ok(Vec::new())
     }
 }
 
-fn save_history(history: &[ClipboardEntry]) {
+fn save_history(history: &[ClipboardEntry]) -> Result<()> {
     let history_path = get_data_dir().join("history.json");
-    let _ = fs::create_dir_all(get_data_dir());
-    let _ = fs::write(
-        &history_path,
-        serde_json::to_string_pretty(history).unwrap(),
-    );
+    persistence::write_json_private(&history_path, history)
 }
 
 fn main() -> Result<()> {
@@ -428,8 +420,14 @@ fn main() -> Result<()> {
     info!("Starting OSWispa - Voice to Text");
 
     // Load configuration and history
-    let config = Arc::new(RwLock::new(load_config()));
-    let history = load_history();
+    let config = Arc::new(RwLock::new(load_config()?));
+    let history = load_history().unwrap_or_else(|err| {
+        warn!(
+            "Could not load clipboard history; starting with an empty history: {}",
+            err
+        );
+        Vec::new()
+    });
     let state = Arc::new(Mutex::new(AppState {
         is_recording: false,
         clipboard_history: history,
@@ -468,9 +466,7 @@ fn main() -> Result<()> {
                     cfg.model_path = model_path;
 
                     // Persist to disk so the wizard doesn't run again
-                    let config_path = get_config_dir().join("config.json");
-                    let _ = fs::create_dir_all(get_config_dir());
-                    let _ = fs::write(&config_path, serde_json::to_string_pretty(&*cfg).unwrap());
+                    save_config(&cfg)?;
                     info!("Config updated with new model path: {:?}", cfg.model_path);
                 }
                 Err(e) => {
@@ -507,6 +503,7 @@ fn main() -> Result<()> {
     let config_for_main = Arc::clone(&config);
     let config_for_audio = Arc::clone(&config);
     let config_for_transcribe = Arc::clone(&config);
+    let config_for_tray = Arc::clone(&config);
     let state_for_main = Arc::clone(&state);
     let state_for_tray = Arc::clone(&state);
 
@@ -566,7 +563,7 @@ fn main() -> Result<()> {
 
     // Start system tray in separate thread
     std::thread::spawn(move || {
-        if let Err(e) = tray::run_tray(event_tx_tray, state_for_tray) {
+        if let Err(e) = tray::run_tray(event_tx_tray, state_for_tray, config_for_tray) {
             error!("System tray error: {}", e);
         }
     });
@@ -667,12 +664,12 @@ fn main() -> Result<()> {
                 //     feedback::play_start_sequence();
                 // }
 
-                let mut state = state_for_main.lock().unwrap();
-                state.is_recording = true;
-                drop(state);
-
-                if let Err(e) = record_tx.send(RecordCommand::Start) {
-                    error!("Failed to send start command: {}", e);
+                match record_tx.send(RecordCommand::Start) {
+                    Ok(()) => state_for_main.lock().unwrap().is_recording = true,
+                    Err(e) => {
+                        state_for_main.lock().unwrap().is_recording = false;
+                        error!("Failed to send start command: {}", e);
+                    }
                 }
             }
             AppEvent::StopRecording | AppEvent::VadSilenceDetected => {
@@ -706,7 +703,7 @@ fn main() -> Result<()> {
             }
             AppEvent::StreamingPartial(text) => {
                 // For streaming mode - show partial results
-                info!("Streaming partial: {}", text);
+                info!("Streaming partial: {} chars", text.len());
                 // Could update a live display here
             }
             AppEvent::TranscriptionComplete(text) => {
@@ -755,7 +752,9 @@ fn main() -> Result<()> {
                     if state.clipboard_history.len() > current_config.max_history {
                         state.clipboard_history.truncate(current_config.max_history);
                     }
-                    save_history(&state.clipboard_history);
+                    if let Err(err) = save_history(&state.clipboard_history) {
+                        warn!("Failed to save clipboard history: {}", err);
+                    }
                 }
 
                 if current_config.notification_enabled {
@@ -774,11 +773,12 @@ fn main() -> Result<()> {
                     }
                     #[cfg(not(target_os = "linux"))]
                     {
-                        info!("Transcribed: {}", preview);
+                        info!("Transcription notification: {} chars", preview.len());
                     }
                 }
             }
             AppEvent::Error(msg) => {
+                state_for_main.lock().unwrap().is_recording = false;
                 error!("Error: {}", msg);
 
                 if config_for_main.read().unwrap().audio_feedback {
@@ -794,9 +794,6 @@ fn main() -> Result<()> {
                         .show();
                 }
             }
-            AppEvent::ShowHistory => {
-                info!("Show history requested");
-            }
             AppEvent::OpenSettings => {
                 info!("Opening settings dialog...");
                 #[cfg(feature = "gui")]
@@ -806,12 +803,21 @@ fn main() -> Result<()> {
             }
             AppEvent::ReloadConfig => {
                 info!("Reloading configuration...");
-                let new_config = load_config();
-                {
-                    let mut config_guard = config_for_main.write().unwrap();
-                    *config_guard = new_config.clone();
+                match load_config() {
+                    Ok(new_config) => {
+                        {
+                            let mut config_guard = config_for_main.write().unwrap();
+                            *config_guard = new_config.clone();
+                        }
+                        let _ = hotkey_config_tx.send(Arc::new(new_config));
+                    }
+                    Err(err) => {
+                        error!(
+                            "Keeping current configuration because reload failed: {}",
+                            err
+                        );
+                    }
                 }
-                let _ = hotkey_config_tx.send(Arc::new(new_config));
             }
             AppEvent::Quit => {
                 info!("Shutting down...");
