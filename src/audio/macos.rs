@@ -25,7 +25,7 @@ pub fn audio_worker(
     let recording = Arc::new(AtomicBool::new(false));
     let cancelled = Arc::new(AtomicBool::new(false));
 
-    let mut _recording_thread: Option<std::thread::JoinHandle<()>> = None;
+    let mut recording_thread: Option<std::thread::JoinHandle<()>> = None;
 
     for cmd in record_rx {
         match cmd {
@@ -43,7 +43,7 @@ pub fn audio_worker(
                 recording.store(true, Ordering::SeqCst);
                 cancelled.store(false, Ordering::SeqCst);
 
-                _recording_thread = Some(std::thread::spawn(move || {
+                recording_thread = Some(std::thread::spawn(move || {
                     info!("AudioWorker: Starting cpal recording session");
                     let result = run_cpal_session(&recording_clone, &status_tx_clone);
 
@@ -83,6 +83,10 @@ pub fn audio_worker(
                 recording.store(false, Ordering::SeqCst);
             }
         }
+    }
+
+    if let Some(thread) = recording_thread {
+        let _ = thread.join();
     }
 }
 
