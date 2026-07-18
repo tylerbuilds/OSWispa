@@ -15,7 +15,7 @@
   <meta name="description" content="OSWispa is a fast, local-first voice transcription tool powered by Whisper.cpp with configurable hotkeys, custom model imports, and optional VPS backend.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;family=Fraunces:opsz,wght@9..144,400;600;700&amp;display=swap" rel="stylesheet">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -320,12 +320,13 @@
         <div class="section-heading reveal" style="--delay: 0.05s">
           <p class="eyebrow">Install</p>
           <h2>Get running in minutes.</h2>
-          <p class="section-lead">Ubuntu/Debian and Apple Silicon macOS have downloadable packages. Other platforms still need manual dependencies.</p>
+          <p class="section-lead">x86-64 Linux plus Apple Silicon and Intel macOS have downloadable packages. Other platforms still need manual dependencies.</p>
         </div>
         <div class="install-grid">
           <div class="install-card reveal" style="--delay: 0.1s">
             <h3>Install (.deb)</h3>
             <p>Ubuntu/Debian users: download the .deb from GitHub Releases and install with apt.</p>
+            <p><strong>v0.4.1 note:</strong> its Linux binary requires GLIBC 2.39. Ubuntu 22.04 and Debian 12 users should use the source installer until the next release.</p>
             <pre><code>curl -LO https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa_amd64.deb
 sudo apt install ./oswispa_amd64.deb
 oswispa</code></pre>
@@ -347,9 +348,9 @@ oswispa</code></pre>
           </div>
           <div class="install-card reveal" style="--delay: 0.25s">
             <h3>Auto paste tips</h3>
-            <p>Wayland uses `ydotoold` for direct text insertion into the focused app. Clipboard copy is still kept as a fallback.</p>
-            <pre><code>sudo ydotoold &
-pgrep ydotoold</code></pre>
+            <p>Wayland uses <code>ydotoold</code> for direct text insertion into the focused app. Clipboard copy is still kept as a fallback.</p>
+            <pre><code>systemctl --user status ydotoold
+journalctl --user -u ydotoold -n 50</code></pre>
             <div class="install-meta">
               <span>If text does not appear, start the daemon or use the copied transcript from the clipboard.</span>
             </div>
@@ -550,6 +551,8 @@ pgrep -f oswispa</code></pre>
           <a href="https://github.com/tylerbuilds/OSWispa">GitHub</a>
           <a href="https://github.com/tylerbuilds/OSWispa/issues">Issues</a>
           <a href="https://github.com/tylerbuilds/OSWispa/blob/master/LICENSE">MIT License</a>
+          <a href="https://github.com/tylerbuilds/OSWispa/blob/master/PRIVACY.md">Privacy</a>
+          <a href="https://github.com/tylerbuilds/OSWispa/blob/master/SECURITY.md">Security</a>
           <a href="contact.html">Contact</a>
         </div>
         <a class="btn btn-secondary btn-small footer-follow" href="https://x.com/TylerIsBuilding" target="_blank" rel="noopener">Follow on X</a>
