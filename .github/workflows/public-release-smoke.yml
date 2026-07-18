@@ -12,6 +12,115 @@ permissions:
   contents: read
 
 jobs:
+  smoke-linux-deb-tar:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - name: Download public Linux release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          mkdir -p "$RUNNER_TEMP/download"
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern oswispa-linux-amd64.tar.gz \
+            --pattern oswispa_amd64.deb \
+            --pattern SHA256SUMS \
+            --dir "$RUNNER_TEMP/download"
+
+      - name: Verify checksums and install Debian package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/download"
+          for asset in oswispa-linux-amd64.tar.gz oswispa_amd64.deb; do
+            grep -F "  $asset" SHA256SUMS | sha256sum --check
+          done
+
+          sudo apt-get update
+          sudo apt-get install -y xvfb "$RUNNER_TEMP/download/oswispa_amd64.deb"
+
+      - name: Run installed Debian package smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${RELEASE_TAG#v}"
+          output="$(XDG_SESSION_TYPE=x11 xvfb-run -a oswispa --platform-smoke-test)"
+          printf '%s\n' "$output"
+          grep -Fq "OSWISPA_PLATFORM_SMOKE_OK version=$version os=linux arch=x86_64" <<<"$output"
+          grep -Fq "audio=linux-arecord hotkey=linux-evdev input=linux-native" <<<"$output"
+
+      - name: Extract tarball and run portable binary smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${RELEASE_TAG#v}"
+          install_root="$RUNNER_TEMP/portable-oswispa"
+          mkdir -p "$install_root"
+          tar -xzf "$RUNNER_TEMP/download/oswispa-linux-amd64.tar.gz" -C "$install_root"
+          test -x "$install_root/oswispa"
+          output="$(XDG_SESSION_TYPE=x11 xvfb-run -a "$install_root/oswispa" --platform-smoke-test)"
+          printf '%s\n' "$output"
+          grep -Fq "OSWISPA_PLATFORM_SMOKE_OK version=$version os=linux arch=x86_64" <<<"$output"
+          grep -Fq "audio=linux-arecord hotkey=linux-evdev input=linux-native" <<<"$output"
+
+  smoke-linux-rpm:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    container:
+      image: fedora:44@sha256:89f61a124414261868224666aa7fb8df1b78397a53623774bdfb105d1612b48b
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - name: Install download and X11 test tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          dnf install -y ca-certificates curl xorg-x11-server-Xvfb
+
+      - name: Download and verify public RPM
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          download_root="$RUNNER_TEMP/download"
+          release_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}"
+          mkdir -p "$download_root"
+          curl --fail --location --retry 3 \
+            --output "$download_root/oswispa_x86_64.rpm" \
+            "$release_url/oswispa_x86_64.rpm"
+          curl --fail --location --retry 3 \
+            --output "$download_root/SHA256SUMS" \
+            "$release_url/SHA256SUMS"
+          cd "$download_root"
+          grep -F "  oswispa_x86_64.rpm" SHA256SUMS | sha256sum --check
+          dnf install -y ./oswispa_x86_64.rpm
+
+      - name: Run installed RPM smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${RELEASE_TAG#v}"
+          Xvfb :99 -screen 0 1280x720x24 >/tmp/oswispa-xvfb.log 2>&1 &
+          xvfb_pid=$!
+          trap 'kill "$xvfb_pid" >/dev/null 2>&1 || true' EXIT
+          for _ in $(seq 1 20); do
+            if [[ -S /tmp/.X11-unix/X99 ]]; then
+              break
+            fi
+            sleep 0.25
+          done
+          test -S /tmp/.X11-unix/X99
+          output="$(DISPLAY=:99 XDG_SESSION_TYPE=x11 oswispa --platform-smoke-test)"
+          printf '%s\n' "$output"
+          grep -Fq "OSWISPA_PLATFORM_SMOKE_OK version=$version os=linux arch=x86_64" <<<"$output"
+          grep -Fq "audio=linux-arecord hotkey=linux-evdev input=linux-native" <<<"$output"
+
   smoke-macos:
     strategy:
       fail-fast: false
@@ -24,6 +133,7 @@ jobs:
             asset_arch: x86_64
             rust_arch: x86_64
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     env:
       GH_TOKEN: ${{ github.token }}
       RELEASE_TAG: ${{ inputs.tag }}
@@ -68,6 +178,7 @@ jobs:
 
   smoke-windows:
     runs-on: windows-2025
+    timeout-minutes: 15
     env:
       GH_TOKEN: ${{ github.token }}
       RELEASE_TAG: ${{ inputs.tag }}
