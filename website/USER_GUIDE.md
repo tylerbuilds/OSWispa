@@ -10,6 +10,8 @@ OSWispa is built for short dictation bursts, not hour-long live captioning. Hold
 
 OSWispa transcribes locally by default, inserts the text into the focused app, and also copies the transcript to the clipboard.
 
+On Windows the default shortcut is **Ctrl + Windows**. Keep the OSWispa console window open while dictating.
+
 ## What happens on first launch
 
 OSWispa now runs a short device test before it downloads a model. It looks at:
@@ -70,3 +72,7 @@ For reliable login startup, use the installed user service:
 systemctl --user enable --now oswispa
 systemctl --user status oswispa
 ```
+
+## Windows microphone troubleshooting
+
+If recording does not start, open **Settings > Privacy & security > Microphone** and enable microphone access for desktop apps. The unsigned alpha may also require **More info > Run anyway** at the first SmartScreen prompt.
