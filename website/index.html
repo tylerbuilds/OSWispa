@@ -141,27 +141,28 @@
             <p class="eyebrow">Release</p>
             <h2><span data-latest-release>latest</span> is published.</h2>
             <p class="section-lead">
-              OSWispa v0.4.1 ships the stabilized Linux dictation path: warm local Whisper contexts,
-              direct Wayland text insertion, a safer ROCm GPU path that keeps desktop headroom intact,
-              and a packaged macOS app download for Apple Silicon users.
+              OSWispa v0.4.2 ships the July security and reliability fixes, lower-floor Linux packages,
+              VM-tested macOS bundles for Apple Silicon and Intel, and the first functional Windows
+              package with native recording, global hotkeys, clipboard delivery, and text insertion.
             </p>
             <div class="release-actions">
-              <a class="btn btn-primary" href="https://github.com/tylerbuilds/OSWispa/releases/latest">Release notes</a>
+              <a class="btn btn-primary" href="https://github.com/tylerbuilds/OSWispa/releases/latest">All downloads</a>
+              <a class="btn btn-secondary" href="https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa-windows-x86_64.zip">Windows ZIP</a>
               <a class="btn btn-secondary" href="https://github.com/tylerbuilds/OSWispa">View repo</a>
             </div>
           </div>
           <div class="release-grid">
             <div class="release-item">
               <p class="label">Published</p>
-              <p class="value">March 13, 2026</p>
+              <p class="value">July 18, 2026</p>
             </div>
             <div class="release-item">
               <p class="label">Status</p>
-              <p class="value">Alpha, stable on Linux</p>
+              <p class="value">Alpha, VM-gated packages</p>
             </div>
             <div class="release-item">
-              <p class="label">Primary OS</p>
-              <p class="value">Ubuntu / Debian</p>
+              <p class="label">Desktop OS</p>
+              <p class="value">Linux / macOS / Windows</p>
             </div>
             <div class="release-item">
               <p class="label">Backend</p>
@@ -178,17 +179,17 @@
       <section id="changelog" class="section">
         <div class="section-heading reveal" style="--delay: 0.05s">
           <p class="eyebrow">Changelog</p>
-          <h2>What changed in v0.4.1 on March 13, 2026.</h2>
-          <p class="section-lead">This page was updated on March 13, 2026 to reflect the current tagged release, the March 12 release train that led into it, and the broader git history behind the project.</p>
+          <h2>What changed in v0.4.2 on July 18, 2026.</h2>
+          <p class="section-lead">The audited desktop release now has checksummed Linux, macOS and Windows downloads, plus package-install proof on clean hosted VMs.</p>
         </div>
         <div class="release-card reveal" style="--delay: 0.1s">
           <ul class="release-notes">
-            <li>Local Whisper contexts stay warm between dictations, which cuts the heavy re-init cost after every release.</li>
-            <li>Wayland now types directly into the focused app and still copies the transcript to the clipboard for backup.</li>
-            <li>The hotkey listener ignores the `ydotoold` virtual keyboard, so text insertion no longer retriggers recording.</li>
-            <li>ROCm runs with a more conservative free-VRAM reserve to avoid pushing the desktop into unstable territory.</li>
-            <li>`distil-large-v3` is now included in the curated model list for faster local dictation on capable GPUs.</li>
-            <li>macOS now ships as a packaged `OSWispa.app` download inside a drag-and-drop `.dmg`, with a bundled readme for first-time setup.</li>
+            <li>Configuration, history, API-key fallback files, temporary recordings, IPC and remote responses now follow stricter privacy and failure-handling rules.</li>
+            <li>Model downloads reject server errors, partial files, path traversal and invalid Whisper model headers before installation.</li>
+            <li>Windows now records through WASAPI, listens for the global Ctrl+Windows hotkey, verifies clipboard delivery and inserts text into the focused app.</li>
+            <li>Both macOS DMGs and the Windows ZIP are installed and executed on clean hosted VMs before publication.</li>
+            <li>Linux packages are built on Ubuntu 22.04 for a GLIBC 2.35 compatibility floor, with Debian and RPM requirements checked automatically.</li>
+            <li>Every public artefact is covered by the release's <code>SHA256SUMS</code> file and a post-publication reinstall gate.</li>
           </ul>
           <p class="release-changelog-link">
             Full changelog: <a href="https://github.com/tylerbuilds/OSWispa/blob/master/CHANGELOG.md">CHANGELOG.md</a>
@@ -197,6 +198,7 @@
         <div class="release-card reveal" style="--delay: 0.15s">
           <p class="meta-title">Release timeline from git tags</p>
           <ul class="release-notes">
+            <li><strong>July 18, 2026:</strong> <code>v0.4.2</code></li>
             <li><strong>March 13, 2026:</strong> <code>v0.4.1</code></li>
             <li><strong>February 19, 2026:</strong> <code>v0.3.3</code></li>
             <li><strong>February 15, 2026:</strong> <code>v0.3.0</code>, <code>v0.3.1</code>, and <code>v0.3.2</code></li>
@@ -305,11 +307,15 @@
               </div>
               <div class="support-card">
                 <p class="support-title">Fedora / Arch</p>
-                <p class="support-status warn">Manual</p>
+                <p class="support-status good">Supported</p>
               </div>
               <div class="support-card">
-                <p class="support-title">macOS / Windows</p>
-                <p class="support-status note">Experimental</p>
+                <p class="support-title">macOS</p>
+                <p class="support-status good">Supported alpha</p>
+              </div>
+              <div class="support-card">
+                <p class="support-title">Windows x86-64</p>
+                <p class="support-status good">Supported alpha</p>
               </div>
             </div>
           </div>
@@ -320,13 +326,13 @@
         <div class="section-heading reveal" style="--delay: 0.05s">
           <p class="eyebrow">Install</p>
           <h2>Get running in minutes.</h2>
-          <p class="section-lead">x86-64 Linux plus Apple Silicon and Intel macOS have downloadable packages. Other platforms still need manual dependencies.</p>
+          <p class="section-lead">Download packages for x86-64 Linux, Apple Silicon and Intel macOS, or x86-64 Windows.</p>
         </div>
         <div class="install-grid">
           <div class="install-card reveal" style="--delay: 0.1s">
             <h3>Install (.deb)</h3>
             <p>Ubuntu/Debian users: download the .deb from GitHub Releases and install with apt.</p>
-            <p><strong>v0.4.1 note:</strong> its Linux binary requires GLIBC 2.39. Ubuntu 22.04 and Debian 12 users should use the source installer until the next release.</p>
+            <p><strong>v0.4.2:</strong> built on Ubuntu 22.04 for a GLIBC 2.35 compatibility floor.</p>
             <pre><code>curl -LO https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa_amd64.deb
 sudo apt install ./oswispa_amd64.deb
 oswispa</code></pre>
@@ -344,6 +350,17 @@ oswispa</code></pre>
    Control-click the app and choose Open</code></pre>
             <div class="install-meta">
               <span>Apple Silicon can use Metal. Intel Macs stay on the lighter CPU path. The app launches in Terminal and will ask for Microphone + Accessibility permissions.</span>
+            </div>
+          </div>
+          <div class="install-card reveal" style="--delay: 0.25s">
+            <h3>Install (Windows)</h3>
+            <p>Download the x86-64 ZIP, extract it into a permanent folder, and run <code>oswispa.exe</code>.</p>
+            <pre><code>1. Download oswispa-windows-x86_64.zip
+2. Extract the complete ZIP
+3. Run oswispa.exe
+4. Hold Ctrl+Windows to dictate</code></pre>
+            <div class="install-meta">
+              <span><a href="https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa-windows-x86_64.zip">Download the Windows ZIP</a>. The alpha is unsigned and has no tray UI yet.</span>
             </div>
           </div>
           <div class="install-card reveal" style="--delay: 0.25s">

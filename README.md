@@ -3,7 +3,7 @@
 **Open Source Whisper Assistant** - Lightning-fast voice-to-text for your desktop.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Platform: Linux & macOS](https://img.shields.io/badge/Platform-Linux%20%26%20macOS-green.svg)](#)
+[![Platform: Linux, macOS & Windows](https://img.shields.io/badge/Platform-Linux%2C%20macOS%20%26%20Windows-green.svg)](#)
 [![Status: Alpha](https://img.shields.io/badge/Status-Alpha-orange.svg)](#)
 
 A privacy-focused, local-first voice transcription tool powered by [Whisper.cpp](https://github.com/ggerganov/whisper.cpp). Hold a hotkey, speak, release - your words appear instantly.
@@ -14,23 +14,24 @@ A privacy-focused, local-first voice transcription tool powered by [Whisper.cpp]
 
 ## 🚧 Project Status & Transparency
 
-**Current State:** v0.4.1 (Alpha)
+**Current State:** v0.4.2 (Alpha)
 
-The downloadable release remains v0.4.1. Security and reliability fixes merged afterwards are listed under [Unreleased](CHANGELOG.md#unreleased) and are not in release binaries until a new tag is published.
+The [v0.4.2 release](https://github.com/tylerbuilds/OSWispa/releases/tag/v0.4.2) contains the July security and reliability audit fixes, lower-floor Linux packages, VM-tested macOS packages, and the first functional Windows package.
 
 | Platform | Status | Notes |
 |----------|--------|-------|
 | **Ubuntu/Debian** | ✅ **Supported** | Primary dev environment. Automated installer with GPU auto-detection. |
 | **macOS** | ✅ **Supported** | Audio, hotkeys, clipboard all working. Metal GPU untested. |
 | **Fedora/Arch** | ✅ **Supported** | Automated installer with `dnf`/`pacman` support. |
-| **Windows** | 🧪 **Experimental** | Theoretically supported, but untested. **Help wanted!** |
+| **Windows** | ✅ **Supported (Alpha)** | WASAPI audio, global hotkeys, clipboard and text insertion. VM-tested x86-64 ZIP. |
 
 ### 🛑 Known Limitations
-1.  **Installer**: Supports Ubuntu/Debian, Fedora/RHEL, Arch/Manjaro, and macOS. Other distros: install deps manually.
+1.  **Installer**: The source installer supports Ubuntu/Debian, Fedora/RHEL, Arch/Manjaro, and macOS. Windows uses the release ZIP.
 2.  **Auto-Paste (Linux)**: Uses `ydotool` to simulate typing. The source installer enables its user service.
 3.  **Global Hotkeys (Linux)**: Reads `/dev/input` directly, requires `input` group membership.
 4.  **Global Hotkeys (macOS)**: Requires Accessibility permission in System Settings.
 5.  **macOS Packaging**: The current app bundle is not signed or notarised.
+6.  **Windows Packaging**: The ZIP is not code-signed and has no tray UI yet; keep its console window open.
 
 ---
 
@@ -49,7 +50,7 @@ The downloadable release remains v0.4.1. Security and reliability fixes merged a
 ## 🤝 Call for Contributors
 
 - [x] ~~Create installation scripts for **Fedora**, **Arch**, and **macOS**~~ (done).
-- [ ] Test and debug the **Windows** build process.
+- [ ] Add a signed **Windows MSIX/MSI installer** and native tray UI.
 - [ ] Improve **Wayland** integration without requiring root/input group hacks.
 - [ ] Add a proper GUI settings menu (currently experimental).
 - [ ] Test **Metal GPU** acceleration on macOS Apple Silicon.
@@ -62,7 +63,7 @@ If you can help, please fork the repo and submit a PR! See [CONTRIBUTING.md](CON
 
 ### Option A: Install the `.deb`
 
-The v0.4.1 Linux artefacts require GLIBC 2.39. On Ubuntu 22.04 or Debian 12, use the source installer below until the next release; future Linux releases are built on Ubuntu 22.04 for a lower compatibility floor.
+The v0.4.2 Linux artefacts are built on Ubuntu 22.04, lowering the compatibility floor to GLIBC 2.35.
 
 1. Download the latest `amd64` `.deb` from GitHub Releases.
 2. Install it with `apt` (preferred, pulls dependencies):
@@ -83,7 +84,7 @@ sudo dnf install ./oswispa_x86_64.rpm
 oswispa
 ```
 
-Starting with the next release, the release page also includes `SHA256SUMS` covering every downloadable asset.
+The release page includes `SHA256SUMS` covering every downloadable asset.
 
 ### Option C (Recommended for GPU builds): Build From Source
 
@@ -152,12 +153,33 @@ OSWispa needs two permissions on macOS:
 1. **Microphone**: Granted automatically on first recording attempt.
 2. **Accessibility**: Required for global hotkeys. Go to **System Settings > Privacy & Security > Accessibility** and add `oswispa`.
 
-### macOS Limitations (v0.4.1)
+### macOS Limitations (v0.4.2)
 
 - No native menu bar/tray UI yet; the packaged app launches OSWispa in Terminal
 - No signed/notarized installer yet, so first launch may require Control-click > Open
 - Apple Silicon packages use Metal; Intel packages use CPU transcription
 - First launch auto-selects a model, but power users can still override it with `OSWISPA_SETUP_MANUAL=1`
+
+---
+
+## 🪟 Installation (Windows)
+
+1. Download [`oswispa-windows-x86_64.zip`](https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa-windows-x86_64.zip).
+2. Extract the complete ZIP into a permanent folder.
+3. Run `oswispa.exe` and keep its console window open.
+4. Allow desktop-app microphone access if Windows prompts for it.
+5. Hold **Ctrl+Windows**, speak, then release the keys.
+
+PowerShell installation:
+
+```powershell
+Invoke-WebRequest https://github.com/tylerbuilds/OSWispa/releases/latest/download/oswispa-windows-x86_64.zip -OutFile oswispa-windows-x86_64.zip
+Expand-Archive .\oswispa-windows-x86_64.zip -DestinationPath .\OSWispa
+Set-Location .\OSWispa
+.\oswispa.exe
+```
+
+> **Note:** This alpha package is not code-signed. Windows SmartScreen may require **More info → Run anyway**. There is no native tray UI yet.
 
 ---
 
