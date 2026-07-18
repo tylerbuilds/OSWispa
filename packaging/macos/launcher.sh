@@ -9,6 +9,13 @@ if [ ! -x "$BIN_PATH" ]; then
   exit 1
 fi
 
+# Diagnostics and automated package checks run the bundled binary directly so
+# they do not require Terminal automation. Normal Finder launches still open a
+# visible Terminal window for first-run setup and status output.
+if [ "$#" -gt 0 ]; then
+  exec "$BIN_PATH" "$@"
+fi
+
 exec /usr/bin/osascript - "$BIN_PATH" <<'APPLESCRIPT'
 on run argv
   set binPath to item 1 of argv

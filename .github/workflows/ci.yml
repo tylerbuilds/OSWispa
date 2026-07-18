@@ -105,6 +105,17 @@ jobs:
       - name: Test (no GUI feature)
         run: cargo test --locked --no-default-features
 
+      - name: Build and run desktop smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --no-default-features
+          output="$(target/release/oswispa --platform-smoke-test)"
+          printf '%s\n' "$output"
+          grep -Fq "OSWISPA_PLATFORM_SMOKE_OK version=" <<<"$output"
+          grep -Fq "os=macos" <<<"$output"
+          grep -Fq "audio=macos-coreaudio-cpal hotkey=macos-rdev input=macos-arboard-enigo" <<<"$output"
+
   check-windows:
     runs-on: windows-latest
     steps:
@@ -124,3 +135,22 @@ jobs:
 
       - name: Test (no GUI feature)
         run: cargo test --locked --no-default-features
+
+      - name: Build and run desktop smoke test
+        shell: pwsh
+        run: |
+          cargo build --release --locked --no-default-features
+          if ($LASTEXITCODE -ne 0) { throw "Windows release build failed" }
+          $output = & target\release\oswispa.exe --platform-smoke-test
+          if ($LASTEXITCODE -ne 0) { throw "Windows platform smoke test failed" }
+          $output | Write-Host
+          $joined = $output -join "`n"
+          if (-not $joined.Contains("OSWISPA_PLATFORM_SMOKE_OK version=")) {
+            throw "Windows smoke marker was missing"
+          }
+          if (-not $joined.Contains("os=windows")) {
+            throw "Windows smoke test reported the wrong operating system"
+          }
+          if (-not $joined.Contains("audio=windows-wasapi-cpal hotkey=windows-rdev input=windows-arboard-enigo")) {
+            throw "Windows smoke test did not exercise the expected runtime backends"
+          }
