@@ -66,6 +66,12 @@ arboard = "3"
 enigo = "0.6"
 rdev = "0.5"
 
+[target.'cfg(target_os = "windows")'.dependencies]
+# Windows: clipboard, text injection, global hotkeys.
+arboard = "3"
+enigo = "0.6"
+rdev = "0.5"
+
 [features]
 default = ["gui"]
 gui = ["gtk4", "tokio", "futures-util"]

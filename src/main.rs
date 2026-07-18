@@ -412,6 +412,59 @@ fn save_history(history: &[ClipboardEntry]) -> Result<()> {
     persistence::write_json_private(&history_path, history)
 }
 
+fn run_platform_smoke_test() -> Result<()> {
+    for (component, backend) in [
+        ("audio", audio::backend_name()),
+        ("hotkey", hotkey::backend_name()),
+        ("input", input::backend_name()),
+    ] {
+        if backend == "unsupported" {
+            anyhow::bail!("{} has no runtime backend on this platform", component);
+        }
+    }
+
+    let recording = audio::private_recording_temp_path()?;
+    let path = recording.to_path_buf();
+    let spec = hound::WavSpec {
+        channels: 1,
+        sample_rate: 16_000,
+        bits_per_sample: 16,
+        sample_format: hound::SampleFormat::Int,
+    };
+    let mut writer = hound::WavWriter::create(&path, spec)?;
+    for sample in [0_i16, 1_024, -1_024, 0] {
+        writer.write_sample(sample)?;
+    }
+    writer.finalize()?;
+    let reader = hound::WavReader::open(&path)?;
+    let actual_spec = reader.spec();
+    if actual_spec.channels != 1
+        || actual_spec.sample_rate != 16_000
+        || actual_spec.bits_per_sample != 16
+        || reader.len() != 4
+    {
+        anyhow::bail!("Synthetic recording did not satisfy the transcription WAV contract");
+    }
+
+    let marker = format!(
+        "OSWispa {} {} VM clipboard smoke",
+        env!("CARGO_PKG_VERSION"),
+        std::env::consts::OS
+    );
+    input::copy_to_clipboard_verified(&marker)?;
+
+    println!(
+        "OSWISPA_PLATFORM_SMOKE_OK version={} os={} arch={} audio={} hotkey={} input={}",
+        env!("CARGO_PKG_VERSION"),
+        std::env::consts::OS,
+        std::env::consts::ARCH,
+        audio::backend_name(),
+        hotkey::backend_name(),
+        input::backend_name()
+    );
+    Ok(())
+}
+
 fn main() -> Result<()> {
     // Initialize logging
     tracing_subscriber::fmt()
@@ -419,6 +472,13 @@ fn main() -> Result<()> {
         .init();
 
     info!("Starting OSWispa - Voice to Text");
+
+    if std::env::args_os()
+        .skip(1)
+        .any(|argument| argument == "--platform-smoke-test")
+    {
+        return run_platform_smoke_test();
+    }
 
     // Load configuration and history
     let config = Arc::new(RwLock::new(load_config()?));
@@ -552,7 +612,7 @@ fn main() -> Result<()> {
         );
     });
 
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
     std::thread::spawn(move || {
         audio::audio_worker(record_rx, audio_tx, event_tx_audio);
     });
