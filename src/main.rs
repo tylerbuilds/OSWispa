@@ -454,10 +454,15 @@ fn main() -> Result<()> {
         );
     }
 
-    // Verify model exists when local backend is required at startup.
-    if !initial_config.model_path.exists() {
+    // Verify the configured model rather than trusting an interrupted legacy
+    // download merely because a file exists at the expected path.
+    let model_validation = models::validate_model_path(&initial_config.model_path);
+    if let Err(model_error) = model_validation {
         if initial_config.backend == TranscriptionBackend::Local {
-            info!("No local model found — launching first-time setup wizard");
+            info!(
+                "No usable local model found ({}) — launching first-time setup wizard",
+                model_error
+            );
 
             match setup::run_first_time_setup() {
                 Ok(model_path) => {
@@ -484,8 +489,8 @@ fn main() -> Result<()> {
             }
         } else {
             warn!(
-                "Local model {:?} not found. Remote backend is enabled; local fallback will be unavailable.",
-                initial_config.model_path
+                "Local model {:?} is unavailable ({}). Remote backend is enabled; local fallback will be unavailable.",
+                initial_config.model_path, model_error
             );
         }
     }

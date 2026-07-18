@@ -3,8 +3,12 @@
 //! Handles downloading, listing, and switching between Whisper models.
 
 use anyhow::Result;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use tracing::info;
+
+const MIN_EXPECTED_MODEL_PERCENT: u64 = 80;
+const MIN_CUSTOM_MODEL_BYTES: u64 = 1024 * 1024;
 
 /// Available Whisper models with metadata
 #[derive(Debug, Clone)]
@@ -83,8 +87,8 @@ pub const AVAILABLE_MODELS: &[ModelInfo] = &[
         description: "Best speed/accuracy for high-end English dictation",
     },
     ModelInfo {
-        name: "Large",
-        filename: "ggml-large.bin",
+        name: "Large v3",
+        filename: "ggml-large-v3.bin",
         size_mb: 3000,
         url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin",
         description: "Slowest, best accuracy, all languages",
@@ -98,21 +102,89 @@ pub fn get_models_dir() -> PathBuf {
 
 /// List installed models
 pub fn get_installed_models() -> Vec<&'static ModelInfo> {
-    let models_dir = get_models_dir();
     AVAILABLE_MODELS
         .iter()
-        .filter(|m| models_dir.join(m.filename).exists())
+        .filter(|model| is_model_installed(model))
         .collect()
 }
 
 /// Check if a specific model is installed
 pub fn is_model_installed(model: &ModelInfo) -> bool {
-    get_models_dir().join(model.filename).exists()
+    validate_downloaded_model(model, &get_models_dir().join(model.filename)).is_ok()
 }
 
 /// Get full path for a model
 pub fn get_model_path(model: &ModelInfo) -> PathBuf {
     get_models_dir().join(model.filename)
+}
+
+fn validate_model_filename(model: &ModelInfo) -> Result<()> {
+    if model.filename.contains('/')
+        || model.filename.contains('\\')
+        || model.filename.contains("..")
+    {
+        anyhow::bail!("Invalid model filename: {}", model.filename);
+    }
+    Ok(())
+}
+
+fn minimum_expected_model_bytes(model: &ModelInfo) -> u64 {
+    model.size_mb as u64 * 1024 * 1024 * MIN_EXPECTED_MODEL_PERCENT / 100
+}
+
+fn validate_downloaded_model(model: &ModelInfo, path: &Path) -> Result<()> {
+    let size = std::fs::metadata(path)?.len();
+    let minimum = minimum_expected_model_bytes(model);
+    if size < minimum {
+        anyhow::bail!(
+            "Downloaded model is incomplete: got {} bytes, expected at least {}",
+            size,
+            minimum
+        );
+    }
+
+    validate_model_magic(path)
+}
+
+fn validate_model_magic(path: &Path) -> Result<()> {
+    let mut magic = [0_u8; 4];
+    std::fs::File::open(path)?.read_exact(&mut magic)?;
+    if &magic != b"lmgg" && &magic != b"GGUF" {
+        anyhow::bail!("File is not a recognised GGML/GGUF model");
+    }
+    Ok(())
+}
+
+/// Validate a configured or imported model before attempting to load it.
+pub fn validate_model_path(path: &Path) -> Result<()> {
+    if !path.is_file() {
+        anyhow::bail!("Model path is not a regular file: {:?}", path);
+    }
+
+    if let Some(model) = AVAILABLE_MODELS.iter().find(|model| {
+        path.file_name()
+            .map(|name| name == std::ffi::OsStr::new(model.filename))
+            .unwrap_or(false)
+    }) {
+        return validate_downloaded_model(model, path);
+    }
+
+    let size = std::fs::metadata(path)?.len();
+    if size < MIN_CUSTOM_MODEL_BYTES {
+        anyhow::bail!("Model is incomplete: got {} bytes", size);
+    }
+    validate_model_magic(path)
+}
+
+fn install_validated_model(temp_path: &Path, dest_path: &Path) -> Result<()> {
+    // Windows cannot rename over an existing file. If an older release left an
+    // invalid final file behind, remove only that invalid file after the new
+    // payload has passed validation.
+    if dest_path.exists() && validate_model_path(dest_path).is_err() {
+        std::fs::remove_file(dest_path)?;
+    }
+    std::fs::rename(temp_path, dest_path)?;
+    Ok(())
 }
 
 fn is_supported_model_path(path: &Path) -> bool {
@@ -134,6 +206,7 @@ pub fn import_model_from_path(source: &Path) -> Result<PathBuf> {
     if !is_supported_model_path(source) {
         anyhow::bail!("Unsupported model extension. Use .bin or .gguf");
     }
+    validate_model_path(source)?;
 
     let file_name = source
         .file_name()
@@ -221,34 +294,56 @@ where
     use futures_util::StreamExt;
     use std::io::Write;
 
+    validate_model_filename(model)?;
+
     let models_dir = get_models_dir();
     std::fs::create_dir_all(&models_dir)?;
 
     let dest_path = models_dir.join(model.filename);
     let temp_path = models_dir.join(format!("{}.downloading", model.filename));
+    let _ = std::fs::remove_file(&temp_path);
 
     info!("Downloading {} to {:?}", model.name, dest_path);
 
     let client = reqwest::Client::new();
-    let response = client.get(model.url).send().await?;
+    let response = client.get(model.url).send().await?.error_for_status()?;
+
+    if response
+        .content_length()
+        .map(|length| length < minimum_expected_model_bytes(model))
+        .unwrap_or(false)
+    {
+        anyhow::bail!("Model server returned an incomplete payload");
+    }
 
     let total_size = response
         .content_length()
         .unwrap_or(model.size_mb as u64 * 1024 * 1024);
     let mut downloaded: u64 = 0;
 
-    let mut file = std::fs::File::create(&temp_path)?;
-    let mut stream = response.bytes_stream();
+    let result: Result<()> = async {
+        let mut file = std::fs::File::create(&temp_path)?;
+        let mut stream = response.bytes_stream();
 
-    while let Some(chunk) = stream.next().await {
-        let chunk = chunk?;
-        file.write_all(&chunk)?;
-        downloaded += chunk.len() as u64;
-        progress_callback(downloaded, total_size);
+        while let Some(chunk) = stream.next().await {
+            let chunk = chunk?;
+            file.write_all(&chunk)?;
+            downloaded += chunk.len() as u64;
+            progress_callback(downloaded, total_size);
+        }
+
+        file.sync_all()?;
+        drop(file);
+        validate_downloaded_model(model, &temp_path)?;
+        install_validated_model(&temp_path, &dest_path)?;
+        Ok(())
     }
+    .await;
 
-    // Rename temp file to final name
-    std::fs::rename(&temp_path, &dest_path)?;
+    if let Err(err) = result {
+        let _ = std::fs::remove_file(&temp_path);
+        return Err(err);
+    }
 
     info!("Download complete: {:?}", dest_path);
     Ok(dest_path)
@@ -261,45 +356,123 @@ pub fn download_model_blocking<F>(model: &ModelInfo, progress_callback: F) -> Re
 where
     F: Fn(u64, u64),
 {
-    use std::io::{Read, Write};
+    use std::io::Write;
+
+    validate_model_filename(model)?;
 
     let models_dir = get_models_dir();
     std::fs::create_dir_all(&models_dir)?;
 
     let dest_path = models_dir.join(model.filename);
     let temp_path = models_dir.join(format!("{}.downloading", model.filename));
+    let _ = std::fs::remove_file(&temp_path);
 
     info!("Downloading {} to {:?}", model.name, dest_path);
 
     let client = reqwest::blocking::Client::builder().timeout(None).build()?;
 
-    let response = client.get(model.url).send()?;
+    let response = client.get(model.url).send()?.error_for_status()?;
 
-    if !response.status().is_success() {
-        anyhow::bail!("Download failed: HTTP {}", response.status());
+    if response
+        .content_length()
+        .map(|length| length < minimum_expected_model_bytes(model))
+        .unwrap_or(false)
+    {
+        anyhow::bail!("Model server returned an incomplete payload");
     }
 
     let total_size = response
         .content_length()
         .unwrap_or(model.size_mb as u64 * 1024 * 1024);
 
-    let mut file = std::fs::File::create(&temp_path)?;
-    let mut reader = response;
-    let mut downloaded: u64 = 0;
-    let mut buf = [0u8; 32768];
+    let result = (|| -> Result<()> {
+        let mut file = std::fs::File::create(&temp_path)?;
+        let mut reader = response;
+        let mut downloaded: u64 = 0;
+        let mut buf = [0u8; 32768];
 
-    loop {
-        let n = reader.read(&mut buf)?;
-        if n == 0 {
-            break;
+        loop {
+            let n = reader.read(&mut buf)?;
+            if n == 0 {
+                break;
+            }
+            file.write_all(&buf[..n])?;
+            downloaded += n as u64;
+            progress_callback(downloaded, total_size);
         }
-        file.write_all(&buf[..n])?;
-        downloaded += n as u64;
-        progress_callback(downloaded, total_size);
-    }
 
-    std::fs::rename(&temp_path, &dest_path)?;
+        file.sync_all()?;
+        drop(file);
+        validate_downloaded_model(model, &temp_path)?;
+        install_validated_model(&temp_path, &dest_path)?;
+        Ok(())
+    })();
+
+    if let Err(err) = result {
+        let _ = std::fs::remove_file(&temp_path);
+        return Err(err);
+    }
 
     info!("Download complete: {:?}", dest_path);
     Ok(dest_path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::{Seek, SeekFrom, Write};
+
+    fn fixture_model() -> ModelInfo {
+        ModelInfo {
+            name: "Fixture",
+            filename: "fixture.bin",
+            size_mb: 1,
+            url: "https://example.invalid/fixture.bin",
+            description: "test fixture",
+        }
+    }
+
+    #[test]
+    fn model_filename_rejects_path_traversal() {
+        let mut model = fixture_model();
+        model.filename = "../fixture.bin";
+        assert!(validate_model_filename(&model).is_err());
+    }
+
+    #[test]
+    fn downloaded_model_requires_expected_size_and_magic() {
+        let model = fixture_model();
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join(model.filename);
+        let mut file = std::fs::File::create(&path).unwrap();
+        file.write_all(b"lmgg").unwrap();
+        file.seek(SeekFrom::Start(minimum_expected_model_bytes(&model) - 1))
+            .unwrap();
+        file.write_all(&[0]).unwrap();
+        drop(file);
+
+        assert!(validate_downloaded_model(&model, &path).is_ok());
+
+        std::fs::write(&path, b"<html>not a model</html>").unwrap();
+        assert!(validate_downloaded_model(&model, &path).is_err());
+    }
+
+    #[test]
+    fn custom_model_path_requires_minimum_size_and_magic() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("custom.gguf");
+        let mut file = std::fs::File::create(&path).unwrap();
+        file.write_all(b"GGUF").unwrap();
+        file.seek(SeekFrom::Start(MIN_CUSTOM_MODEL_BYTES - 1))
+            .unwrap();
+        file.write_all(&[0]).unwrap();
+        drop(file);
+
+        assert!(validate_model_path(&path).is_ok());
+
+        let mut file = std::fs::OpenOptions::new().write(true).open(&path).unwrap();
+        file.write_all(b"html").unwrap();
+        drop(file);
+        assert!(validate_model_path(&path).is_err());
+    }
 }

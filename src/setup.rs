@@ -9,7 +9,7 @@ use crate::models::{self, ModelInfo, AVAILABLE_MODELS};
 use anyhow::Result;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::hint::black_box;
-use std::io::{self, Read, Write};
+use std::io::{self, Write};
 use std::path::PathBuf;
 use std::process::Command;
 use std::time::{Duration, Instant};
@@ -349,7 +349,7 @@ fn wizard_models() -> Vec<&'static ModelInfo> {
         "ggml-small.en.bin",
         "ggml-medium.en.bin",
         "ggml-distil-large-v3.bin",
-        "ggml-large.bin",
+        "ggml-large-v3.bin",
     ]
     .iter()
     .map(|filename| find_model(filename))
@@ -444,7 +444,7 @@ fn recommendation_reason(model: &ModelInfo, hw: &HardwareProfile, selected: &Mod
         "ggml-distil-large-v3.bin" => {
             "Excellent accuracy, but only worth it when the machine has real headroom.".to_string()
         }
-        "ggml-large.bin" => {
+        "ggml-large-v3.bin" => {
             "Highest accuracy, but not the best default if you care about speed.".to_string()
         }
         _ => String::new(),
@@ -607,43 +607,7 @@ fn prompt_for_model(recommendations: &[ModelRecommendation], default_idx: usize)
 
 /// Download a model file with a terminal progress bar.
 fn download_model_with_progress(model: &ModelInfo) -> Result<PathBuf> {
-    if model.filename.contains('/')
-        || model.filename.contains('\\')
-        || model.filename.contains("..")
-    {
-        anyhow::bail!("Invalid model filename: {}", model.filename);
-    }
-
-    let models_dir = models::get_models_dir();
-    std::fs::create_dir_all(&models_dir)?;
-
-    let dest_path = models_dir.join(model.filename);
-    let temp_path = models_dir.join(format!("{}.downloading", model.filename));
-
-    if temp_path.exists() {
-        let _ = std::fs::remove_file(&temp_path);
-    }
-
-    let client = reqwest::blocking::Client::builder().timeout(None).build()?;
-
-    let response = client
-        .get(model.url)
-        .send()
-        .map_err(|e| anyhow::anyhow!("Download failed: {}", e))?;
-
-    if !response.status().is_success() {
-        anyhow::bail!(
-            "Download failed: HTTP {} from {}",
-            response.status(),
-            model.url
-        );
-    }
-
-    let total_size = response
-        .content_length()
-        .unwrap_or(model.size_mb as u64 * 1024 * 1024);
-
-    let pb = ProgressBar::new(total_size);
+    let pb = ProgressBar::new(model.size_mb as u64 * 1024 * 1024);
     pb.set_style(
         ProgressStyle::with_template(
             "  [{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})",
@@ -652,26 +616,21 @@ fn download_model_with_progress(model: &ModelInfo) -> Result<PathBuf> {
         .progress_chars("█▓░"),
     );
 
-    let mut file = std::fs::File::create(&temp_path)?;
-    let mut reader = response;
-    let mut downloaded: u64 = 0;
-    let mut buf = [0u8; 32768];
-
-    loop {
-        let n = reader.read(&mut buf)?;
-        if n == 0 {
-            break;
-        }
-        file.write_all(&buf[..n])?;
-        downloaded += n as u64;
+    let result = models::download_model_blocking(model, |downloaded, total| {
+        pb.set_length(total);
         pb.set_position(downloaded);
+    });
+
+    match result {
+        Ok(path) => {
+            pb.finish_with_message("done");
+            Ok(path)
+        }
+        Err(err) => {
+            pb.abandon_with_message("failed");
+            Err(err)
+        }
     }
-
-    pb.finish_with_message("done");
-    drop(file);
-    std::fs::rename(&temp_path, &dest_path)?;
-
-    Ok(dest_path)
 }
 
 #[cfg(test)]
