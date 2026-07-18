@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en" data-bridge="development">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>OSWispa history and recovery preview</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-surface="history">
+  <a class="skip-link" href="#history-main">Skip to content</a>
+  <div class="development-banner" role="note">
+    Development preview · synthetic text only · copy and clear actions affect this page, not your clipboard or files
+  </div>
+
+  <div class="desktop-shell history-shell">
+    <header class="desktop-header">
+      <a class="brand" href="index.html" aria-label="Back to OSWispa desktop preview">
+        <span class="whisper-mark" aria-hidden="true">
+          <span class="whisper-orbit whisper-orbit--outer"></span>
+          <span class="whisper-orbit whisper-orbit--inner"></span>
+          <span class="star-compass"></span>
+        </span>
+        <span><strong>OSWispa</strong><small>History &amp; recovery</small></span>
+      </a>
+      <nav class="surface-nav" aria-label="Desktop surfaces">
+        <a class="surface-nav-item" href="index.html#ready-check">Ready Check</a>
+        <a class="surface-nav-item" href="index.html#settings">Settings</a>
+        <a class="surface-nav-item is-active" href="history.html" aria-current="page">History &amp; recovery</a>
+        <a class="surface-nav-item" href="signal.html?state=copied">Signal preview</a>
+      </nav>
+      <div class="desktop-state"><span class="state-dot" aria-hidden="true"></span><span>Text only · 3 / 50</span></div>
+    </header>
+
+    <main id="history-main" class="history-main">
+      <div class="view-heading history-heading">
+        <div>
+          <p class="eyebrow">Local recovery</p>
+          <h1>History &amp; recovery</h1>
+          <p class="view-lead">Recent text can be recovered when insertion misses its target. Entries stay collapsed so transcript content is not previewed by default.</p>
+        </div>
+        <div class="history-boundary">
+          <strong>Bounded by design</strong>
+          <span>50 text entries maximum</span>
+          <span>No recorded audio</span>
+        </div>
+      </div>
+
+      <section class="history-toolbar" aria-labelledby="history-tools-title">
+        <h2 id="history-tools-title" class="sr-only">History controls</h2>
+        <label class="search-field">
+          <span>Search synthetic entries</span>
+          <input type="search" data-history-search placeholder="Search hidden transcript text" autocomplete="off">
+        </label>
+        <label class="field field--compact">Delivery outcome
+          <select data-history-filter>
+            <option value="all">All outcomes</option>
+            <option value="inserted">Inserted</option>
+            <option value="copied">Copied only</option>
+            <option value="attention">Needs attention</option>
+          </select>
+        </label>
+        <button class="button button--danger" type="button" data-clear-history>Clear preview history</button>
+      </section>
+
+      <p class="history-status" role="status" aria-live="polite" data-history-status>3 synthetic entries. Transcript text remains collapsed.</p>
+
+      <section class="history-list-section" aria-labelledby="history-list-title">
+        <div class="history-section-heading">
+          <div><p class="step-kicker">Today</p><h2 id="history-list-title">Delivery receipts</h2></div>
+          <p>Open one entry to reveal its synthetic text.</p>
+        </div>
+
+        <ol class="history-list" data-history-list>
+          <li class="history-item" data-history-entry data-outcome="inserted" data-search-text="draft the release note windows now works">
+            <details>
+              <summary>
+                <span class="history-compass" aria-hidden="true"><span class="star-compass"></span></span>
+                <span class="history-summary-copy"><strong>20:14 · 46 characters</strong><small>Local · base.en · transcript hidden</small></span>
+                <span class="status-pill status-pill--ready">Inserted</span>
+              </summary>
+              <div class="history-recovery">
+                <p class="history-transcript">Draft the release note: Windows now works.</p>
+                <dl class="receipt-grid"><div><dt>Receipt</dt><dd>local-1082</dd></div><div><dt>Audio</dt><dd>2.4 seconds</dd></div><div><dt>Delivery</dt><dd>Verified insert</dd></div></dl>
+                <button class="button button--secondary" type="button" data-copy-entry="local-1082">Preview copy recovery</button>
+              </div>
+            </details>
+          </li>
+
+          <li class="history-item" data-history-entry data-outcome="copied" data-search-text="send the package proof after the checks finish">
+            <details>
+              <summary>
+                <span class="history-compass" aria-hidden="true"><span class="star-compass"></span></span>
+                <span class="history-summary-copy"><strong>18:42 · 47 characters</strong><small>Local · small.en · transcript hidden</small></span>
+                <span class="status-pill status-pill--copied">Copied only</span>
+              </summary>
+              <div class="history-recovery">
+                <p class="history-transcript">Send the package proof after the checks finish.</p>
+                <dl class="receipt-grid"><div><dt>Receipt</dt><dd>local-1076</dd></div><div><dt>Audio</dt><dd>3.1 seconds</dd></div><div><dt>Delivery</dt><dd>Clipboard verified</dd></div></dl>
+                <button class="button button--secondary" type="button" data-copy-entry="local-1076">Preview copy recovery</button>
+              </div>
+            </details>
+          </li>
+
+          <li class="history-item" data-history-entry data-outcome="attention" data-search-text="check the microphone source before recording again">
+            <details>
+              <summary>
+                <span class="history-compass" aria-hidden="true"><span class="star-compass"></span></span>
+                <span class="history-summary-copy"><strong>16:09 · 50 characters</strong><small>Local · base.en · transcript hidden</small></span>
+                <span class="status-pill status-pill--attention">Needs attention</span>
+              </summary>
+              <div class="history-recovery">
+                <p class="history-transcript">Check the microphone source before recording again.</p>
+                <dl class="receipt-grid"><div><dt>Receipt</dt><dd>local-1069</dd></div><div><dt>Audio</dt><dd>2.8 seconds</dd></div><div><dt>Delivery</dt><dd>Not attempted</dd></div></dl>
+                <button class="button button--secondary" type="button" data-copy-entry="local-1069">Preview copy recovery</button>
+              </div>
+            </details>
+          </li>
+        </ol>
+
+        <div class="empty-state" data-history-empty hidden>
+          <span class="whisper-mark whisper-mark--large" aria-hidden="true"><span class="whisper-orbit whisper-orbit--outer"></span><span class="whisper-orbit whisper-orbit--inner"></span><span class="star-compass"></span></span>
+          <h2>No matching preview receipts</h2>
+          <p>Adjust the search or outcome filter. Production history remains bounded and local.</p>
+        </div>
+      </section>
+
+      <aside class="recovery-note" aria-labelledby="recovery-note-title">
+        <p class="eyebrow">Recovery rule</p>
+        <h2 id="recovery-note-title">Copy is the safe fallback.</h2>
+        <p>If text insertion cannot be verified, OSWispa should leave the transcript on the clipboard and report “Copied” rather than pretending it reached the focused app.</p>
+      </aside>
+    </main>
+  </div>
+
+  <dialog class="confirm-dialog" data-clear-dialog aria-labelledby="clear-dialog-title">
+    <div class="dialog-mark" aria-hidden="true"><span class="star-compass"></span></div>
+    <h2 id="clear-dialog-title">Clear synthetic preview history?</h2>
+    <p>This removes the three in-memory fixture rows from this page. It cannot delete OSWispa files.</p>
+    <div class="dialog-actions">
+      <button class="button button--secondary" type="button" data-clear-cancel>Cancel</button>
+      <button class="button button--danger" type="button" data-clear-confirm>Clear preview rows</button>
+    </div>
+  </dialog>
+
+  <script src="bridge.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
