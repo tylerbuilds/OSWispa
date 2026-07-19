@@ -1,8 +1,14 @@
 # Changelog
 
-Scope window: project inception on 2025-12-11 through v0.5.1 on 2026-07-18.
+Scope window: project inception on 2025-12-11 through v0.5.2 on 2026-07-19.
 
 This changelog is reconstructed from Git history, tags, GitHub Releases, merged pull requests, and the current source tree. A tag link is used where no GitHub Release was published.
+
+## 0.5.2 - 2026-07-19
+
+### Fixed
+
+- Prevented the persistent Linux/X11 `xclip` clipboard owner from inheriting a caller's output streams. Commands now return promptly when their output is captured while the clipboard selection remains available for pasting.
 
 ## 0.5.1 - 2026-07-18
 
@@ -94,6 +100,7 @@ This changelog is reconstructed from Git history, tags, GitHub Releases, merged 
 
 | Version | Date | Kind | Evidence |
 | --- | --- | --- | --- |
+| v0.5.2 | 2026-07-19 | Release | [GitHub Release](https://github.com/tylerbuilds/OSWispa/releases/tag/v0.5.2) |
 | v0.5.1 | 2026-07-18 | Release | [GitHub Release](https://github.com/tylerbuilds/OSWispa/releases/tag/v0.5.1) |
 | v0.5.0 | 2026-07-18 | Release | [GitHub Release](https://github.com/tylerbuilds/OSWispa/releases/tag/v0.5.0) |
 | v0.4.2 | 2026-07-18 | Release | [GitHub Release](https://github.com/tylerbuilds/OSWispa/releases/tag/v0.4.2) |

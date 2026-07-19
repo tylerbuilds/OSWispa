@@ -107,6 +107,11 @@ fn copy_to_x11_clipboard_xclip(text: &str) -> Result<()> {
     let mut child = Command::new("xclip")
         .args(["-selection", "clipboard", "-in"])
         .stdin(Stdio::piped())
+        // The clipboard owner intentionally outlives this process. Do not let
+        // it inherit a caller's captured output pipe, or command substitution
+        // will wait for xclip even after the dictation command has returned.
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .spawn()
         .context("Failed to run xclip. Install with: sudo apt install xclip")?;
 

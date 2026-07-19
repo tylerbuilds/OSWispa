@@ -6,7 +6,7 @@ Do not publish a release because the source name and website changed. A release 
 
 - Public product: MorpheOS Voice
 - Compatibility package/command: `oswispa`
-- Current live release: v0.5.0 public alpha under the MorpheOS Voice name
+- Current live release: v0.5.2 public alpha under the MorpheOS Voice name
 - Canonical future page: `https://morpheos.net/voice`
 - Current official repository: `https://github.com/tylerbuilds/OSWispa`
 

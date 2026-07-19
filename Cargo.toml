@@ -1,6 +1,6 @@
 [package]
 name = "oswispa"
-version = "0.5.1"
+version = "0.5.2"
 edition = "2021"
 description = "Free, open-source voice typing for any app"
 authors = ["MorpheOS"]

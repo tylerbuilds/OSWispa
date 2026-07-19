@@ -1,6 +1,6 @@
 [package]
 name = "oswispa-desktop"
-version = "0.5.1"
+version = "0.5.2"
 edition = "2021"
 description = "Bounded Tauri desktop shell for the MorpheOS Voice engine"
 license = "MIT"
