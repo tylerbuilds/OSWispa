@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Validate the MorpheOS Voice static site and release-facing claims."""
+"""Validate the legacy-URL hand-off to MorpheOS Voice."""
 
 from __future__ import annotations
 
-import re
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
@@ -59,14 +58,6 @@ def parse_html(path: Path) -> SiteParser:
     return parser
 
 
-def cargo_version() -> str:
-    cargo = (ROOT / "Cargo.toml").read_text(encoding="utf-8")
-    match = re.search(r'^version\s*=\s*"([^"]+)"', cargo, flags=re.MULTILINE)
-    if not match:
-        raise RuntimeError("Could not read the package version from Cargo.toml")
-    return match.group(1)
-
-
 def local_target(source: Path, reference: str) -> tuple[Path, str] | None:
     parsed = urlsplit(reference)
     if parsed.scheme or parsed.netloc or reference.startswith("//"):
@@ -113,18 +104,7 @@ def main() -> int:
                 if fragment not in target_parser.ids:
                     errors.append(f"{relative}: missing fragment target: {reference}")
 
-    version = cargo_version()
     index = (WEBSITE / "index.html").read_text(encoding="utf-8")
-    if f"v{version}" not in index:
-        errors.append(f"website/index.html: fallback release must match Cargo.toml v{version}")
-
-    version_pattern = re.compile(r"\bv\d+\.\d+\.\d+\b")
-    for path in html_files:
-        for found in version_pattern.findall(path.read_text(encoding="utf-8")):
-            if found != f"v{version}":
-                errors.append(
-                    f"{path.relative_to(ROOT)}: stale hard-coded release {found}; expected v{version}"
-                )
 
     claim_text = "\n".join(
         path.read_text(encoding="utf-8")
@@ -162,24 +142,20 @@ def main() -> int:
             errors.append(f"website: remove {reason}: {phrase!r}")
 
     required = [
+        "OSWispa is now MorpheOS Voice.",
         "MorpheOS Voice",
-        "Talk instead of type — in any app.",
-        "Free, open-source voice typing for your computer.",
-        "Illustrated flow — not a live screenshot",
-        "https://morpheos.net/voice",
-        "Linux primary",
-        "Processed on this computer",
-        "Sent to the selected provider",
-        "CPU-only",
-        "not signed or notarised",
-        "no installer or tray",
-        "console window",
-        "first model download",
-        "Release proof boundary",
+        "https://morpheos.net/voice/",
+        "Visit MorpheOS Voice",
+        "Legacy OSWispa address",
     ]
     for phrase in required:
         if phrase.casefold() not in index.casefold():
-            errors.append(f"website/index.html: missing product-truth marker {phrase!r}")
+            errors.append(f"website/index.html: missing transition marker {phrase!r}")
+
+    if 'name="robots" content="noindex,follow"' not in index:
+        errors.append("website/index.html: transition page must be noindex,follow")
+    if "releases/latest/download" in index:
+        errors.append("website/index.html: legacy landing page must not offer direct downloads")
 
     if errors:
         print("Website validation failed:", file=sys.stderr)
@@ -187,7 +163,7 @@ def main() -> int:
             print(f"- {error}", file=sys.stderr)
         return 1
 
-    print(f"Website validation passed for {len(html_files)} HTML pages (v{version}).")
+    print(f"Website transition validation passed for {len(html_files)} HTML pages.")
     return 0
 
 

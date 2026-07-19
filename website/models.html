@@ -3,90 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#10110f">
-  <title>Local speech models — MorpheOS Voice</title>
-  <meta name="description" content="Choose a local Whisper.cpp speech model for MorpheOS Voice without guessing at architecture or quantisation details.">
-  <link rel="canonical" href="https://morpheos.net/voice/models.html">
+  <meta name="theme-color" content="#14201b">
+  <meta name="robots" content="noindex,follow">
+  <title>OSWispa is now MorpheOS Voice</title>
+  <meta name="description" content="OSWispa is now MorpheOS Voice. Visit the new product home for current model guidance and downloads.">
+  <link rel="canonical" href="https://morpheos.net/voice/">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="legacy-page">
   <a class="skip-link" href="#main-content">Skip to content</a>
-  <header class="site-header">
-    <div class="header-inner">
-      <a class="brand-lockup" href="index.html" aria-label="MorpheOS Voice home">
-        <img src="morpheos-voice-mark.svg" alt="" width="40" height="40">
-        <span><b>MorpheOS</b> Voice</span>
-      </a>
-      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" data-nav-toggle>
-        <span>Menu</span><span class="nav-lines" aria-hidden="true"><i></i><i></i></span>
-      </button>
-      <nav class="site-nav" id="primary-nav" aria-label="Primary navigation" data-site-nav>
-        <a href="index.html#how-it-works">How it works</a>
-        <a href="index.html#processing">Privacy</a>
-        <a href="index.html#downloads">Downloads</a>
-        <a href="models.html" aria-current="page">Models</a>
-      </nav>
-      <div class="header-actions">
-        <a class="button button-quiet" href="https://github.com/tylerbuilds/OSWispa">GitHub</a>
-        <a class="button button-primary" href="index.html#downloads">Download</a>
-      </div>
-    </div>
+  <header class="legacy-header">
+    <a class="legacy-brand" href="https://morpheos.net/voice/" aria-label="Visit MorpheOS Voice"><span class="brand-mark" aria-hidden="true">M</span><span>MorpheOS Voice</span></a>
+    <span class="legacy-status">Legacy OSWispa address</span>
   </header>
-
-  <main id="main-content" class="shell">
-    <section class="content-hero">
-      <div>
-        <p class="eyebrow">Local processing / models</p>
-        <h1>Choose for the computer you have.</h1>
-      </div>
-      <p class="large-copy">MorpheOS Voice checks the current build, memory and a short CPU sample before suggesting a local model. Start with that recommendation; model architecture and quantisation do not need to be first-run decisions.</p>
-    </section>
-
-    <section class="content-section">
-      <div><p class="section-index">01 / Practical choices</p></div>
-      <div>
-        <h2>Speed, accuracy and memory</h2>
-        <table>
-          <thead><tr><th>Model</th><th>Approx. download</th><th>Best fit</th></tr></thead>
-          <tbody>
-            <tr><td><code>tiny.en</code></td><td>75 MB</td><td>Quick hardware checks and low-memory computers; English only.</td></tr>
-            <tr><td><code>base.en</code></td><td>142 MB</td><td>Fast English dictation on modest hardware.</td></tr>
-            <tr><td><code>small.en</code></td><td>466 MB</td><td>Stronger English accuracy with a moderate memory cost.</td></tr>
-            <tr><td><code>medium.en</code></td><td>1.5 GB</td><td>A useful accuracy balance when the computer can keep it responsive.</td></tr>
-            <tr><td><code>distil-large-v3</code></td><td>1.5 GB</td><td>High-end English speed/accuracy balance on suitable hardware.</td></tr>
-            <tr><td><code>large-v3</code></td><td>2.9 GB</td><td>Highest local accuracy in the curated list; slower and more demanding.</td></tr>
-          </tbody>
-        </table>
-        <p>These sizes are approximate upstream artefact sizes, not performance guarantees. CPU speed, GPU backend, audio, language and spoken context all affect the result.</p>
-      </div>
-    </section>
-
-    <section class="content-section">
-      <div><p class="section-index">02 / Download source</p></div>
-      <div>
-        <h2>Models are separate downloads</h2>
-        <p>MorpheOS Voice does not bundle a speech model in the application packages. Managed downloads come from the <a href="https://huggingface.co/ggerganov/whisper.cpp/tree/main">ggerganov/whisper.cpp model repository on Hugging Face</a> and are validated before installation.</p>
-        <p>Optional model files retain their upstream licences and terms. The application's MIT licence does not relicense them. See the <a href="https://github.com/tylerbuilds/OSWispa/blob/master/THIRD_PARTY_NOTICES.md">third-party notices</a>.</p>
-      </div>
-    </section>
-
-    <section class="content-section">
-      <div><p class="section-index">03 / Storage</p></div>
-      <div>
-        <h2>Existing models remain available</h2>
-        <p>The first MorpheOS Voice transition release continues to use the established OSWispa application-data directories. This prevents a public-name change from forcing another multi-gigabyte download or breaking rollback.</p>
-        <p>On Linux, managed models normally live under <code>~/.local/share/oswispa/models/</code>. macOS continues to use <code>~/Library/Application Support/com.oswispa.OSWispa/models/</code>. The application resolves the correct directory on each operating system.</p>
-      </div>
-    </section>
-
-    <section class="final-cta-inner">
-      <div><p class="eyebrow">Start with the recommendation</p><h2>Change the model only when you have a reason.</h2></div>
-      <div class="final-actions"><a class="button button-primary button-large" href="index.html#downloads">Download MorpheOS Voice</a></div>
-    </section>
+  <main id="main-content" class="redirect-main">
+    <p class="eyebrow">Legacy model page</p>
+    <h1>OSWispa is now MorpheOS Voice.</h1>
+    <p>Current downloads, model guidance and product information now live at MorpheOS Voice.</p>
+    <div class="handoff-actions"><a class="button button-primary" href="https://morpheos.net/voice/">Visit MorpheOS Voice <span aria-hidden="true">→</span></a></div>
   </main>
-
-  <footer class="site-footer"><div class="shell footer-inner"><p>© 2026 MorpheOS Voice contributors.</p><nav aria-label="Footer navigation"><a href="index.html">Product</a><a href="USER_GUIDE.md">User guide</a><a href="contact.html">Contact</a></nav></div></footer>
-  <script src="app.js"></script>
+  <footer class="legacy-footer"><p>This page is retained only to direct existing OSWispa links.</p><a href="https://morpheos.net/voice/">morpheos.net/voice</a></footer>
 </body>
 </html>
