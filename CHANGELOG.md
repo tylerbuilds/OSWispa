@@ -1,8 +1,14 @@
 # Changelog
 
-Scope window: project inception on 2025-12-11 through v0.5.0 on 2026-07-18.
+Scope window: project inception on 2025-12-11 through v0.5.1 on 2026-07-18.
 
 This changelog is reconstructed from Git history, tags, GitHub Releases, merged pull requests, and the current source tree. A tag link is used where no GitHub Release was published.
+
+## 0.5.1 - 2026-07-18
+
+### Fixed
+
+- Fixed Linux/X11 clipboard delivery so `xclip` remains the managed clipboard owner instead of blocking the app while it owns the selection. This restores normal dictation flow and lets the installed RPM platform smoke test exit deterministically.
 
 ## 0.5.0 - 2026-07-18
 
@@ -88,6 +94,7 @@ This changelog is reconstructed from Git history, tags, GitHub Releases, merged 
 
 | Version | Date | Kind | Evidence |
 | --- | --- | --- | --- |
+| v0.5.1 | 2026-07-18 | Release | [GitHub Release](https://github.com/tylerbuilds/OSWispa/releases/tag/v0.5.1) |
 | v0.5.0 | 2026-07-18 | Release | [GitHub Release](https://github.com/tylerbuilds/OSWispa/releases/tag/v0.5.0) |
 | v0.4.2 | 2026-07-18 | Release | [GitHub Release](https://github.com/tylerbuilds/OSWispa/releases/tag/v0.4.2) |
 | v0.4.1 | 2026-03-13 | Release | [GitHub Release](https://github.com/tylerbuilds/OSWispa/releases/tag/v0.4.1) |

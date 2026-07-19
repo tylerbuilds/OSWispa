@@ -116,7 +116,7 @@ jobs:
             sleep 0.25
           done
           test -S /tmp/.X11-unix/X99
-          output="$(DISPLAY=:99 XDG_SESSION_TYPE=x11 oswispa --platform-smoke-test)"
+          output="$(timeout 30s env DISPLAY=:99 XDG_SESSION_TYPE=x11 oswispa --platform-smoke-test)"
           printf '%s\n' "$output"
           grep -Fq "OSWISPA_PLATFORM_SMOKE_OK version=$version os=linux arch=x86_64" <<<"$output"
           grep -Fq "audio=linux-arecord hotkey=linux-evdev input=linux-native" <<<"$output"

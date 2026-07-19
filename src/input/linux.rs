@@ -13,6 +13,7 @@
 use anyhow::{Context, Result};
 use std::io::Write;
 use std::process::{Command, Stdio};
+use std::sync::{Mutex, OnceLock};
 use tracing::{debug, info, warn};
 use wl_clipboard_rs::copy::{MimeType, Options, Source};
 
@@ -21,6 +22,17 @@ enum SessionKind {
     Wayland,
     X11,
     Unknown,
+}
+
+/// The current X11 clipboard owner must outlive the write command.
+///
+/// `xclip -in` deliberately remains alive while it owns the selection. Waiting
+/// for it turns every X11 clipboard write into a deadlock, so retain the child
+/// until the next write instead. Replacing the selection causes the previous
+/// owner to exit; we reap it before starting its replacement.
+fn x11_clipboard_owner() -> &'static Mutex<Option<std::process::Child>> {
+    static OWNER: OnceLock<Mutex<Option<std::process::Child>>> = OnceLock::new();
+    OWNER.get_or_init(|| Mutex::new(None))
 }
 
 fn session_kind() -> SessionKind {
@@ -75,6 +87,23 @@ fn copy_to_x11_clipboard_xclip(text: &str) -> Result<()> {
         anyhow::bail!("xclip not found. Install with: sudo apt install xclip");
     }
 
+    let mut owner = x11_clipboard_owner()
+        .lock()
+        .map_err(|_| anyhow::anyhow!("X11 clipboard owner lock was poisoned"))?;
+
+    if let Some(mut previous_owner) = owner.take() {
+        match previous_owner.try_wait() {
+            Ok(Some(_)) => {}
+            Ok(None) => {
+                // A new copy supersedes the old selection. Stop and reap the
+                // old owner before assigning the next one.
+                let _ = previous_owner.kill();
+                let _ = previous_owner.wait();
+            }
+            Err(error) => warn!("Failed to inspect prior xclip owner: {}", error),
+        }
+    }
+
     let mut child = Command::new("xclip")
         .args(["-selection", "clipboard", "-in"])
         .stdin(Stdio::piped())
@@ -85,10 +114,10 @@ fn copy_to_x11_clipboard_xclip(text: &str) -> Result<()> {
         stdin.write_all(text.as_bytes())?;
     }
 
-    let status = child.wait()?;
-    if !status.success() {
-        anyhow::bail!("xclip failed");
-    }
+    // xclip stays alive for as long as it owns the X11 selection. Keeping the
+    // child is both the clipboard-lifetime mechanism and the non-blocking
+    // behaviour required by dictation and the packaged platform smoke test.
+    *owner = Some(child);
 
     debug!("Text copied to X11 clipboard via xclip");
     Ok(())
