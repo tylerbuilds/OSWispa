@@ -103,6 +103,7 @@ jobs:
             --ignore RUSTSEC-2026-0195
 
   check-macos:
+    if: github.event_name != 'pull_request'
     runs-on: macos-latest
     timeout-minutes: 45
     steps:
@@ -141,6 +142,7 @@ jobs:
           grep -Fq "audio=macos-coreaudio-cpal hotkey=macos-rdev input=macos-arboard-enigo" <<<"$output"
 
   check-windows:
+    if: github.event_name != 'pull_request'
     runs-on: windows-latest
     timeout-minutes: 45
     steps:
